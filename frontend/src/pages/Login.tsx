@@ -1,8 +1,23 @@
+import { useState } from "react";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/lib/supabase";
 
+async function signInWithGoogle() {
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+}
+
 export function Login() {
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    await signInWithGoogle();
+  }
+
   return (
     <div
       style={{
@@ -52,6 +67,47 @@ export function Login() {
             boxShadow: "var(--shadow-lg)",
           }}
         >
+          {/* Bouton Google custom — redirectTo explicite */}
+          <button
+            onClick={handleGoogle}
+            disabled={googleLoading}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-3)",
+              padding: "10px var(--space-4)",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              borderRadius: "var(--radius-sm)",
+              color: "var(--color-text-primary)",
+              fontSize: "var(--text-sm)",
+              fontFamily: "var(--font-body)",
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              cursor: googleLoading ? "not-allowed" : "pointer",
+              opacity: googleLoading ? 0.6 : 1,
+              transition: "background var(--transition-fast)",
+              marginBottom: "var(--space-5)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            {googleLoading ? "Redirection…" : "Continuer avec Google"}
+          </button>
+
+          {/* Séparateur */}
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-5)" }}>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>OU</span>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+          </div>
+
           <Auth
             supabaseClient={supabase}
             appearance={{
@@ -85,7 +141,7 @@ export function Login() {
                 label: { letterSpacing: "0.1em", textTransform: "uppercase" },
               },
             }}
-            providers={["google"]}
+            providers={[]}
             redirectTo={window.location.origin}
             localization={{
               variables: {
@@ -93,14 +149,12 @@ export function Login() {
                   email_label: "Adresse e-mail",
                   password_label: "Mot de passe",
                   button_label: "Se connecter",
-                  social_provider_text: "Continuer avec {{provider}}",
                   link_text: "Vous avez déjà un compte ? Se connecter",
                 },
                 sign_up: {
                   email_label: "Adresse e-mail",
                   password_label: "Mot de passe",
                   button_label: "Créer un compte",
-                  social_provider_text: "Continuer avec {{provider}}",
                   link_text: "Pas encore de compte ? S'inscrire",
                 },
               },
