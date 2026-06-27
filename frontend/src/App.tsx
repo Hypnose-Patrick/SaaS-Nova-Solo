@@ -8,6 +8,8 @@ import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Bmc } from "@/pages/Bmc";
 import { Pipeline } from "@/pages/Pipeline";
+import { Finances } from "@/pages/Finances";
+import { Factures } from "@/pages/Factures";
 
 // Pages stub — seront remplacées par leurs implémentations complètes.
 function PageStub({ name }: { name: string }) {
@@ -33,9 +35,9 @@ function ProtectedRoutes() {
         <Route path="bmc" element={<Bmc />} />
         <Route path="business-plan" element={<PageStub name="Business Plan" />} />
         <Route path="pipeline" element={<Pipeline />} />
-        <Route path="finances" element={<PageStub name="Finances" />} />
+        <Route path="finances" element={<Finances />} />
         <Route path="compta" element={<PageStub name="Comptabilité" />} />
-        <Route path="facture" element={<PageStub name="Factures" />} />
+        <Route path="facture" element={<Factures />} />
         <Route path="agenda" element={<PageStub name="Agenda" />} />
         <Route path="documents" element={<PageStub name="Documents" />} />
         <Route path="settings" element={<PageStub name="Réglages" />} />
