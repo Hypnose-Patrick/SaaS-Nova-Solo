@@ -24,71 +24,49 @@ interface FinModel {
   financement: OpexLine[];
 }
 
-const FINANCE_SEED: FinModel = {
-  scenario: "A",
-  startCash: 5000,
-  capitalInjection: 67000, // LPP 50'000 + prêt 20'000 − frais constitution 3'000
-  injectionMonth: 8, // M8 = janv. 2027 = constitution Sàrl
-  scenarios: {
-    A: { label: "Volontariste", months: [
-      { m: "M1", period: "Juin 2026", ca: 500, charges: 1650 }, { m: "M2", period: "Juil 2026", ca: 1200, charges: 1650 },
-      { m: "M3", period: "Août 2026", ca: 2800, charges: 1650 }, { m: "M4", period: "Sept 2026", ca: 6000, charges: 1650 },
-      { m: "M5", period: "Oct 2026", ca: 13500, charges: 1650 }, { m: "M6", period: "Nov 2026", ca: 17500, charges: 1650, draw: 5000 },
-      { m: "M7", period: "Déc 2026", ca: 20500, charges: 1650, draw: 5000 }, { m: "M8", period: "Jan 2027", ca: 23000, charges: 9750 },
-      { m: "M9", period: "Fév 2027", ca: 25500, charges: 9750 }, { m: "M10", period: "Mar 2027", ca: 27500, charges: 9750 },
-      { m: "M11", period: "Avr 2027", ca: 29000, charges: 9750 }, { m: "M12", period: "Mai 2027", ca: 30500, charges: 9750 },
-    ] },
-    B: { label: "Prudent", months: [
-      { m: "M1", period: "Juin 2026", ca: 300, charges: 1650 }, { m: "M2", period: "Juil 2026", ca: 700, charges: 1650 },
-      { m: "M3", period: "Août 2026", ca: 1200, charges: 1650 }, { m: "M4", period: "Sept 2026", ca: 2500, charges: 1650 },
-      { m: "M5", period: "Oct 2026", ca: 5500, charges: 1650 }, { m: "M6", period: "Nov 2026", ca: 7500, charges: 1650, draw: 5000 },
-      { m: "M7", period: "Déc 2026", ca: 9000, charges: 1650, draw: 5000 }, { m: "M8", period: "Jan 2027", ca: 10500, charges: 9750 },
-      { m: "M9", period: "Fév 2027", ca: 12000, charges: 9750 }, { m: "M10", period: "Mar 2027", ca: 13500, charges: 9750 },
-      { m: "M11", period: "Avr 2027", ca: 15000, charges: 9750 }, { m: "M12", period: "Mai 2027", ca: 16500, charges: 9750 },
-    ] },
-  },
-  opexRI: [
-    { poste: "Loyer / quote-part bureau", montant: 350 }, { poste: "Assurance maladie (LAMal)", montant: 450 },
-    { poste: "Assurance RC professionnelle", montant: 50 }, { poste: "Téléphonie & internet", montant: 80 },
-    { poste: "Hébergement, IA & outils SaaS", montant: 150 }, { poste: "Comptabilité / fiduciaire", montant: 120 },
-    { poste: "Frais bancaires", montant: 20 }, { poste: "Déplacements & véhicule", montant: 150 },
-    { poste: "Marketing & communication", montant: 130 }, { poste: "Divers / imprévus", montant: 150 },
-  ],
-  opexSarl: [
-    { poste: "Salaire brut gérant", montant: 6000 }, { poste: "Charges sociales patronales (~15%)", montant: 900 },
-    { poste: "Loyer bureau", montant: 600 }, { poste: "Assurances pro (RC, perte de gain)", montant: 200 },
-    { poste: "Hébergement, IA & outils SaaS", montant: 450 }, { poste: "Comptabilité / fiduciaire", montant: 300 },
-    { poste: "Marketing & acquisition", montant: 500 }, { poste: "Téléphonie & internet", montant: 120 },
-    { poste: "Déplacements & véhicule", montant: 350 }, { poste: "Frais bancaires & divers", montant: 330 },
-  ],
-  financement: [
-    { poste: "Retrait LPP (net injecté dans la Sàrl)", montant: 50000 },
-    { poste: "Prêt familial", montant: 20000 },
-    { poste: "Frais de constitution (notaire, RC, FOSC)", montant: -3000 },
-  ],
-};
-
-const CANON: Record<"RI" | "Sarl", number> = { RI: 1650, Sarl: 9750 };
 const FIN_KEY = "ns_finance";
+const MONTH_ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
 
-// Pré-remplit le modèle depuis les données réelles du profil utilisateur
-// (capital, charges fixes). Les valeurs canoniques ne servent que de filet
-// quand un champ n'est pas renseigné. Tout reste éditable ensuite.
-function seedModel(profile: Profile | null): FinModel {
-  const seed: FinModel = JSON.parse(JSON.stringify(FINANCE_SEED));
-  if (!profile) return seed;
-  const capital = Number(profile.capital) || 0;
-  const charges = Number(profile.charges_fixes) || 0;
-  if (capital > 0) seed.startCash = capital;
-  if (charges > 0) {
-    // applique les charges fixes réelles à la phase d'amorçage (avant l'injection M8)
-    (["A", "B"] as const).forEach((sc) => {
-      seed.scenarios[sc].months.forEach((m, i) => {
-        if (i < seed.injectionMonth - 1) m.charges = charges;
-      });
-    });
-  }
-  return seed;
+// Catégories de charges génériques (Suisse) — montants à 0, à compléter par
+// l'utilisateur. Aucune donnée personnelle d'un autre compte.
+const OPEX_RI_TEMPLATE = [
+  "Loyer / quote-part bureau", "Assurance maladie (LAMal)", "Assurance RC professionnelle",
+  "Téléphonie & internet", "Hébergement & outils", "Comptabilité / fiduciaire",
+  "Frais bancaires", "Déplacements", "Marketing & communication", "Divers / imprévus",
+];
+const OPEX_SARL_TEMPLATE = [
+  "Salaire brut gérant", "Charges sociales patronales", "Loyer bureau", "Assurances pro",
+  "Hébergement & outils", "Comptabilité / fiduciaire", "Marketing & acquisition",
+  "Téléphonie & internet", "Déplacements", "Frais bancaires & divers",
+];
+
+// Construit 12 mois à partir du mois courant (périodes relatives, pas de dates figées).
+function buildMonths(charges: number): FinMonth[] {
+  const now = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    return { m: `M${i + 1}`, period: `${MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`, ca: 0, charges };
+  });
+}
+
+// Modèle NEUTRE pour un nouvel abonné : aucune donnée d'exemple d'un autre
+// utilisateur n'est livrée dans le code. Tout part de SON profil (capital,
+// charges fixes) ou de 0, et reste éditable.
+function buildNeutralModel(profile: Profile | null): FinModel {
+  const charges = Number(profile?.charges_fixes) || 0;
+  return {
+    scenario: "A",
+    startCash: Number(profile?.capital) || 0,
+    capitalInjection: 0,
+    injectionMonth: 0, // pas d'injection de capital par défaut
+    scenarios: {
+      A: { label: "Optimiste", months: buildMonths(charges) },
+      B: { label: "Prudent", months: buildMonths(charges) },
+    },
+    opexRI: OPEX_RI_TEMPLATE.map((poste) => ({ poste, montant: 0 })),
+    opexSarl: OPEX_SARL_TEMPLATE.map((poste) => ({ poste, montant: 0 })),
+    financement: [],
+  };
 }
 function profileSeeded(profile: Profile | null): boolean {
   return !!profile && ((Number(profile.capital) || 0) > 0 || (Number(profile.charges_fixes) || 0) > 0);
@@ -226,7 +204,7 @@ export function Finances() {
   const { compta, fetchCompta } = useAppStore();
   const { loading: aiLoading, error: aiError, gen } = useAiGen();
 
-  const [fin, setFin] = useState<FinModel>(() => loadLocal<FinModel>(FIN_KEY, seedModel(useUserStore.getState().profile)));
+  const [fin, setFin] = useState<FinModel>(() => loadLocal<FinModel>(FIN_KEY, buildNeutralModel(useUserStore.getState().profile)));
   const [analyse, setAnalyse] = useState<string | null>(() => loadLocal<string | null>("ns_finance_analyse", null));
   const [sarlCA, setSarlCA] = useState("");
 
@@ -237,7 +215,7 @@ export function Finances() {
   // Pré-remplissage depuis le profil : seulement si aucun budget n'a encore été
   // saisi (on n'écrase jamais les données de l'utilisateur déjà enregistrées).
   useEffect(() => {
-    if (profile && localStorage.getItem(FIN_KEY) == null) setFin(seedModel(profile));
+    if (profile && localStorage.getItem(FIN_KEY) == null) setFin(buildNeutralModel(profile));
   }, [profile?.id]);
 
   function update(mut: (f: FinModel) => void) {
@@ -270,10 +248,15 @@ export function Finances() {
   }
   function addOpex(phase: "RI" | "Sarl") { update((f) => { (phase === "RI" ? f.opexRI : f.opexSarl).push({ poste: "Nouveau poste", montant: 0 }); }); }
   function delOpex(phase: "RI" | "Sarl", i: number) { update((f) => { (phase === "RI" ? f.opexRI : f.opexSarl).splice(i, 1); }); }
+  function editFin(i: number, field: "poste" | "montant", v: string | number) {
+    update((f) => { const l = f.financement[i]; if (!l) return; if (field === "poste") l.poste = String(v); else l.montant = Number(v) || 0; });
+  }
+  function addFin() { update((f) => { f.financement.push({ poste: "Source de financement", montant: 0 }); }); }
+  function delFin(i: number) { update((f) => { f.financement.splice(i, 1); }); }
 
   function resetCanon() {
     if (!confirm("Réinitialiser le budget ? Tes modifications seront perdues et les valeurs repartiront de ton profil (capital, charges fixes).")) return;
-    const seed = seedModel(profile);
+    const seed = buildNeutralModel(profile);
     saveLocal(FIN_KEY, seed); setFin(seed);
   }
 
@@ -331,7 +314,9 @@ export function Finances() {
   }
 
   async function analyseIA() {
-    const resume = `Scénario ${fin.scenario} (${fin.scenarios[fin.scenario].label}). CA An1 ${chf(k.caTot)} CHF, charges ${chf(k.chTot)} CHF, EBITDA ${chf(k.ebTot)} CHF. Trésorerie : plancher ${chf(k.tresoMin)} CHF, pic ${chf(k.tresoMax)} CHF. 1er mois EBITDA positif : ${k.be}. Capital injecté M8 (janv. 2027) : ${chf(fin.capitalInjection)} CHF. Détail : ${rows.map((r) => `${r.m} CA ${chf(r.ca)}/ch ${chf(r.charges)}→tréso ${chf(r.treso)}`).join(" ; ")}.`;
+    const inj = fin.injectionMonth > 0 && fin.capitalInjection > 0
+      ? ` Capital injecté à M${fin.injectionMonth} : ${chf(fin.capitalInjection)} CHF.` : "";
+    const resume = `Scénario ${fin.scenario} (${fin.scenarios[fin.scenario].label}), 12 mois (${rows[0]?.period} → ${rows[rows.length - 1]?.period}). CA total ${chf(k.caTot)} CHF, charges ${chf(k.chTot)} CHF, EBITDA ${chf(k.ebTot)} CHF. Trésorerie : plancher ${chf(k.tresoMin)} CHF, pic ${chf(k.tresoMax)} CHF. 1er mois EBITDA positif : ${k.be}.${inj} Détail : ${rows.map((r) => `${r.m} CA ${chf(r.ca)}/ch ${chf(r.charges)}→tréso ${chf(r.treso)}`).join(" ; ")}.`;
     const r = await gen("financier", promptFinanceAnalyse(profile, resume), { model: MODEL_REASONING });
     if (r) { setAnalyse(r); saveLocal("ns_finance_analyse", r); }
   }
@@ -370,8 +355,8 @@ export function Finances() {
 
       {/* KPIs prévisionnel */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--space-4)" }}>
-        <KpiCard label="CA cumulé · An 1" value={`${chf(k.caTot)} CHF`} trendValue="12 mois (juin 26 → mai 27)" trend="up" />
-        <KpiCard label="Charges cumulées" value={`${chf(k.chTot)} CHF`} trendValue="1'650 → 9'750 / mois" trend="flat" />
+        <KpiCard label="CA cumulé · An 1" value={`${chf(k.caTot)} CHF`} trendValue="sur 12 mois" trend="up" />
+        <KpiCard label="Charges cumulées" value={`${chf(k.chTot)} CHF`} trendValue="sur 12 mois" trend="flat" />
         <KpiCard label="Résultat (EBITDA)" value={`${k.ebTot >= 0 ? "+" : ""}${chf(k.ebTot)} CHF`} trendValue={k.ebTot >= 0 ? "Excédent" : "Déficit"} trend={k.ebTot >= 0 ? "up" : "down"} />
         <KpiCard label="Trésorerie · pic" value={`${chf(k.tresoMax)} CHF`} trendValue={`plancher ${chf(k.tresoMin)} CHF`} trend={k.tresoMin >= 0 ? "up" : "down"} />
       </div>
@@ -402,7 +387,7 @@ export function Finances() {
           <div style={{ flex: 1, minWidth: 240 }}>
             <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>📈 Budget prévisionnel &amp; plan de trésorerie — 12 mois</p>
             <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
-              Juin 2026 → mai 2027 · capital {chf(fin.capitalInjection)} CHF injecté à la constitution (M8). Cellules CA, charges &amp; prélèvements éditables.
+              {rows[0]?.period} → {rows[rows.length - 1]?.period} · 12 mois glissants. Cellules CA, charges &amp; prélèvements éditables.
             </p>
             {profileSeeded(profile) && (
               <p style={{ fontSize: "10px", color: "var(--color-gold-muted)", margin: "4px 0 0", lineHeight: 1.4 }}>
@@ -485,17 +470,18 @@ export function Finances() {
       <Card>
         <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>🧾 Budget d'exploitation détaillé</p>
         <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: "0 0 var(--space-4)" }}>
-          Répartition indicative &amp; modifiable — le total doit coller au prévisionnel (RI 1'650 · Sàrl 9'750 / mois).
+          Détaille tes charges mensuelles par poste. Idéalement, le total colle aux charges de ton prévisionnel.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "var(--space-5)" }}>
-          {([["RI", "Amorçage — Raison Individuelle", fin.opexRI, opexRITot], ["Sarl", "Sàrl — dès janv. 2027", fin.opexSarl, opexSarlTot]] as const).map(([phase, title, arr, tot]) => {
-            const ok = tot === CANON[phase];
+          {([["RI", "Amorçage — Raison Individuelle", fin.opexRI, opexRITot], ["Sarl", "Sàrl — après constitution (optionnel)", fin.opexSarl, opexSarlTot]] as const).map(([phase, title, arr, tot]) => {
+            const target = phase === "RI" ? (Number(profile?.charges_fixes) || 0) : 0;
+            const ok = target > 0 && tot === target;
             return (
               <div key={phase}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--color-text-secondary)" }}>{title}</span>
-                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 6px", borderRadius: "var(--radius-xs)", background: ok ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)", color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
-                    {chf(tot)} / {chf(CANON[phase])} CHF
+                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 6px", borderRadius: "var(--radius-xs)", background: target > 0 ? (ok ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)") : "rgba(255,255,255,0.05)", color: target > 0 ? (ok ? "var(--color-success)" : "var(--color-warning)") : "var(--color-text-muted)" }}>
+                    {target > 0 ? `${chf(tot)} / ${chf(target)} CHF` : `${chf(tot)} CHF`}
                   </span>
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -524,22 +510,33 @@ export function Finances() {
       {/* Plan de financement Sàrl + Charges sociales + RI→Sàrl */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-5)" }}>
         <Card>
-          <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>🏦 Plan de financement — constitution Sàrl (janv. 2027)</p>
-          <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: "0 0 var(--space-4)" }}>Capital opérationnel injecté à la constitution (CO art. 773) — modélisé en trésorerie au mois M8.</p>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <tbody>
-              {fin.financement.map((l, i) => (
-                <tr key={i}>
-                  <td style={tdStyle}>{l.poste}</td>
-                  <td style={{ ...numTd, color: l.montant < 0 ? "var(--color-danger)" : "var(--color-text-secondary)" }}>{l.montant < 0 ? "−" : ""}{chf(Math.abs(l.montant))} CHF</td>
+          <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>🏦 Plan de financement (optionnel)</p>
+          <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: "0 0 var(--space-4)" }}>Apports et sources de capital (fonds propres, prêt, retrait LPP, frais de constitution…). Montants négatifs pour les frais.</p>
+          {fin.financement.length === 0 ? (
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>Aucune source renseignée. Ajoute tes apports si tu prévois une injection de capital.</p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {fin.financement.map((l, i) => (
+                  <tr key={i}>
+                    <td style={{ ...tdStyle, width: "100%" }}>
+                      <input value={l.poste} onChange={(e) => editFin(i, "poste", e.target.value)} style={{ width: "100%", background: "transparent", border: "none", color: "var(--color-text-secondary)", fontSize: "var(--text-xs)", outline: "none" }} />
+                    </td>
+                    <td style={numTd}><NumCell value={l.montant} onChange={(v) => editFin(i, "montant", v)} w={80} /></td>
+                    <td style={{ ...tdStyle, padding: "5px 4px" }}>
+                      <button onClick={() => delFin(i)} title="Supprimer" style={{ background: "none", border: "none", color: "var(--color-text-muted)", cursor: "pointer", fontSize: "14px" }}>×</button>
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "var(--border-active)" }}>
+                  <td style={{ ...tdStyle, fontWeight: 700 }}>Total apporté</td>
+                  <td style={{ ...numTd, fontWeight: 700, color: "var(--color-success)" }}>{chf(financementTot)} CHF</td>
+                  <td style={tdStyle} />
                 </tr>
-              ))}
-              <tr style={{ borderTop: "var(--border-active)" }}>
-                <td style={{ ...tdStyle, fontWeight: 700 }}>Capital opérationnel injecté</td>
-                <td style={{ ...numTd, fontWeight: 700, color: "var(--color-success)" }}>{chf(financementTot)} CHF</td>
-              </tr>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
+          <Button size="sm" variant="ghost" onClick={addFin} style={{ marginTop: 6 }}>+ Ligne</Button>
         </Card>
 
         <Card>

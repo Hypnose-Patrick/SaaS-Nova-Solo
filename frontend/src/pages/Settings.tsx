@@ -165,7 +165,7 @@ export function Settings() {
             label="Nom complet"
             value={form.name}
             onChange={(e) => setF({ name: e.target.value })}
-            placeholder="Patrick Beiner"
+            placeholder="Ex. Marie Dupont"
           />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <label style={LABEL_STYLE}>Statut</label>
@@ -290,7 +290,7 @@ export function Settings() {
             type="email"
             value={form.contact_email}
             onChange={(e) => setF({ contact_email: e.target.value })}
-            placeholder="patrick@monactivite.ch"
+            placeholder="vous@monactivite.ch"
           />
           <Input
             label="Téléphone"
