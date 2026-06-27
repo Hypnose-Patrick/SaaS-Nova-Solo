@@ -8,8 +8,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptFinanceAnalyse } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
-
-const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+import type { Profile } from "@/types";
 
 // ── Modèle prévisionnel (repris du Nova Solo v1, FINANCE_SEED) ────────────────
 interface FinMonth { m: string; period: string; ca: number; charges: number; draw?: number }
@@ -71,6 +70,29 @@ const FINANCE_SEED: FinModel = {
 
 const CANON: Record<"RI" | "Sarl", number> = { RI: 1650, Sarl: 9750 };
 const FIN_KEY = "ns_finance";
+
+// Pré-remplit le modèle depuis les données réelles du profil utilisateur
+// (capital, charges fixes). Les valeurs canoniques ne servent que de filet
+// quand un champ n'est pas renseigné. Tout reste éditable ensuite.
+function seedModel(profile: Profile | null): FinModel {
+  const seed: FinModel = JSON.parse(JSON.stringify(FINANCE_SEED));
+  if (!profile) return seed;
+  const capital = Number(profile.capital) || 0;
+  const charges = Number(profile.charges_fixes) || 0;
+  if (capital > 0) seed.startCash = capital;
+  if (charges > 0) {
+    // applique les charges fixes réelles à la phase d'amorçage (avant l'injection M8)
+    (["A", "B"] as const).forEach((sc) => {
+      seed.scenarios[sc].months.forEach((m, i) => {
+        if (i < seed.injectionMonth - 1) m.charges = charges;
+      });
+    });
+  }
+  return seed;
+}
+function profileSeeded(profile: Profile | null): boolean {
+  return !!profile && ((Number(profile.capital) || 0) > 0 || (Number(profile.charges_fixes) || 0) > 0);
+}
 
 // ── Helpers de calcul ─────────────────────────────────────────────────────────
 function chf(n: number): string {
@@ -204,12 +226,18 @@ export function Finances() {
   const { compta, fetchCompta } = useAppStore();
   const { loading: aiLoading, error: aiError, gen } = useAiGen();
 
-  const [fin, setFin] = useState<FinModel>(() => loadLocal<FinModel>(FIN_KEY, JSON.parse(JSON.stringify(FINANCE_SEED))));
+  const [fin, setFin] = useState<FinModel>(() => loadLocal<FinModel>(FIN_KEY, seedModel(useUserStore.getState().profile)));
   const [analyse, setAnalyse] = useState<string | null>(() => loadLocal<string | null>("ns_finance_analyse", null));
   const [sarlCA, setSarlCA] = useState("");
 
   useEffect(() => {
     if (profile?.id) fetchCompta(profile.id);
+  }, [profile?.id]);
+
+  // Pré-remplissage depuis le profil : seulement si aucun budget n'a encore été
+  // saisi (on n'écrase jamais les données de l'utilisateur déjà enregistrées).
+  useEffect(() => {
+    if (profile && localStorage.getItem(FIN_KEY) == null) setFin(seedModel(profile));
   }, [profile?.id]);
 
   function update(mut: (f: FinModel) => void) {
@@ -244,8 +272,8 @@ export function Finances() {
   function delOpex(phase: "RI" | "Sarl", i: number) { update((f) => { (phase === "RI" ? f.opexRI : f.opexSarl).splice(i, 1); }); }
 
   function resetCanon() {
-    if (!confirm("Réinitialiser le budget aux valeurs canoniques du business plan ? Vos modifications seront perdues.")) return;
-    const seed: FinModel = JSON.parse(JSON.stringify(FINANCE_SEED));
+    if (!confirm("Réinitialiser le budget ? Tes modifications seront perdues et les valeurs repartiront de ton profil (capital, charges fixes).")) return;
+    const seed = seedModel(profile);
     saveLocal(FIN_KEY, seed); setFin(seed);
   }
 
@@ -374,8 +402,13 @@ export function Finances() {
           <div style={{ flex: 1, minWidth: 240 }}>
             <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>📈 Budget prévisionnel &amp; plan de trésorerie — 12 mois</p>
             <p style={{ fontSize: "11px", color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
-              Juin 2026 → mai 2027 · charges 1'650/mois (RI) puis 9'750/mois (Sàrl, dès janv. 2027) · capital {chf(fin.capitalInjection)} CHF injecté à la constitution (M8). Cellules CA, charges &amp; prélèvements éditables.
+              Juin 2026 → mai 2027 · capital {chf(fin.capitalInjection)} CHF injecté à la constitution (M8). Cellules CA, charges &amp; prélèvements éditables.
             </p>
+            {profileSeeded(profile) && (
+              <p style={{ fontSize: "10px", color: "var(--color-gold-muted)", margin: "4px 0 0", lineHeight: 1.4 }}>
+                ✦ Trésorerie de départ ({chf(fin.startCash)} CHF) et charges fixes d'amorçage reprises de ton profil — ajustables.
+              </p>
+            )}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", alignItems: "center" }}>
             <div style={{ display: "inline-flex", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", overflow: "hidden" }}>
