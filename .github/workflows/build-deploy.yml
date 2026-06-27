@@ -58,7 +58,7 @@ jobs:
 
   deploy-supabase-migrations:
     runs-on: ubuntu-latest
-    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
