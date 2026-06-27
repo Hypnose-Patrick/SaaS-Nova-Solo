@@ -33,20 +33,20 @@ interface AiRequest {
 // Listes blanches : le client ne peut demander qu'un modèle autorisé.
 const ALLOWED_MODELS: Record<string, Set<string>> = {
   openrouter: new Set([
-    "anthropic/claude-3.5-sonnet",
-    "anthropic/claude-3.5-haiku",
+    "anthropic/claude-sonnet-4.6",
+    "anthropic/claude-haiku-4.5",
     "openai/gpt-4o-mini",
     "google/gemini-flash-1.5",
   ]),
   anthropic: new Set([
-    "claude-3-5-sonnet-latest",
-    "claude-3-5-haiku-latest",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5-20251001",
   ]),
 };
 
 const DEFAULT_MODEL: Record<string, string> = {
-  openrouter: "anthropic/claude-3.5-haiku",
-  anthropic: "claude-3-5-haiku-latest",
+  openrouter: "anthropic/claude-haiku-4.5",
+  anthropic: "claude-haiku-4-5-20251001",
 };
 
 function pickModel(provider: string, requested?: string): string {

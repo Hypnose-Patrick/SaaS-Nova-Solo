@@ -4,7 +4,8 @@ import type { AgentKey } from "@/types";
 
 // Modèles autorisés par ai-proxy (allowlist OpenRouter). On reste sur OpenRouter
 // pour le coût : haiku par défaut (rapide/bon marché), sonnet pour le raisonnement.
-export const MODEL_REASONING = "anthropic/claude-3.5-sonnet";
+// Slugs alignés sur le catalogue OpenRouter courant (la famille 3.5 a été retirée).
+export const MODEL_REASONING = "anthropic/claude-sonnet-4.6";
 
 interface GenOpts {
   model?: string;
