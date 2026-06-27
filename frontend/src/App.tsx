@@ -15,20 +15,7 @@ import { Settings } from "@/pages/Settings";
 import { Agenda } from "@/pages/Agenda";
 import { Documents } from "@/pages/Documents";
 import { Diagnostic } from "@/pages/Diagnostic";
-
-// Pages stub — seront remplacées par leurs implémentations complètes.
-function PageStub({ name }: { name: string }) {
-  return (
-    <div style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-body)", padding: "var(--space-4)" }}>
-      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", color: "var(--color-gold)" }}>
-        {name}
-      </span>
-      <p style={{ marginTop: "var(--space-4)", fontSize: "var(--text-sm)" }}>
-        Cette page est en cours de développement.
-      </p>
-    </div>
-  );
-}
+import { BusinessPlan } from "@/pages/BusinessPlan";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -38,7 +25,7 @@ function ProtectedRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="diagnostic" element={<Diagnostic />} />
         <Route path="bmc" element={<Bmc />} />
-        <Route path="business-plan" element={<PageStub name="Business Plan" />} />
+        <Route path="business-plan" element={<BusinessPlan />} />
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="finances" element={<Finances />} />
         <Route path="compta" element={<Compta />} />
