@@ -33,11 +33,26 @@ export function promptPricing(p: Profile | null, offre: string): string {
 }
 
 // ── CV (Communicant) ──
+export type CvType = "bank" | "client" | "linkedin";
+
+export const CV_TYPES: { key: CvType; label: string; hint: string }[] = [
+  { key: "bank", label: "Dossier bancaire / prêteur", hint: "Annexe d'un business plan — légitimité et capacité à gérer l'activité" },
+  { key: "client", label: "Clients & prescripteurs", hint: "Profil commercial — expertise métier et résultats clients" },
+  { key: "linkedin", label: "LinkedIn / Networking", hint: "Visibilité, mots-clés métier, mise en relation" },
+];
+
+const CV_TYPE_BRIEF: Record<CvType, string> = {
+  bank: "Cible : dossier bancaire / prêteur, en annexe d'un business plan. Met en avant la légitimité professionnelle, les compétences transférables, la capacité à gérer une activité et le projet entrepreneurial.",
+  client: "Cible : clients et prescripteurs (profil commercial). Met en avant l'expertise métier, les résultats clients concrets et la proposition de valeur.",
+  linkedin: "Cible : profil LinkedIn / networking. Ton première personne, accroche percutante, mots-clés du métier pour la visibilité, orienté opportunités et mise en relation.",
+};
+
 export function promptCvGenerate(
   p: Profile | null,
   fields: { profil: string; skills: string; exp: string; formation: string; langues: string },
+  cvType: CvType = "bank",
 ): string {
-  return `${profileContext(p)}\n\nTu es expert CV Optimizer Suisse romande. Génère un CV complet pour ${p?.name ?? "le candidat"}. Règles : verbes d'action forts (Piloté, Développé), structure CAR, résultats chiffrés CHF/%, ATS-friendly, fr-CH. PROFIL : ${fields.profil} | COMPÉTENCES : ${fields.skills} | EXPÉRIENCES : ${fields.exp} | FORMATION : ${fields.formation} | LANGUES : ${fields.langues} | Sections attendues : PROFIL | COMPÉTENCES CLÉS | EXPÉRIENCE | FORMATION | LANGUES`;
+  return `${profileContext(p)}\n\nTu es expert CV Optimizer Suisse romande. ${CV_TYPE_BRIEF[cvType]}\nGénère un CV complet pour ${p?.name ?? "le candidat"}. Règles : verbes d'action forts (Piloté, Développé), structure CAR, résultats chiffrés CHF/%, ATS-friendly, fr-CH. N'invente aucun employeur, diplôme ni chiffre absent des données fournies ; si une information manque, écris « [à compléter] ». PROFIL : ${fields.profil || "—"} | COMPÉTENCES : ${fields.skills || "—"} | EXPÉRIENCES : ${fields.exp || "—"} | FORMATION : ${fields.formation || "—"} | LANGUES : ${fields.langues || "—"} | Sections attendues : PROFIL | COMPÉTENCES CLÉS | EXPÉRIENCE | FORMATION | LANGUES`;
 }
 
 export function promptCvImprove(p: Profile | null, label: string, val: string): string {
@@ -45,8 +60,35 @@ export function promptCvImprove(p: Profile | null, label: string, val: string): 
 }
 
 // ── Dossier de présentation (Communicant) — 4MAT + neuromarketing ──
-export function promptDossier(p: Profile | null, bmcResume: string, pricing: string): string {
-  return `${profileContext(p)}\n\nTu es un expert en rédaction de dossiers de présentation commerciale pour indépendants en Suisse romande. Rédige un dossier structuré selon la pédagogie 4MAT (POURQUOI / QUOI / COMMENT / ET SI) avec des leviers de neuromarketing (preuve sociale, rareté, bénéfices concrets). Inclure : résumé exécutif, proposition de valeur, offres et tarifs, déroulé d'accompagnement, appel à l'action. Contexte BMC : ${bmcResume || "—"}. Tarifs : ${pricing || "—"}. Ton : professionnel, chaleureux, suisse romand, sans anglicisme. Utilise des titres en MAJUSCULES pour les sections.`;
+export type DossierTemplate = "orp" | "client" | "b2b" | "investisseur";
+
+export const DOSSIER_TEMPLATES: { key: DossierTemplate; label: string; hint: string }[] = [
+  { key: "orp", label: "Dossier ORP / LACI", hint: "Validation projet art. 71a — conseiller ORP" },
+  { key: "client", label: "Dossier Client", hint: "Convaincre un client final (coaching, formation, prestation)" },
+  { key: "b2b", label: "Dossier B2B / Banque", hint: "Financement bancaire ou partenariat B2B" },
+  { key: "investisseur", label: "Pitch Investisseur", hint: "Lever des fonds — VC, business angel, family office" },
+];
+
+const DOSSIER_BRIEF: Record<DossierTemplate, string> = {
+  orp: "Destiné à un conseiller ORP pour la validation d'un projet d'indépendant (art. 71a LACI / soutien à l'activité indépendante). Démontre le sérieux et la viabilité économique du projet, le plan de lancement, le réalisme du marché et l'autonomie financière visée à terme.",
+  client: "Destiné à convaincre un client final (coaching, formation, prestation). Centré sur le bénéfice client, le déroulé concret de l'accompagnement et la preuve de valeur.",
+  b2b: "Destiné à un financement bancaire ou un partenariat B2B. Met en avant le modèle économique, les chiffres clés, la rentabilité, la gestion du risque et la solidité du porteur de projet.",
+  investisseur: "Destiné à lever des fonds (VC, business angel, family office). Structure pitch : problème, solution, marché adressable, traction, modèle de revenus, équipe, demande de financement et usage des fonds.",
+};
+
+export interface DossierRecipient { nom: string; fonction: string; org: string }
+
+export function promptDossier(
+  p: Profile | null,
+  bmcResume: string,
+  pricing: string,
+  template: DossierTemplate = "client",
+  recipient?: DossierRecipient,
+): string {
+  const recip = recipient && (recipient.nom || recipient.fonction || recipient.org)
+    ? `\nDestinataire (à adresser sur la page de couverture) : ${[recipient.nom, recipient.fonction, recipient.org].filter(Boolean).join(" — ")}.`
+    : "";
+  return `${profileContext(p)}\n\nTu es un expert en rédaction de dossiers de présentation commerciale pour indépendants en Suisse romande. ${DOSSIER_BRIEF[template]}${recip}\nRédige un dossier structuré selon la pédagogie 4MAT (POURQUOI / QUOI / COMMENT / ET SI) avec des leviers de neuromarketing (preuve sociale, rareté, bénéfices concrets). Inclure : résumé exécutif, proposition de valeur, offres et tarifs, déroulé d'accompagnement, appel à l'action adapté à la cible. Contexte BMC : ${bmcResume || "—"}. Tarifs : ${pricing || "—"}. Ton : professionnel, chaleureux, suisse romand, sans anglicisme. N'invente aucun chiffre absent du contexte. Utilise des titres en MAJUSCULES pour les sections.`;
 }
 
 // ── Analyse BMC globale (Stratège) ──
