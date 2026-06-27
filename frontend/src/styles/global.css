@@ -1,0 +1,39 @@
+/* Reset minimal + base globale */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--color-gold);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-gold-light);
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+textarea, input, select {
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+/* Tailwind base layers */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
