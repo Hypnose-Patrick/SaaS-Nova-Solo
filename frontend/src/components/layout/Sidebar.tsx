@@ -14,6 +14,7 @@ const NAV = [
   { to: "/pipeline", label: "Pipeline", icon: "◈" },
   { to: "/marketing", label: "Marketing & Visibilité", icon: "◫" },
   { to: "/mirrorfisch", label: "Test d'audience", icon: "◎" },
+  { to: "/hermes", label: "Cabinet Hermès", icon: "♟" },
   { to: "/finances", label: "Finances", icon: "◇" },
   { to: "/compta", label: "Comptabilité", icon: "◈" },
   { to: "/facture", label: "Factures", icon: "◻" },

@@ -23,6 +23,7 @@ import { Dossier } from "@/pages/Dossier";
 import { MirrorFisch } from "@/pages/MirrorFisch";
 import { Contrat } from "@/pages/Contrat";
 import { Marketing } from "@/pages/Marketing";
+import { Hermes } from "@/pages/Hermes";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -41,6 +42,7 @@ function ProtectedRoutes() {
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="marketing" element={<Marketing />} />
         <Route path="mirrorfisch" element={<MirrorFisch />} />
+        <Route path="hermes" element={<Hermes />} />
         <Route path="finances" element={<Finances />} />
         <Route path="compta" element={<Compta />} />
         <Route path="facture" element={<Factures />} />
