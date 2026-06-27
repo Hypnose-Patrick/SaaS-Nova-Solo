@@ -49,6 +49,44 @@ export function promptBmcGlobal(p: Profile | null, canvasResume: string): string
   return `${profileContext(p)}\n\nTu es un expert en Business Model Canvas. Analyse ce canvas complet d'un projet en Suisse romande et donne : une cohérence globale notée sur 10, 3 forces, 3 risques majeurs, 2 recommandations prioritaires. Sois concret et chiffré quand c'est possible.\n\nCanvas :\n${canvasResume}`;
 }
 
+// ── Guides d'enrichissement BMC (repris v1 BMC_GUIDE), indexés par block_key ──
+export const BMC_GUIDE: Record<string, { prio: string; guide: string; kpi: string }> = {
+  partenaires: { prio: "Haute", guide: "Segmente tes partenaires par catégorie (tech, contenu, distribution), précise le rôle de chacun, et ajoute un plan d'engagement avec échéance et responsable.", kpi: "Partenaires actifs · statut des contrats · intégrations finalisées" },
+  activites: { prio: "Haute", guide: "Distingue développement produit, maintenance, coaching et prospection ; précise la fréquence, la charge de travail et le responsable par activité.", kpi: "Heures/mois par activité · nombre de sprints · leads générés" },
+  ressources: { prio: "Haute", guide: "Quantifie tes ressources (agents IA, coachs, capital, infra), identifie les manques critiques et associe chaque ressource à une activité.", kpi: "Coût mensuel des ressources · taux d'utilisation · manques couverts" },
+  valeur: { prio: "Haute", guide: "Reformule en 1–2 phrases claires, différencie l'IA et l'expertise humaine, ajoute des preuves concrètes et une offre en plusieurs niveaux.", kpi: "Taux de conversion · témoignages · adoption des offres · rétention" },
+  relations: { prio: "Haute", guide: "Définis la cadence de suivi par segment, les canaux utilisés, et intègre des mesures de satisfaction et de rétention.", kpi: "NPS/CSAT · taux de rétention · fréquence de contact par segment" },
+  canaux: { prio: "Haute", guide: "Priorise les canaux, indique leur coût et leur rendement, formalise une stratégie SEO/contenu et les partenariats de diffusion.", kpi: "Leads par canal · coût d'acquisition · trafic organique · conversion" },
+  segments: { prio: "Haute", guide: "Transforme les descriptions générales en personas concrets, priorise les segments, et précise le besoin principal de chaque segment.", kpi: "Taille adressable · segments prioritaires · conversion par persona" },
+  couts: { prio: "Haute", guide: "Sépare coûts fixes et variables, ajoute des montants (CHF), et prévois un scénario MVP et un scénario de montée en charge.", kpi: "Burn rate · coût par utilisateur · seuil de rentabilité · marge brute" },
+  revenus: { prio: "Haute", guide: "Segmente les revenus par source, clarifie la tarification, et suis les indicateurs financiers clés.", kpi: "MRR · panier moyen · LTV · CAC · part de chaque source" },
+};
+
+// Enrichissement d'un bloc BMC (proposition prête à coller) — repris de bmcEnrich v1.
+export function promptBmcEnrich(p: Profile | null, label: string, current: string): string {
+  const blockKey = Object.keys(BMC_GUIDE).find((k) => label.toLowerCase().includes(k.slice(0, 5))) ?? "";
+  const g = BMC_GUIDE[blockKey];
+  return `${profileContext(p)}\n\n# TÂCHE : enrichir le bloc « ${label} » du Business Model Canvas.\nContenu actuel : ${current ? `« ${current} »` : "(vide)"}\nMéthode d'enrichissement à appliquer : ${g?.guide ?? "Clarifie, structure et rends ce bloc mesurable."}${g?.kpi ? `\nRends-le mesurable via ces indicateurs : ${g.kpi}.` : ""}\n\n# RÈGLES\n- Réécris le bloc enrichi, prêt à coller (aucun préambule, aucun titre).\n- 3 à 6 puces courtes commençant par « • », concrètes, chiffrées en CHF quand c'est pertinent.\n- N'invente aucun chiffre ni certification ; si une donnée manque, écris « [à préciser : … ] ».\n- Français de Suisse, concis, voix active.`;
+}
+
+// ── Cascade post-diagnostic : pré-remplissage BMC / BP / CV / Pricing ──
+// Repris de cascadeFromDiagnostic v1 : un diagnostic alimente les modules clés.
+export function promptCascadeBmc(p: Profile | null, diag: string): string {
+  return `${profileContext(p)}\n\nDIAGNOSTIC DE L'ENTREPRENEUR :\n${diag}\n\nProduis un PREMIER JET du Business Model Canvas, cohérent avec ce diagnostic, pour un indépendant en Suisse romande. Chaque bloc = 2 à 4 phrases concrètes, chiffrées en CHF quand c'est pertinent, fr-CH. C'est un brouillon que la personne affinera.\n\nRéponds UNIQUEMENT en JSON valide : {"partenaires":"...","activites":"...","valeur":"...","relations":"...","segments":"...","ressources":"...","canaux":"...","couts":"...","revenus":"..."}`;
+}
+
+export function promptCascadeBp(p: Profile | null, diag: string): string {
+  return `${profileContext(p)}\n\nDIAGNOSTIC DE L'ENTREPRENEUR :\n${diag}\n\nProduis un PREMIER JET de business plan cohérent avec ce diagnostic (indépendant Suisse romande). Chaque section = 80 à 120 mots, ton professionnel et concret, chiffré en CHF quand pertinent. Brouillon à affiner.\n\nRéponds UNIQUEMENT en JSON valide : {"bp_executive":"résumé exécutif","bp_offer":"offre & positionnement","bp_market":"marché cible & personas","bp_commercial":"stratégie commerciale","bp_financials":"plan financier","bp_roadmap":"roadmap 12 mois"}`;
+}
+
+export function promptCascadeCv(p: Profile | null, diag: string): string {
+  return `${profileContext(p)}\n\nDIAGNOSTIC DE L'ENTREPRENEUR :\n${diag}\n\nProduis un PREMIER JET des champs d'un CV d'indépendant (Suisse romande, fr-CH). Pour "profil" : une accroche percutante (3-4 phrases). Pour "skills" : 5 à 8 compétences clés séparées par des virgules, déduites du domaine. Pour "exp" et "formation" : propose une trame plausible MAIS marque clairement les éléments à confirmer par « [à compléter : … ] » (n'invente pas d'employeurs ni de diplômes réels).\n\nRéponds UNIQUEMENT en JSON valide : {"profil":"...","skills":"...","exp":"...","formation":"..."}`;
+}
+
+export function promptCascadePricingOffer(p: Profile | null, diag: string): string {
+  return `${profileContext(p)}\n\nDIAGNOSTIC DE L'ENTREPRENEUR :\n${diag}\n\nRédige en 3-5 phrases une DESCRIPTION D'OFFRE packagée et claire (que ferait l'indépendant, pour qui, format, durée), cohérente avec ce diagnostic. Ce texte servira d'entrée au calculateur de tarification. Réponds uniquement avec la description, sans préambule.`;
+}
+
 // ── MirrorFisch — simulateur de réaction d'audience (Communicant) ──
 export function promptMirrorFisch(persona: string, message: string): string {
   return `Tu es MirrorFisch, un simulateur de réaction d'audience pour le marketing. Analyse ce message marketing du point de vue d'un·e "${persona}". Donne : (1) Probabilité de conversion estimée (ex: 24%), (2) Score d'engagement sur 100 (ex: 67/100), (3) Ce qui attire ou repousse ce persona dans le message, (4) Une suggestion d'amélioration en 1 phrase. Message : "${message}"`;
