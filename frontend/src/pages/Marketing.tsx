@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
-import { promptMarketingPost, promptEditorialIdeas, promptPortfolioCase } from "@/lib/lancementPrompts";
+import { promptMarketingPost, promptEditorialIdeas, promptPortfolioCase, promptMarketingInsights } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal, parseLooseJson } from "@/lib/local";
 
 const FORMATS = [
@@ -19,12 +19,34 @@ const FORMATS = [
 
 interface Idea { semaine: string; format: string; titre: string; objectif: string }
 interface CalItem { id: string; date: string; canal: string; idee: string; statut: "À créer" | "Planifié" | "Publié" }
+interface Insight { priorite: "P1" | "P2" | "P3"; titre: string; action: string }
+interface Channel { id: string; canal: string; etat: string; statut: PresenceStatut }
+
+type PresenceStatut = "À évaluer" | "À optimiser" | "Actif" | "À créer";
 
 const STATUTS: CalItem["statut"][] = ["À créer", "Planifié", "Publié"];
 const STATUT_COLOR: Record<CalItem["statut"], string> = {
   "À créer": "var(--color-text-muted)",
   "Planifié": "var(--color-info)",
   "Publié": "var(--color-success)",
+};
+
+const PRESENCE_STATUTS: PresenceStatut[] = ["À évaluer", "À optimiser", "Actif", "À créer"];
+const PRESENCE_COLOR: Record<PresenceStatut, string> = {
+  "À évaluer": "var(--color-text-muted)",
+  "À optimiser": "var(--color-warning)",
+  "Actif": "var(--color-success)",
+  "À créer": "var(--color-danger)",
+};
+const INSIGHT_COLOR: Record<Insight["priorite"], string> = {
+  P1: "var(--color-gold)",
+  P2: "var(--color-warning)",
+  P3: "var(--color-text-muted)",
+};
+const INSIGHT_LABEL: Record<Insight["priorite"], string> = {
+  P1: "P1 — Priorité haute",
+  P2: "P2 — À planifier",
+  P3: "P3 — Exploratoire",
 };
 
 const TA: React.CSSProperties = {
@@ -56,6 +78,7 @@ export function Marketing() {
   const post = useAiGen();
   const ideasGen = useAiGen();
   const portfolio = useAiGen();
+  const insightsGen = useAiGen();
 
   // Générateur de contenu
   const [format, setFormat] = useState<string>(() => loadLocal("ns_mkt_format", FORMATS[0]));
@@ -69,7 +92,45 @@ export function Marketing() {
   // Portfolio
   const [caseStudy, setCaseStudy] = useState<string | null>(() => loadLocal<string | null>("ns_mkt_case", null));
 
+  // Insights IA + audit de présence en ligne
+  const [insights, setInsights] = useState<Insight[]>(() => loadLocal<Insight[]>("ns_mkt_insights", []));
+  const [channels, setChannels] = useState<Channel[]>(() =>
+    loadLocal<Channel[]>("ns_mkt_presence", [
+      { id: "ch_linkedin", canal: "LinkedIn", etat: "", statut: "À évaluer" },
+      { id: "ch_site", canal: "Site web", etat: profile?.website ?? "", statut: profile?.website ? "Actif" : "À créer" },
+      { id: "ch_news", canal: "Newsletter", etat: "", statut: "À créer" },
+    ]),
+  );
+
   function persistCal(next: CalItem[]) { setCalendar(next); saveLocal("ns_mkt_calendar", next); }
+  function persistChannels(next: Channel[]) { setChannels(next); saveLocal("ns_mkt_presence", next); }
+
+  function presenceSummary(): string {
+    return channels
+      .filter((c) => c.canal.trim())
+      .map((c) => `${c.canal} : ${c.etat || "—"} (${c.statut})`)
+      .join(" ; ");
+  }
+
+  async function generateInsights() {
+    const r = await insightsGen.gen("communicant", promptMarketingInsights(profile, presenceSummary()), { model: MODEL_REASONING });
+    if (r) {
+      const parsed = parseLooseJson<{ insights: Insight[] }>(r);
+      const list = (parsed?.insights ?? []).filter((i) => i.titre && i.action);
+      setInsights(list);
+      saveLocal("ns_mkt_insights", list);
+    }
+  }
+
+  function updateChannel(id: string, patch: Partial<Channel>) {
+    persistChannels(channels.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  }
+  function addChannel() {
+    persistChannels([...channels, { id: nextId(), canal: "", etat: "", statut: "À évaluer" }]);
+  }
+  function removeChannel(id: string) {
+    persistChannels(channels.filter((c) => c.id !== id));
+  }
 
   async function generatePost() {
     saveLocal("ns_mkt_format", format);
@@ -188,6 +249,53 @@ export function Marketing() {
             ))}
           </div>
         )}
+      </Card>
+
+      {/* Insights IA */}
+      <Card glass title="Insights IA — Recommandations" action={
+        <Button size="sm" variant="gold" loading={insightsGen.loading} onClick={generateInsights}>
+          {insights.length > 0 ? "Réanalyser" : "Générer des insights"}
+        </Button>
+      }>
+        {insightsGen.error && <p style={{ fontSize: "var(--text-sm)", color: "var(--color-danger)", marginBottom: "var(--space-3)" }}>{insightsGen.error}</p>}
+        {insights.length === 0 ? (
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+            Lancez l'analyse : Nova priorise 3 à 5 actions de visibilité adaptées à votre profil et à votre présence en ligne déclarée ci-dessous.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            {insights.map((ins, i) => (
+              <div key={i} style={{ padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-input)", borderRadius: "var(--radius-sm)", borderLeft: `3px solid ${INSIGHT_COLOR[ins.priorite]}` }}>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: INSIGHT_COLOR[ins.priorite], marginBottom: 2, letterSpacing: "var(--tracking-wide)" }}>
+                  {INSIGHT_LABEL[ins.priorite] ?? ins.priorite}
+                </div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-primary)", fontWeight: 500 }}>{ins.titre}</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)" }}>{ins.action}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Présence en ligne — audit des canaux */}
+      <Card glass title="Présence en ligne — audit des canaux" action={
+        <Button size="sm" variant="ghost" onClick={addChannel}>+ Canal</Button>
+      }>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          {channels.map((c) => (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <input value={c.canal} onChange={(e) => updateChannel(c.id, { canal: e.target.value })} placeholder="Canal" style={{ ...FIELD, marginTop: 0, width: 130, flexShrink: 0 }} />
+              <input value={c.etat} onChange={(e) => updateChannel(c.id, { etat: e.target.value })} placeholder="État (ex : nombre de relations, abonnés, URL…)" style={{ ...FIELD, marginTop: 0, flex: 1, minWidth: 0 }} />
+              <select value={c.statut} onChange={(e) => updateChannel(c.id, { statut: e.target.value as PresenceStatut })} style={{ ...FIELD, marginTop: 0, width: 130, flexShrink: 0, color: PRESENCE_COLOR[c.statut] }}>
+                {PRESENCE_STATUTS.map((s) => <option key={s} value={s} style={{ color: "var(--color-text-primary)" }}>{s}</option>)}
+              </select>
+              <Button size="sm" variant="ghost" onClick={() => removeChannel(c.id)}>✕</Button>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: "var(--space-3)" }}>
+          Renseignez l'état de chaque canal : il nourrit les Insights IA ci-dessus.
+        </p>
       </Card>
 
       {/* Portfolio / étude de cas */}

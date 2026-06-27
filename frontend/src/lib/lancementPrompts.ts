@@ -148,6 +148,10 @@ export function promptEditorialIdeas(p: Profile | null): string {
   return `${profileContext(p)}\n\nTu es un stratège de contenu pour indépendants en Suisse romande. Propose un calendrier éditorial de 6 idées de contenu LinkedIn réparties sur les 4 prochaines semaines, adaptées à ce profil et à sa cible. Pour chaque idée : un format (Témoignage, Conseil, Carrousel, Question, Coulisses, Étude de cas), un titre accrocheur, et l'objectif marketing visé (notoriété, engagement, conversion, autorité).\n\nRéponds UNIQUEMENT en JSON valide : {"ideas":[{"semaine":"S1","format":"...","titre":"...","objectif":"..."}]}`;
 }
 
+export function promptMarketingInsights(p: Profile | null, presence: string): string {
+  return `${profileContext(p)}\n\nÉtat de présence en ligne déclaré par l'utilisateur : ${presence || "non renseigné"}.\n\nTu es un stratège marketing pour indépendants en Suisse romande. Analyse la situation et propose 3 à 5 recommandations d'action priorisées pour développer la visibilité, adaptées à ce profil, sa cible et son état de présence actuel. Chaque recommandation : une priorité (P1 = haute, P2 = à planifier, P3 = exploratoire), un titre court, et une action concrète immédiatement applicable. Sois spécifique au métier, pas générique.\n\nRéponds UNIQUEMENT en JSON valide : {"insights":[{"priorite":"P1","titre":"...","action":"..."}]}`;
+}
+
 export function promptPortfolioCase(p: Profile | null): string {
   return `${profileContext(p)}\n\nTu es un expert en preuve sociale et copywriting pour indépendants en Suisse romande. Génère une étude de cas (portfolio) professionnelle et crédible pour ${p?.name ?? "le prestataire"} (${p?.domaine ?? "coaching"}). Structure obligatoire : (1) Situation AVANT d'un client fictif mais plausible en Suisse romande, (2) Travail réalisé en 4 étapes type, (3) Résultat APRÈS quantifié (poste obtenu, +X CHF, délai, clarté), (4) Témoignage client authentique entre guillemets avec prénom et secteur. Langue : fr-CH. Ton : authentique, sobre, sans superlatifs creux. Précise discrètement qu'il s'agit d'un exemple illustratif à remplacer par un cas réel.`;
 }
