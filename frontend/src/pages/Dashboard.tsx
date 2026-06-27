@@ -1,15 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { loadLocal, saveLocal } from "@/lib/local";
+
+// Rituels génériques de momentum — mêmes pour tous, état coché remis à zéro chaque jour.
+const RITUELS = [
+  "Contacter 1 personne de mon réseau",
+  "10 min de visibilité (LinkedIn, post, commentaire)",
+  "Avancer un livrable clé (BMC, business plan, offre)",
+  "Relancer 1 prospect en attente",
+];
 
 export function Dashboard() {
   const profile = useUserStore((s) => s.profile);
   const { compta, fetchCompta, events, fetchEvents } = useAppStore();
   const setOpen = useChatStore((s) => s.setOpen);
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const [rituels, setRituels] = useState<{ day: string; done: boolean[] }>(() =>
+    loadLocal("ns_rituels", { day: todayKey, done: RITUELS.map(() => false) }),
+  );
+  // Reset quotidien
+  const ritDone = rituels.day === todayKey ? rituels.done : RITUELS.map(() => false);
+  function toggleRituel(i: number) {
+    const done = ritDone.map((v, j) => (j === i ? !v : v));
+    const next = { day: todayKey, done };
+    setRituels(next);
+    saveLocal("ns_rituels", next);
+  }
+  const ritCount = ritDone.filter(Boolean).length;
 
   useEffect(() => {
     if (profile?.id) {
@@ -126,23 +149,36 @@ export function Dashboard() {
           )}
         </Card>
 
-        {/* Actions rapides */}
-        <Card title="Actions rapides" glass>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <Button size="sm" variant="gold" onClick={() => setOpen(true)} style={{ width: "100%", justifyContent: "center" }}>
-              Parler à Nova
-            </Button>
-            <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
-              Nouvelle facture
-            </Button>
-            <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
-              Ajouter prospect
-            </Button>
-            <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
-              Saisir dépense
-            </Button>
-          </div>
-        </Card>
+        {/* Colonne droite : rituels + actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+          <Card title={`Rituels du jour · ${ritCount}/${RITUELS.length}`} glass>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {RITUELS.map((r, i) => (
+                <label key={i} style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)", fontSize: "var(--text-sm)", color: ritDone[i] ? "var(--color-text-muted)" : "var(--color-text-secondary)", cursor: "pointer", textDecoration: ritDone[i] ? "line-through" : "none" }}>
+                  <input type="checkbox" checked={ritDone[i]} onChange={() => toggleRituel(i)} style={{ marginTop: 3, accentColor: "var(--color-gold)" }} />
+                  <span>{r}</span>
+                </label>
+              ))}
+            </div>
+          </Card>
+
+          <Card title="Actions rapides" glass>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <Button size="sm" variant="gold" onClick={() => setOpen(true)} style={{ width: "100%", justifyContent: "center" }}>
+                Parler à Nova
+              </Button>
+              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+                Nouvelle facture
+              </Button>
+              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+                Ajouter prospect
+              </Button>
+              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+                Saisir dépense
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Statut profil */}

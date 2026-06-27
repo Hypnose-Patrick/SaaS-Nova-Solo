@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
+import { loadLocal, saveLocal } from "@/lib/local";
 import type { CalendarEvent } from "@/types";
 
 const DAYS_FR   = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -418,6 +419,110 @@ export function Agenda() {
           </Card>
         </div>
       </div>
+
+      {/* Matrice d'Eisenhower */}
+      <EisenhowerMatrix />
     </div>
+  );
+}
+
+// ── Matrice d'Eisenhower ── tâches priorisées par quadrant, glisser-déposer, persist localStorage.
+type Quad = "q1" | "q2" | "q3" | "q4";
+interface Task { id: string; text: string }
+type Board = Record<Quad, Task[]>;
+
+const QUADS: { key: Quad; title: string; accent: string }[] = [
+  { key: "q1", title: "Urgent & important", accent: "var(--color-danger)" },
+  { key: "q2", title: "Important, pas urgent", accent: "var(--color-warning)" },
+  { key: "q3", title: "Urgent, pas important", accent: "var(--color-info)" },
+  { key: "q4", title: "Ni urgent ni important", accent: "var(--color-text-muted)" },
+];
+const EMPTY_BOARD: Board = { q1: [], q2: [], q3: [], q4: [] };
+
+function EisenhowerMatrix() {
+  const [board, setBoard] = useState<Board>(() => loadLocal<Board>("ns_eisenhower", EMPTY_BOARD));
+  const [draft, setDraft] = useState<Record<Quad, string>>({ q1: "", q2: "", q3: "", q4: "" });
+  const [drag, setDrag] = useState<{ from: Quad; id: string } | null>(null);
+  const [over, setOver] = useState<Quad | null>(null);
+
+  function persist(next: Board) {
+    setBoard(next);
+    saveLocal("ns_eisenhower", next);
+  }
+  function addTask(q: Quad) {
+    const text = draft[q].trim();
+    if (!text) return;
+    const id = `${q}-${board[q].length}-${text.slice(0, 8)}-${board.q1.length + board.q2.length + board.q3.length + board.q4.length}`;
+    persist({ ...board, [q]: [...board[q], { id, text }] });
+    setDraft((d) => ({ ...d, [q]: "" }));
+  }
+  function removeTask(q: Quad, id: string) {
+    persist({ ...board, [q]: board[q].filter((t) => t.id !== id) });
+  }
+  function drop(to: Quad) {
+    const d = drag;
+    setOver(null);
+    setDrag(null);
+    if (!d || d.from === to) return;
+    const task = board[d.from].find((t) => t.id === d.id);
+    if (!task) return;
+    persist({ ...board, [d.from]: board[d.from].filter((t) => t.id !== d.id), [to]: [...board[to], task] });
+  }
+
+  return (
+    <Card glass title="Matrice d'Eisenhower">
+      <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4)" }}>
+        Priorisez vos tâches par quadrant — glissez-déposez une tâche d'une case à l'autre.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+        {QUADS.map((q) => (
+          <div
+            key={q.key}
+            onDragOver={(e) => { e.preventDefault(); if (over !== q.key) setOver(q.key); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver((o) => (o === q.key ? null : o)); }}
+            onDrop={() => drop(q.key)}
+            style={{
+              display: "flex", flexDirection: "column", gap: "var(--space-2)",
+              padding: "var(--space-3)", minHeight: 130,
+              borderRadius: "var(--radius-sm)",
+              border: over === q.key ? "1px dashed var(--color-gold)" : "var(--border-subtle)",
+              borderLeft: `2px solid ${q.accent}`,
+              background: over === q.key ? "rgba(197,165,114,0.05)" : "var(--color-bg-surface)",
+              transition: "background var(--transition-fast)",
+            }}
+          >
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: q.accent }}>
+              {q.title}
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+              {board[q.key].map((t) => (
+                <div
+                  key={t.id}
+                  draggable
+                  onDragStart={() => setDrag({ from: q.key, id: t.id })}
+                  onDragEnd={() => { setDrag(null); setOver(null); }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)",
+                    background: "var(--color-bg-primary)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)",
+                    padding: "var(--space-2) var(--space-3)", cursor: "grab",
+                    opacity: drag?.id === t.id ? 0.5 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>{t.text}</span>
+                  <button onClick={() => removeTask(q.key, t.id)} title="Supprimer" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, opacity: 0.4, padding: 2, lineHeight: 1 }}>✕</button>
+                </div>
+              ))}
+            </div>
+            <input
+              value={draft[q.key]}
+              onChange={(e) => setDraft((d) => ({ ...d, [q.key]: e.target.value }))}
+              onKeyDown={(e) => { if (e.key === "Enter") addTask(q.key); }}
+              placeholder="+ Ajouter une tâche…"
+              style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", padding: "var(--space-2) var(--space-3)", outline: "none", width: "100%", boxSizing: "border-box" }}
+            />
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

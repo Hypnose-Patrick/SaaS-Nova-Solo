@@ -67,6 +67,38 @@ export async function researchProspect(
   );
 }
 
+// Gabarits de mail de prise de contact (structure VOUS-MOI-NOUS).
+export const PROSPECT_EMAIL_TEMPLATES = [
+  { key: "direct", label: "Approche directe (120–140 mots)" },
+  { key: "institutionnel", label: "Relais institutionnel (80–100 mots)" },
+  { key: "relance", label: "Relance rebond (60–80 mots)" },
+  { key: "spontanee", label: "Candidature spontanée (200–260 mots)" },
+] as const;
+
+export type ProspectEmailTemplate = (typeof PROSPECT_EMAIL_TEMPLATES)[number]["key"];
+
+const PROSPECT_EMAIL_BRIEF: Record<ProspectEmailTemplate, string> = {
+  direct: "Approche directe et concise (120–140 mots).",
+  institutionnel: "Relais institutionnel, ton sobre et factuel (80–100 mots).",
+  relance: "Relance rebond, courte et non insistante (60–80 mots).",
+  spontanee: "Candidature spontanée argumentée (200–260 mots).",
+};
+
+// Mail de prise de contact (commercial) — structure VOUS-MOI-NOUS.
+export async function prospectEmail(
+  prospectName: string,
+  company: string | null,
+  soncas: string | null,
+  template: ProspectEmailTemplate,
+  profileContext: unknown,
+): Promise<string> {
+  return askAgent(
+    "commercial",
+    `Rédige un e-mail de prise de contact à ${prospectName}${company ? ` (${company})` : ""} pour décrocher un premier échange. ${PROSPECT_EMAIL_BRIEF[template]} Structure VOUS-MOI-NOUS : ouvre sur le besoin du destinataire (VOUS), présente brièvement la valeur (MOI), propose une collaboration concrète (NOUS).${soncas ? ` Adapte le levier à la motivation d'achat dominante « ${soncas} » (SONCAS).` : ""} Fr-CH, sans anglicisme, objet inclus, un seul appel à l'action clair. N'invente aucun fait sur l'entreprise. Réponds uniquement avec l'objet et le corps du mail.`,
+    profileContext,
+  );
+}
+
 // Extraction OCR — appelle ocr-receipt.
 export async function ocrReceipt(storagePath: string): Promise<unknown> {
   const authHeader = await getBearerHeader();
