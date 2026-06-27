@@ -3,10 +3,16 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/lib/supabase";
 
+const APP_URL =
+  import.meta.env.VITE_APP_URL ??
+  (window.location.hostname === "localhost"
+    ? "http://localhost:5174"
+    : "https://nova-solo.vercel.app");
+
 async function signInWithGoogle() {
   await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: window.location.origin },
+    options: { redirectTo: APP_URL },
   });
 }
 
