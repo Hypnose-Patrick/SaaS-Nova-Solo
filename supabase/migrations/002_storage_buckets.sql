@@ -1,23 +1,26 @@
 -- Bucket nova-docs — PRIVÉ (pas public)
 -- Les fichiers ne sont accessibles qu'avec une URL signée temporaire (7 jours)
 
-INSERT INTO storage.buckets (id, name, public) VALUES ('nova-docs', 'nova-docs', false);
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('nova-docs', 'nova-docs', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
--- Upload : l'utilisateur ne peut uploader que ses propres fichiers
+DROP POLICY IF EXISTS "users_upload_own_docs" ON storage.objects;
+DROP POLICY IF EXISTS "users_read_own_docs"   ON storage.objects;
+DROP POLICY IF EXISTS "users_delete_own_docs" ON storage.objects;
+
 CREATE POLICY "users_upload_own_docs" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'nova-docs'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- Lecture : uniquement ses propres fichiers
 CREATE POLICY "users_read_own_docs" ON storage.objects
   FOR SELECT USING (
     bucket_id = 'nova-docs'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
--- Suppression : uniquement ses propres fichiers
 CREATE POLICY "users_delete_own_docs" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'nova-docs'

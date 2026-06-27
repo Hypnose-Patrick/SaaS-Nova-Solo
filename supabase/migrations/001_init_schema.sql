@@ -1,9 +1,52 @@
 -- Nova Solo — Schéma complet (Audit Hermes §6.2)
 -- Supabase project: lkulymxkcfiugjdawjnc
--- 14 tables + RLS policies
+-- 15 tables + RLS policies
+-- Idempotent : CREATE TABLE IF NOT EXISTS + ALTER TABLE ADD COLUMN IF NOT EXISTS
+
+-- === PATCH tables existantes (colonnes manquantes) ===
+-- Si profiles existe déjà avec un schéma différent (ex: DDC-DASHBOARD), on ajoute les colonnes Nova Solo.
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS statut TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS domaine TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS situation TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS ville TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS canton TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS is_laci BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS capital NUMERIC DEFAULT 0;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS charges_fixes NUMERIC DEFAULT 0;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS runway_months INTEGER;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS slogan TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS accent_color TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS brand_name TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS tagline TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS contact_email TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS contact_tel TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS contact_adresse TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS website TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS dob TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS profil TEXT;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS pricing_tarif NUMERIC;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS pricing_clients INTEGER;
+ALTER TABLE IF EXISTS profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS storage_url TEXT;
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS storage_provider TEXT;
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS file_type TEXT;
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS file_size INTEGER;
+ALTER TABLE IF EXISTS documents ADD COLUMN IF NOT EXISTS analysis TEXT;
+
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS tva_rate NUMERIC DEFAULT 8.1;
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS amount_ht NUMERIC;
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS amount_ttc NUMERIC;
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS items JSONB;
+ALTER TABLE IF EXISTS invoices ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'draft';
 
 -- === PROFIL UTILISATEUR ===
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT,
@@ -36,7 +79,7 @@ CREATE TABLE profiles (
 );
 
 -- === BUSINESS MODEL CANVAS ===
-CREATE TABLE bmc (
+CREATE TABLE IF NOT EXISTS bmc (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   block_key TEXT NOT NULL,  -- 'segments', 'valeur', 'canaux', 'relations', 'revenus', 'ressources', 'activites', 'partenaires', 'couts'
@@ -47,7 +90,7 @@ CREATE TABLE bmc (
 );
 
 -- === BUSINESS PLAN ===
-CREATE TABLE business_plans (
+CREATE TABLE IF NOT EXISTS business_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   section_key TEXT NOT NULL,  -- 'resume', 'marche', 'offre', 'acquisition', 'previsionnel'
@@ -59,7 +102,7 @@ CREATE TABLE business_plans (
 );
 
 -- === PROSPECTION (Kanban) ===
-CREATE TABLE prospects (
+CREATE TABLE IF NOT EXISTS prospects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -76,7 +119,7 @@ CREATE TABLE prospects (
 );
 
 -- === AGENDA ===
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -92,7 +135,7 @@ CREATE TABLE events (
 );
 
 -- === FINANCES ===
-CREATE TABLE finance_data (
+CREATE TABLE IF NOT EXISTS finance_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
@@ -104,7 +147,7 @@ CREATE TABLE finance_data (
 );
 
 -- === COMPTABILITÉ ===
-CREATE TABLE compta_entries (
+CREATE TABLE IF NOT EXISTS compta_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
@@ -119,7 +162,7 @@ CREATE TABLE compta_entries (
 );
 
 -- === DOCUMENTS ===
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   filename TEXT NOT NULL,
@@ -132,7 +175,7 @@ CREATE TABLE documents (
 );
 
 -- === RITUELS ===
-CREATE TABLE rituals (
+CREATE TABLE IF NOT EXISTS rituals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   label TEXT NOT NULL,
@@ -142,7 +185,7 @@ CREATE TABLE rituals (
 );
 
 -- === CHECKLIST (LACI / démarrage) ===
-CREATE TABLE checklist (
+CREATE TABLE IF NOT EXISTS checklist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   label TEXT NOT NULL,
@@ -152,7 +195,7 @@ CREATE TABLE checklist (
 );
 
 -- === CHAT HISTORY ===
-CREATE TABLE chat_history (
+CREATE TABLE IF NOT EXISTS chat_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   role TEXT NOT NULL,  -- 'user', 'assistant'
@@ -162,7 +205,7 @@ CREATE TABLE chat_history (
 );
 
 -- === DIAGNOSTIC ===
-CREATE TABLE diagnostics (
+CREATE TABLE IF NOT EXISTS diagnostics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   step INTEGER,
@@ -173,7 +216,7 @@ CREATE TABLE diagnostics (
 );
 
 -- === FACTURES ===
-CREATE TABLE invoices (
+CREATE TABLE IF NOT EXISTS invoices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   number TEXT NOT NULL,
@@ -191,7 +234,7 @@ CREATE TABLE invoices (
 -- === MESSAGERIE (settings non-secrets) ===
 -- Les tokens secrets (telegramToken, aiKey, etc.) NE sont pas stockés en DB.
 -- Ils restent en sessionStorage côté client uniquement (décision sécurité audit Hermes).
-CREATE TABLE messaging_settings (
+CREATE TABLE IF NOT EXISTS messaging_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   telegram_chat_id TEXT,        -- Chat ID (pas le token — secret sessionStorage)
@@ -206,7 +249,7 @@ CREATE TABLE messaging_settings (
 );
 
 -- === VISION SYMBOLIQUE ===
-CREATE TABLE symbolic_maps (
+CREATE TABLE IF NOT EXISTS symbolic_maps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   intake JSONB,   -- {answers[], metaphore}
@@ -236,6 +279,23 @@ ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messaging_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE symbolic_maps ENABLE ROW LEVEL SECURITY;
 
+-- DROP IF EXISTS pour idempotence (re-exécution sûre)
+DROP POLICY IF EXISTS "users_own_profiles"    ON profiles;
+DROP POLICY IF EXISTS "users_own_bmc"         ON bmc;
+DROP POLICY IF EXISTS "users_own_bp"          ON business_plans;
+DROP POLICY IF EXISTS "users_own_prospects"   ON prospects;
+DROP POLICY IF EXISTS "users_own_events"      ON events;
+DROP POLICY IF EXISTS "users_own_finance"     ON finance_data;
+DROP POLICY IF EXISTS "users_own_compta"      ON compta_entries;
+DROP POLICY IF EXISTS "users_own_documents"   ON documents;
+DROP POLICY IF EXISTS "users_own_rituals"     ON rituals;
+DROP POLICY IF EXISTS "users_own_checklist"   ON checklist;
+DROP POLICY IF EXISTS "users_own_chat"        ON chat_history;
+DROP POLICY IF EXISTS "users_own_diagnostics" ON diagnostics;
+DROP POLICY IF EXISTS "users_own_invoices"    ON invoices;
+DROP POLICY IF EXISTS "users_own_messaging"   ON messaging_settings;
+DROP POLICY IF EXISTS "users_own_symbolic"    ON symbolic_maps;
+
 CREATE POLICY "users_own_profiles"       ON profiles         FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "users_own_bmc"            ON bmc              FOR ALL USING (profile_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
 CREATE POLICY "users_own_bp"             ON business_plans   FOR ALL USING (profile_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
@@ -257,6 +317,11 @@ CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS profiles_updated_at  ON profiles;
+DROP TRIGGER IF EXISTS bp_updated_at        ON business_plans;
+DROP TRIGGER IF EXISTS prospects_updated_at ON prospects;
+DROP TRIGGER IF EXISTS symbolic_updated_at  ON symbolic_maps;
 
 CREATE TRIGGER profiles_updated_at   BEFORE UPDATE ON profiles        FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER bp_updated_at         BEFORE UPDATE ON business_plans  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
