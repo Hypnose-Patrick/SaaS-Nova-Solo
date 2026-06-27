@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { challengeBmcBlock } from "@/lib/ai";
+import { AiResult } from "@/components/ui/AiResult";
+import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
+import { promptBmcGlobal } from "@/lib/lancementPrompts";
+import { loadLocal, saveLocal } from "@/lib/local";
 
 const BLOCKS = [
   { key: "partenaires", label: "Partenaires clés",     area: "partenaires" },
@@ -25,10 +29,18 @@ export function Bmc() {
   const [editing, setEditing] = useState<BlockKey | null>(null);
   const [draft, setDraft] = useState("");
   const [challenging, setChallenging] = useState<BlockKey | null>(null);
+  const { loading: gLoading, error: gError, gen } = useAiGen();
+  const [global, setGlobal] = useState<string | null>(() => loadLocal<string | null>("ns_bmc_global", null));
 
   useEffect(() => {
     if (profile?.id) fetchBmc(profile.id);
   }, [profile?.id]);
+
+  async function analyzeGlobal() {
+    const resume = BLOCKS.map((b) => `${b.label} : ${getBlock(b.key)?.content ?? "—"}`).join("\n");
+    const r = await gen("strategist", promptBmcGlobal(profile, resume), { model: MODEL_REASONING });
+    if (r) { setGlobal(r); saveLocal("ns_bmc_global", r); }
+  }
 
   function getBlock(key: BlockKey) {
     return bmc.find((b) => b.block_key === key);
@@ -187,6 +199,14 @@ export function Bmc() {
           );
         })}
       </div>
+
+      <Card glass title="Analyse globale du canvas" action={
+        <Button size="sm" variant="gold" loading={gLoading} onClick={analyzeGlobal}>
+          {global ? "Réanalyser" : "Analyser"}
+        </Button>
+      }>
+        <AiResult content={global} loading={gLoading} error={gError} emptyHint="Cohérence globale notée /10, 3 forces, 3 risques et 2 recommandations prioritaires." />
+      </Card>
     </div>
   );
 }

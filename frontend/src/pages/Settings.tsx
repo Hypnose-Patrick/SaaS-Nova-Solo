@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import type { Profile } from "@/types";
+import { useAiGen } from "@/lib/useAiGen";
+import { promptBio } from "@/lib/lancementPrompts";
 
 type Statut = Profile["statut"];
 
@@ -93,6 +95,13 @@ export function Settings() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { loading: bioLoading, gen } = useAiGen();
+
+  async function improveBio() {
+    if (!form?.bio.trim()) return;
+    const r = await gen("communicant", promptBio(form.bio));
+    if (r) setF({ bio: r });
+  }
 
   useEffect(() => {
     if (profile) setForm(profileToForm(profile));
@@ -242,7 +251,12 @@ export function Settings() {
           </div>
         </div>
         <div style={{ marginTop: "var(--space-4)" }}>
-          <label style={LABEL_STYLE}>Bio / Pitch</label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <label style={LABEL_STYLE}>Bio / Pitch</label>
+            <Button size="sm" variant="ghost" loading={bioLoading} onClick={improveBio} disabled={!form.bio.trim()}>
+              Améliorer avec l'IA
+            </Button>
+          </div>
           <textarea
             value={form.bio}
             onChange={(e) => setF({ bio: e.target.value })}
