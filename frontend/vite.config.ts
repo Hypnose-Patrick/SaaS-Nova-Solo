@@ -17,9 +17,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          supabase: ["@supabase/supabase-js", "@supabase/auth-helpers-react"],
+          supabase: ["@supabase/supabase-js", "@supabase/ssr", "@supabase/auth-ui-react", "@supabase/auth-ui-shared"],
           charts: ["chart.js", "react-chartjs-2"],
-          "date-fns": ["date-fns"],
           router: ["react-router-dom"],
         },
       },
