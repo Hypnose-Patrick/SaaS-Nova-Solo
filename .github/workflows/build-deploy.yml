@@ -2,7 +2,7 @@ name: Build & Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -58,6 +58,7 @@ jobs:
 
   deploy-supabase-migrations:
     runs-on: ubuntu-latest
+    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
