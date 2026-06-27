@@ -14,6 +14,7 @@ import { Compta } from "@/pages/Compta";
 import { Settings } from "@/pages/Settings";
 import { Agenda } from "@/pages/Agenda";
 import { Documents } from "@/pages/Documents";
+import { Diagnostic } from "@/pages/Diagnostic";
 
 // Pages stub — seront remplacées par leurs implémentations complètes.
 function PageStub({ name }: { name: string }) {
@@ -35,7 +36,7 @@ function ProtectedRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<Dashboard />} />
-        <Route path="diagnostic" element={<PageStub name="Diagnostic" />} />
+        <Route path="diagnostic" element={<Diagnostic />} />
         <Route path="bmc" element={<Bmc />} />
         <Route path="business-plan" element={<PageStub name="Business Plan" />} />
         <Route path="pipeline" element={<Pipeline />} />
