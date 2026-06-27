@@ -6,6 +6,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
+import { extractReceipt } from "@/lib/ai";
 import type { ComptaEntry } from "@/types";
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -55,6 +56,13 @@ export function Compta() {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState<number | "all">("all");
   const [form, setForm] = useState<NewEntry>(EMPTY_FORM);
+
+  // Scan de reçu (IA) + import/export CSV
+  const [receiptText, setReceiptText] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (profile?.id) fetchCompta(profile.id);
@@ -121,6 +129,113 @@ export function Compta() {
   async function deleteEntry(id: string) {
     await supabase.from("compta_entries").delete().eq("id", id);
     useAppStore.setState((s) => ({ compta: s.compta.filter((e) => e.id !== id) }));
+  }
+
+  // Scan de reçu par IA → préremplit le formulaire de saisie
+  async function scanReceipt() {
+    const text = receiptText.trim();
+    if (!text) return;
+    setScanning(true);
+    setScanMsg(null);
+    try {
+      const allCats = [...CATEGORIES_REVENU, ...CATEGORIES_DEPENSE];
+      const r = await extractReceipt(text, allCats, profile ?? {});
+      setForm({
+        date: r.date ?? new Date().toISOString().slice(0, 10),
+        description: r.fournisseur ?? "",
+        amount: r.montant != null ? String(r.montant) : "",
+        type: r.type,
+        tva: r.tva != null ? String(r.tva) : "",
+        fournisseur: r.fournisseur ?? "",
+        category: r.categorie ?? "",
+      });
+      setShowForm(true);
+      setScanMsg(
+        `Extrait : ${r.montant != null ? formatChf(r.montant) : "montant ?"}` +
+          `${r.fournisseur ? ` · ${r.fournisseur}` : ""}${r.date ? ` · ${r.date}` : ""}. ` +
+          `Vérifiez et enregistrez.`,
+      );
+    } catch {
+      setScanMsg("Extraction impossible — réessayez ou saisissez manuellement.");
+    }
+    setScanning(false);
+  }
+
+  // Import d'un relevé bancaire CSV (Date / Description / Montant, séparateur ; , ou tab)
+  async function importBankCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !profile?.id) return;
+    setImporting(true);
+    setImportMsg(null);
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter((l) => l.trim());
+    const rows: Array<Omit<ComptaEntry, "id" | "created_at">> = [];
+    let skipped = 0;
+    lines.forEach((line, i) => {
+      if (i === 0 && /date/i.test(line)) return; // en-tête
+      const parts = line.split(/[;,\t]/).map((p) => p.trim().replace(/^"|"$/g, ""));
+      if (parts.length < 3) { skipped++; return; }
+      let rawDate = parts[0];
+      let rawDesc = parts[1];
+      let rawAmt = parts[2].replace(/['\s ]/g, "").replace("−", "-").replace(",", ".");
+      // Certaines banques inversent description/montant
+      if (isNaN(parseFloat(rawAmt)) && !isNaN(parseFloat(rawDesc))) {
+        const tmp = rawDesc; rawDesc = rawAmt; rawAmt = tmp.replace(/['\s ]/g, "").replace("−", "-").replace(",", ".");
+      }
+      const amount = parseFloat(rawAmt);
+      if (!amount || !rawDate) { skipped++; return; }
+      // Date DD.MM.YYYY → YYYY-MM-DD
+      const dm = rawDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (dm) rawDate = `${dm[3]}-${dm[2].padStart(2, "0")}-${dm[1].padStart(2, "0")}`;
+      rows.push({
+        profile_id: profile.id,
+        date: rawDate,
+        description: rawDesc || "Import bancaire",
+        amount: Math.abs(amount),
+        type: amount >= 0 ? "revenu" : "depense",
+        tva: null,
+        fournisseur: null,
+        category: null,
+        receipt_url: null,
+      });
+    });
+    if (rows.length === 0) {
+      setImportMsg("Aucune ligne reconnue. Format attendu : Date ; Description ; Montant.");
+      setImporting(false);
+      return;
+    }
+    const { data } = await supabase.from("compta_entries").insert(rows).select();
+    if (data) {
+      useAppStore.setState((s) => ({
+        compta: [...(data as ComptaEntry[]), ...s.compta].sort((a, b) => b.date.localeCompare(a.date)),
+      }));
+    }
+    setImportMsg(`${rows.length} écriture${rows.length > 1 ? "s" : ""} importée${rows.length > 1 ? "s" : ""}${skipped ? ` · ${skipped} ignorée${skipped > 1 ? "s" : ""}` : ""}.`);
+    setImporting(false);
+  }
+
+  // Export CSV des écritures filtrées (sécurisé contre l'injection de formules)
+  function csvField(s: string | number): string {
+    const v = String(s ?? "");
+    const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return /[";\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  }
+  function exportCsv() {
+    if (filtered.length === 0) return;
+    const header = ["Date", "Type", "Montant CHF", "Description", "Fournisseur/Client", "Catégorie", "TVA %"];
+    const body = filtered.map((e) =>
+      [e.date, e.type === "revenu" ? "Revenu" : "Dépense", e.amount.toFixed(2),
+       e.description ?? "", e.fournisseur ?? "", e.category ?? "", e.tva != null ? String(e.tva) : ""]
+        .map(csvField).join(";"),
+    );
+    const csv = "﻿" + [header.map(csvField).join(";"), ...body].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `compta_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const categories = form.type === "revenu" ? CATEGORIES_REVENU : CATEGORIES_DEPENSE;
@@ -258,6 +373,52 @@ export function Compta() {
           </div>
         </Card>
       )}
+
+      {/* Scan reçu IA + import / export CSV */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+        <Card glass title="Scanner un reçu (IA)">
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>
+            Collez le texte d'une quittance — Nova en extrait montant, date, fournisseur, TVA et catégorie, puis préremplit la saisie.
+          </p>
+          <textarea
+            value={receiptText}
+            onChange={(e) => setReceiptText(e.target.value)}
+            rows={4}
+            placeholder={"Migros — 22.06.2026\nFournitures bureau\nTotal CHF 34.80 (TVA 8.1% incluse)"}
+            style={{ width: "100%", boxSizing: "border-box", background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", padding: "var(--space-3)", outline: "none", resize: "vertical", marginBottom: "var(--space-3)" }}
+          />
+          <Button size="sm" variant="gold" loading={scanning} disabled={!receiptText.trim()} onClick={scanReceipt}>
+            Extraire avec l'IA
+          </Button>
+          {scanMsg && (
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", margin: "var(--space-3) 0 0", lineHeight: "var(--leading-relaxed)" }}>
+              {scanMsg}
+            </p>
+          )}
+        </Card>
+
+        <Card glass title="Import / export">
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>
+            Importez un relevé bancaire CSV (colonnes Date · Description · Montant ; séparateur «;», «,» ou tabulation). Le signe du montant détermine recette / dépense.
+          </p>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <label style={{ display: "inline-flex" }}>
+              <input type="file" accept=".csv,.txt" onChange={importBankCsv} style={{ display: "none" }} />
+              <span style={{ display: "inline-flex", alignItems: "center", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)", cursor: importing ? "wait" : "pointer", opacity: importing ? 0.6 : 1 }}>
+                {importing ? "Import…" : "📂 Importer CSV"}
+              </span>
+            </label>
+            <Button size="sm" variant="ghost" disabled={filtered.length === 0} onClick={exportCsv}>
+              ⬇ Exporter ({filtered.length})
+            </Button>
+          </div>
+          {importMsg && (
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", margin: "var(--space-3) 0 0" }}>
+              {importMsg}
+            </p>
+          )}
+        </Card>
+      </div>
 
       {/* Filtres */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>

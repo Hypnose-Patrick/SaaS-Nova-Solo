@@ -99,7 +99,55 @@ export async function prospectEmail(
   );
 }
 
-// Extraction OCR — appelle ocr-receipt.
+// Extraction de reçu / quittance par IA à partir du texte collé.
+// Renvoie des champs structurés pour préremplir une écriture comptable.
+export interface ReceiptExtraction {
+  montant: number | null;
+  date: string | null;
+  fournisseur: string | null;
+  tva: number | null;
+  categorie: string | null;
+  type: "revenu" | "depense";
+}
+
+export async function extractReceipt(
+  rawText: string,
+  categories: string[],
+  profileContext: unknown,
+): Promise<ReceiptExtraction> {
+  const raw = await askAgent(
+    "financier",
+    `Tu es un assistant comptable suisse. Extrais les données de ce reçu / cette quittance. ` +
+      `Détermine : montant TTC en CHF (nombre), date au format YYYY-MM-DD, fournisseur / émetteur, ` +
+      `taux de TVA applicable (8.1, 3.8, 2.6 ou null), catégorie comptable parmi exactement [${categories.join(", ")}], ` +
+      `et type ("depense" pour un achat, "revenu" pour une recette). ` +
+      `Reçu : """${rawText}""". ` +
+      `Réponds UNIQUEMENT par un objet JSON strict, sans texte autour : ` +
+      `{"montant":0,"date":"YYYY-MM-DD","fournisseur":"","tva":null,"categorie":"","type":"depense"}. ` +
+      `Utilise null pour toute valeur que tu ne peux pas déterminer.`,
+    profileContext,
+  );
+  const fallback: ReceiptExtraction = {
+    montant: null, date: null, fournisseur: null, tva: null, categorie: null, type: "depense",
+  };
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return fallback;
+    const o = JSON.parse(match[0]) as Partial<ReceiptExtraction>;
+    return {
+      montant: typeof o.montant === "number" ? o.montant : null,
+      date: typeof o.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o.date) ? o.date : null,
+      fournisseur: typeof o.fournisseur === "string" && o.fournisseur ? o.fournisseur : null,
+      tva: typeof o.tva === "number" ? o.tva : null,
+      categorie: typeof o.categorie === "string" && categories.includes(o.categorie) ? o.categorie : null,
+      type: o.type === "revenu" ? "revenu" : "depense",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+// Extraction OCR (image) — appelle ocr-receipt.
 export async function ocrReceipt(storagePath: string): Promise<unknown> {
   const authHeader = await getBearerHeader();
   const ocrUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-receipt`;
