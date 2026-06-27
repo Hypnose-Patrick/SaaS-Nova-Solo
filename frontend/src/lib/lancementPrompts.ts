@@ -22,6 +22,11 @@ export function promptBio(bio: string): string {
   return `Tu es un expert en personal branding pour indépendants en Suisse romande. Améliore cette biographie pour la rendre plus percutante, personnelle et orientée client. Garde le ton authentique, première personne, 120-150 mots maximum. Réponds uniquement avec la bio améliorée. Biographie actuelle : ${bio}`;
 }
 
+// ── Prévisionnel financier (Financier) — repris v1 financeAnalyseIA ──
+export function promptFinanceAnalyse(p: Profile | null, resume: string): string {
+  return `${profileContext(p)}\n\nTu es le directeur financier (style « véto cash » : rigoureux, prudent, chiffré, CHF, fiscalité suisse — AVS ~10%, TVA 8.1%, seuil d'assujettissement 100'000 CHF, passage RI → Sàrl).\nBudget prévisionnel 12 mois : ${resume}\nAnalyse en 6-8 phrases maximum, ton direct : (1) le mois de trésorerie le plus tendu et le runway réel, (2) le seuil de rentabilité réel, (3) 1 risque majeur, (4) 2 recommandations concrètes et datées. Réponds uniquement avec l'analyse.`;
+}
+
 // ── Offre & Pricing (Financier) ──
 export function promptPricing(p: Profile | null, offre: string): string {
   return `${profileContext(p)}\n\nTu es un expert en tarification de services pour indépendants en Suisse romande. À partir de l'offre décrite, propose une grille tarifaire cohérente (3 paliers si pertinent : essai/découverte → standard → premium), en CHF, avec justification de la valeur perçue, ancrage marché suisse romand, gestion de la TVA suisse (8.1%) et alerte sur le seuil d'assujettissement de 100'000 CHF. Évite le sous-pricing. Offre : ${offre}`;
