@@ -10,6 +10,7 @@ import { Bmc } from "@/pages/Bmc";
 import { Pipeline } from "@/pages/Pipeline";
 import { Finances } from "@/pages/Finances";
 import { Factures } from "@/pages/Factures";
+import { Compta } from "@/pages/Compta";
 
 // Pages stub — seront remplacées par leurs implémentations complètes.
 function PageStub({ name }: { name: string }) {
@@ -36,7 +37,7 @@ function ProtectedRoutes() {
         <Route path="business-plan" element={<PageStub name="Business Plan" />} />
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="finances" element={<Finances />} />
-        <Route path="compta" element={<PageStub name="Comptabilité" />} />
+        <Route path="compta" element={<Compta />} />
         <Route path="facture" element={<Factures />} />
         <Route path="agenda" element={<PageStub name="Agenda" />} />
         <Route path="documents" element={<PageStub name="Documents" />} />
