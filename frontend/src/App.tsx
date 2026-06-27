@@ -6,6 +6,8 @@ import { useUserStore } from "@/stores/useUserStore";
 import { AppShell } from "@/components/layout/AppShell";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
+import { Bmc } from "@/pages/Bmc";
+import { Pipeline } from "@/pages/Pipeline";
 
 // Pages stub — seront remplacées par leurs implémentations complètes.
 function PageStub({ name }: { name: string }) {
@@ -28,9 +30,9 @@ function ProtectedRoutes() {
       <Route element={<AppShell />}>
         <Route index element={<Dashboard />} />
         <Route path="diagnostic" element={<PageStub name="Diagnostic" />} />
-        <Route path="bmc" element={<PageStub name="Business Model Canvas" />} />
+        <Route path="bmc" element={<Bmc />} />
         <Route path="business-plan" element={<PageStub name="Business Plan" />} />
-        <Route path="pipeline" element={<PageStub name="Pipeline commercial" />} />
+        <Route path="pipeline" element={<Pipeline />} />
         <Route path="finances" element={<PageStub name="Finances" />} />
         <Route path="compta" element={<PageStub name="Comptabilité" />} />
         <Route path="facture" element={<PageStub name="Factures" />} />
