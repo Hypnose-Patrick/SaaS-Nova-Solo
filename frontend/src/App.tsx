@@ -11,6 +11,7 @@ import { Pipeline } from "@/pages/Pipeline";
 import { Finances } from "@/pages/Finances";
 import { Factures } from "@/pages/Factures";
 import { Compta } from "@/pages/Compta";
+import { Settings } from "@/pages/Settings";
 
 // Pages stub — seront remplacées par leurs implémentations complètes.
 function PageStub({ name }: { name: string }) {
@@ -41,7 +42,7 @@ function ProtectedRoutes() {
         <Route path="facture" element={<Factures />} />
         <Route path="agenda" element={<PageStub name="Agenda" />} />
         <Route path="documents" element={<PageStub name="Documents" />} />
-        <Route path="settings" element={<PageStub name="Réglages" />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
