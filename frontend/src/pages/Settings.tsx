@@ -7,6 +7,7 @@ import type { Profile } from "@/types";
 import { useAiGen } from "@/lib/useAiGen";
 import { promptBio } from "@/lib/lancementPrompts";
 import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
+import { AiEngineCard } from "@/components/settings/AiEngineCard";
 
 const MAX_LOGO_BYTES = 500 * 1024; // 500 Ko — stocké en data URL dans le profil
 
@@ -446,6 +447,9 @@ export function Settings() {
           </div>
         )}
       </Card>
+
+      {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
+      <AiEngineCard />
 
       {/* Bouton global */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
