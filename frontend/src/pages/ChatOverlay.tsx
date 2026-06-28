@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useChatStore } from "@/stores/useChatStore";
 import { useUserStore } from "@/stores/useUserStore";
+import { helpForPath } from "@/lib/pageHelp";
 import { Button } from "@/components/ui/Button";
 import type { AgentKey } from "@/types";
 
@@ -13,21 +15,6 @@ const AGENTS: { key: AgentKey; label: string }[] = [
   { key: "commercial", label: "Commercial" },
   { key: "technicien", label: "Tech." },
 ];
-
-// Raccourcis de démarrage — questions génériques, sans donnée personnelle.
-const SHORTCUTS: Partial<Record<AgentKey, string[]>> = {
-  nova: [
-    "Par où commencer aujourd'hui ?",
-    "Quelles sont mes priorités cette semaine ?",
-    "Aide-moi à clarifier mon offre",
-  ],
-  juriste: ["Quel statut juridique choisir ?", "Mes obligations TVA en Suisse ?"],
-  strategist: ["Challenge mon modèle économique", "Quels segments viser en priorité ?"],
-  financier: ["Comment fixer mon prix ?", "Quel est mon seuil de rentabilité ?"],
-  communicant: ["Aide-moi à écrire un post LinkedIn", "Affûte mon pitch en une phrase"],
-  commercial: ["Comment décrocher mes premiers clients ?", "Réponds à l'objection « c'est trop cher »"],
-  technicien: ["Quels outils pour démarrer ?", "Comment automatiser mes relances ?"],
-};
 
 // Typage minimal de la Web Speech API (absente de lib.dom).
 interface SpeechResultLike {
@@ -63,6 +50,8 @@ export function ChatOverlay() {
   const { messages, thinking, open, activeAgent, setOpen, setAgent, send } =
     useChatStore();
   const profile = useUserStore((s) => s.profile);
+  const { pathname } = useLocation();
+  const pageHelp = helpForPath(pathname);
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -70,6 +59,24 @@ export function ChatOverlay() {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const speechSupported = useMemo(() => Boolean(getSpeechCtor()), []);
+
+  // Contexte transmis à Nova : l'écran courant + l'essentiel du profil de
+  // l'abonné (ses propres données). Permet une aide située et personnalisée.
+  function pageContext(): unknown {
+    return {
+      ecran: pageHelp.title,
+      role_ecran: pageHelp.blurb,
+      profil: profile
+        ? {
+            prenom: profile.name ?? undefined,
+            domaine: profile.domaine ?? undefined,
+            situation: profile.situation ?? undefined,
+            statut: profile.statut ?? undefined,
+            localisation: [profile.ville, profile.canton].filter(Boolean).join(" ") || undefined,
+          }
+        : undefined,
+    };
+  }
 
   useEffect(() => {
     if (open) {
@@ -86,14 +93,52 @@ export function ChatOverlay() {
     return () => recognitionRef.current?.stop();
   }, [open]);
 
-  if (!open) return null;
+  // Fermé → bulle d'aide flottante (toujours visible, sur chaque écran).
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Ouvrir l'aide Nova"
+        title={`Besoin d'aide ? — ${pageHelp.title}`}
+        style={{
+          position: "fixed",
+          bottom: "var(--space-6)",
+          right: "var(--space-6)",
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          padding: "var(--space-3) var(--space-5)",
+          borderRadius: 999,
+          border: "var(--border-gold)",
+          background: "var(--color-bg-elevated)",
+          color: "var(--color-gold)",
+          boxShadow: "var(--shadow-xl)",
+          cursor: "pointer",
+          fontFamily: "var(--font-display)",
+          fontSize: "var(--text-sm)",
+          letterSpacing: "var(--tracking-wide)",
+          backdropFilter: "blur(12px)",
+          zIndex: "var(--z-modal)",
+        }}
+      >
+        <span style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
+        <span>Aide</span>
+      </button>
+    );
+  }
 
   function submit(value: string) {
     const v = value.trim();
     if (!v || !profile?.id || thinking) return;
     recognitionRef.current?.stop();
-    send(v, profile.id);
+    send(v, profile.id, pageContext());
     setText("");
+  }
+
+  // Question suggérée : route d'abord vers l'expert le plus pertinent pour l'écran.
+  function submitSuggestion(value: string) {
+    setAgent(pageHelp.agent);
+    submit(value);
   }
 
   function handleSend() {
@@ -133,7 +178,7 @@ export function ChatOverlay() {
     setListening(true);
   }
 
-  const shortcuts = SHORTCUTS[activeAgent] ?? SHORTCUTS.nova ?? [];
+  const shortcuts = pageHelp.suggestions;
 
   return (
     <div
@@ -250,16 +295,16 @@ export function ChatOverlay() {
                 margin: 0,
               }}
             >
-              Posez votre question à{" "}
-              <span style={{ color: "var(--color-gold)" }}>
-                {AGENTS.find((a) => a.key === activeAgent)?.label}
-              </span>
+              Vous êtes sur{" "}
+              <span style={{ color: "var(--color-gold)" }}>{pageHelp.title}</span>
+              <br />
+              <span style={{ fontSize: "var(--text-xs)" }}>{pageHelp.blurb}</span>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%" }}>
               {shortcuts.map((s) => (
                 <button
                   key={s}
-                  onClick={() => submit(s)}
+                  onClick={() => submitSuggestion(s)}
                   disabled={thinking}
                   style={{
                     textAlign: "left",
