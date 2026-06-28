@@ -6,7 +6,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
-import { extractReceipt } from "@/lib/ai";
+import { extractReceipt, ocrReceipt } from "@/lib/ai";
 import type { ComptaEntry } from "@/types";
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -61,6 +61,7 @@ export function Compta() {
   const [receiptText, setReceiptText] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const [photoScanning, setPhotoScanning] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -159,6 +160,43 @@ export function Compta() {
       setScanMsg("Extraction impossible — réessayez ou saisissez manuellement.");
     }
     setScanning(false);
+  }
+
+  // Scan PHOTO d'une quittance : upload dans le bucket privé puis OCR vision IA.
+  async function scanReceiptPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !profile?.user_id) return;
+    if (!file.type.startsWith("image/")) { setScanMsg("Choisissez une image (JPG, PNG…)."); return; }
+    setPhotoScanning(true);
+    setScanMsg("Lecture de la quittance…");
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${profile.user_id}/receipts/${Date.now()}-${safeName}`;
+      const { error: upErr } = await supabase.storage.from("nova-docs").upload(path, file, { upsert: true });
+      if (upErr) throw new Error(upErr.message);
+      const r = await ocrReceipt(path);
+      const cat = r.categorie && CATEGORIES_DEPENSE.find((c) => c.toLowerCase() === r.categorie!.toLowerCase());
+      setForm({
+        date: r.date ?? new Date().toISOString().slice(0, 10),
+        description: r.fournisseur ?? "",
+        amount: r.montant_ttc != null ? String(r.montant_ttc) : "",
+        type: "depense",
+        tva: r.tva_taux != null ? String(r.tva_taux) : "",
+        fournisseur: r.fournisseur ?? "",
+        category: cat || "",
+      });
+      setShowForm(true);
+      const conf = Math.round((r.confiance ?? 0) * 100);
+      setScanMsg(
+        `Extrait : ${r.montant_ttc != null ? formatChf(r.montant_ttc) : "montant ?"}` +
+          `${r.fournisseur ? ` · ${r.fournisseur}` : ""}${r.date ? ` · ${r.date}` : ""}` +
+          `${conf ? ` (confiance ${conf}%)` : ""}. Vérifiez et enregistrez.`,
+      );
+    } catch (err) {
+      setScanMsg(`OCR photo indisponible (${err instanceof Error ? err.message : "erreur"}). Utilisez le collage de texte ci-contre.`);
+    }
+    setPhotoScanning(false);
   }
 
   // Import d'un relevé bancaire CSV (Date / Description / Montant, séparateur ; , ou tab)
@@ -378,7 +416,7 @@ export function Compta() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
         <Card glass title="Scanner un reçu (IA)">
           <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>
-            Collez le texte d'une quittance — Nova en extrait montant, date, fournisseur, TVA et catégorie, puis préremplit la saisie.
+            Photographiez une quittance ou collez son texte — Nova en extrait montant, date, fournisseur, TVA et catégorie, puis préremplit la saisie.
           </p>
           <textarea
             value={receiptText}
@@ -387,9 +425,17 @@ export function Compta() {
             placeholder={"Migros — 22.06.2026\nFournitures bureau\nTotal CHF 34.80 (TVA 8.1% incluse)"}
             style={{ width: "100%", boxSizing: "border-box", background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", padding: "var(--space-3)", outline: "none", resize: "vertical", marginBottom: "var(--space-3)" }}
           />
-          <Button size="sm" variant="gold" loading={scanning} disabled={!receiptText.trim()} onClick={scanReceipt}>
-            Extraire avec l'IA
-          </Button>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
+            <Button size="sm" variant="gold" loading={scanning} disabled={!receiptText.trim() || photoScanning} onClick={scanReceipt}>
+              Extraire le texte
+            </Button>
+            <label style={{ display: "inline-flex" }}>
+              <input type="file" accept="image/*" capture="environment" onChange={scanReceiptPhoto} style={{ display: "none" }} disabled={photoScanning || scanning} />
+              <span style={{ display: "inline-flex", alignItems: "center", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)", cursor: photoScanning ? "wait" : "pointer", opacity: photoScanning ? 0.6 : 1 }}>
+                {photoScanning ? "Lecture…" : "📷 Photo de quittance"}
+              </span>
+            </label>
+          </div>
           {scanMsg && (
             <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", margin: "var(--space-3) 0 0", lineHeight: "var(--leading-relaxed)" }}>
               {scanMsg}

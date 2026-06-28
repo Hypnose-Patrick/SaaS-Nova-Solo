@@ -147,8 +147,20 @@ export async function extractReceipt(
   }
 }
 
-// Extraction OCR (image) — appelle ocr-receipt.
-export async function ocrReceipt(storagePath: string): Promise<unknown> {
+// Résultat d'extraction renvoyé par l'Edge Function ocr-receipt (vision IA).
+export interface ReceiptOcr {
+  fournisseur: string | null;
+  date: string | null;            // YYYY-MM-DD
+  montant_ttc: number | null;
+  tva_taux: number | null;
+  tva_montant: number | null;
+  categorie: string | null;
+  devise: string;
+  confiance: number;
+}
+
+// Extraction OCR depuis une VRAIE image — appelle ocr-receipt (bucket privé).
+export async function ocrReceipt(storagePath: string): Promise<ReceiptOcr> {
   const authHeader = await getBearerHeader();
   const ocrUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ocr-receipt`;
   const res = await fetch(ocrUrl, {
@@ -156,7 +168,10 @@ export async function ocrReceipt(storagePath: string): Promise<unknown> {
     headers: { ...authHeader, "Content-Type": "application/json" },
     body: JSON.stringify({ storage_path: storagePath }),
   });
-  if (!res.ok) throw new Error(`OCR échoué ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? err.error ?? `OCR échoué ${res.status}`);
+  }
   const data = await res.json();
-  return data.data;
+  return data.data as ReceiptOcr;
 }
