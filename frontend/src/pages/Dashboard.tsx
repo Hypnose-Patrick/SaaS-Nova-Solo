@@ -27,6 +27,24 @@ const LACI_71A_STEPS = [
   "Lancer l'activité avant la fin du délai-cadre d'indemnisation",
 ];
 
+// Bien-être & Résilience — le risque n°1 du solo n'est pas financier, c'est
+// l'isolement. Signaux génériques cochés par l'abonné (per-tenant, démarrent vides).
+const BIENETRE_SIGNALS = [
+  "Je travaille plus de 50h/semaine depuis 2 semaines",
+  "Je n'ai pas parlé à un pair professionnel cette semaine",
+  "J'ai du mal à me déconnecter le soir / week-end",
+  "Je reporte mes propres soins (sport, repas, sommeil)",
+];
+
+// Ressources publiques de Suisse romande — génériques, non personnelles.
+const BIENETRE_RESSOURCES: { nom: string; desc: string }[] = [
+  { nom: "Masterminds & pairs", desc: "Un groupe de 4–6 indépendants pour se challenger (1h/sem)." },
+  { nom: "Genilem", desc: "Accompagnement d'entrepreneurs (Genève / Vaud)." },
+  { nom: "CCSO", desc: "Chambre de commerce Valais / Suisse occidentale." },
+  { nom: "Innosuisse", desc: "Coaching d'innovation (activités à fort potentiel)." },
+  { nom: "Coworking", desc: "Un bureau partagé pour briser l'isolement." },
+];
+
 export function Dashboard() {
   const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
@@ -62,6 +80,22 @@ export function Dashboard() {
     saveLocal("ns_rituels", next);
   }
   const ritCount = ritDone.filter(Boolean).length;
+
+  const [bienetre, setBienetre] = useState<boolean[]>(() =>
+    loadLocal("ns_bienetre", BIENETRE_SIGNALS.map(() => false)),
+  );
+  function toggleBienetre(i: number) {
+    const next = bienetre.map((v, j) => (j === i ? !v : v));
+    setBienetre(next);
+    saveLocal("ns_bienetre", next);
+  }
+  const bienetreCount = bienetre.filter(Boolean).length;
+  const bienetreRisk =
+    bienetreCount >= 3
+      ? { label: "À surveiller", color: "var(--color-danger)" }
+      : bienetreCount >= 1
+        ? { label: "Vigilance", color: "var(--color-warning)" }
+        : { label: "Au vert", color: "var(--color-success)" };
 
   useEffect(() => {
     if (profile?.id) {
@@ -256,6 +290,56 @@ export function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Bien-être & Résilience — le risque n°1 du solo, c'est l'isolement */}
+      <Card title="Bien-être & Résilience" glass>
+        <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-xs)", margin: "0 0 var(--space-4)", lineHeight: "var(--leading-normal)" }}>
+          Le plus grand risque de l'indépendant solo n'est pas financier — c'est
+          l'isolement. Faites le point sans jugement, et brisez la solitude avant qu'elle ne pèse.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "var(--space-6)" }}>
+          {/* Signaux d'alerte */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)" }}>Signaux d'alerte</span>
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: bienetreRisk.color, border: `1px solid ${bienetreRisk.color}`, borderRadius: "var(--radius-xs)", padding: "1px 8px", letterSpacing: "var(--tracking-wide)" }}>
+                {bienetreRisk.label}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {BIENETRE_SIGNALS.map((s, i) => (
+                <label key={i} style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)", fontSize: "var(--text-sm)", color: bienetre[i] ? "var(--color-text-primary)" : "var(--color-text-secondary)", cursor: "pointer" }}>
+                  <input type="checkbox" checked={bienetre[i] ?? false} onChange={() => toggleBienetre(i)} style={{ marginTop: 3, accentColor: "var(--color-gold)" }} />
+                  <span>{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Ressources Suisse romande */}
+          <div>
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "var(--space-3)" }}>
+              Ressources — Suisse romande
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {BIENETRE_RESSOURCES.map((r) => (
+                <div key={r.nom} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: "var(--leading-normal)" }}>
+                  <span style={{ color: "var(--color-gold)", fontWeight: 600 }}>{r.nom}</span> — {r.desc}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {bienetreCount >= 2 && (
+          <div style={{ marginTop: "var(--space-4)", padding: "var(--space-3) var(--space-4)", background: "rgba(197,165,114,0.06)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>
+              Plusieurs signaux sont au rouge. Prendre 20 minutes pour en parler n'est pas du temps perdu.
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>En parler à Nova</Button>
+          </div>
+        )}
+      </Card>
 
       {/* Statut profil */}
       {profile && !profile.domaine && (
