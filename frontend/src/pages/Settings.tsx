@@ -8,6 +8,7 @@ import { useAiGen } from "@/lib/useAiGen";
 import { promptBio } from "@/lib/lancementPrompts";
 import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
 import { AiEngineCard } from "@/components/settings/AiEngineCard";
+import { TelegramCard } from "@/components/settings/TelegramCard";
 
 const MAX_LOGO_BYTES = 500 * 1024; // 500 Ko — stocké en data URL dans le profil
 
@@ -450,6 +451,9 @@ export function Settings() {
 
       {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
       <AiEngineCard />
+
+      {/* Section : Notifications Telegram (bot personnel de l'abonné) */}
+      <TelegramCard />
 
       {/* Bouton global */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
