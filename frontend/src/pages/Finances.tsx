@@ -9,22 +9,13 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptFinanceAnalyse } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import type { Profile } from "@/types";
+import {
+  FIN_KEY, chf, financeCompute, financeKpis,
+  type FinMonth, type OpexLine, type FinModel, type FinRow,
+} from "@/lib/finance";
 
-// ── Modèle prévisionnel (repris du Nova Solo v1, FINANCE_SEED) ────────────────
-interface FinMonth { m: string; period: string; ca: number; charges: number; draw?: number }
-interface OpexLine { poste: string; montant: number }
-interface FinModel {
-  scenario: "A" | "B";
-  startCash: number;
-  capitalInjection: number;
-  injectionMonth: number; // 1-indexé
-  scenarios: Record<"A" | "B", { label: string; months: FinMonth[] }>;
-  opexRI: OpexLine[];
-  opexSarl: OpexLine[];
-  financement: OpexLine[];
-}
-
-const FIN_KEY = "ns_finance";
+// Modèle prévisionnel + helpers de calcul (FinModel, chf, financeCompute…) :
+// centralisés dans lib/finance.ts (source unique, partagée avec le Business Plan).
 const MONTH_ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
 
 // Catégories de charges génériques (Suisse) — montants à 0, à compléter par
@@ -72,40 +63,6 @@ function profileSeeded(profile: Profile | null): boolean {
   return !!profile && ((Number(profile.capital) || 0) > 0 || (Number(profile.charges_fixes) || 0) > 0);
 }
 
-// ── Helpers de calcul ─────────────────────────────────────────────────────────
-function chf(n: number): string {
-  const r = Math.round(Number(n) || 0);
-  const neg = r < 0;
-  const s = Math.abs(r).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  return (neg ? "−" : "") + s;
-}
-
-interface FinRow { m: string; period: string; ca: number; charges: number; ebitda: number; draw: number; injection: number; treso: number }
-
-function financeCompute(f: FinModel): FinRow[] {
-  const rows: FinRow[] = [];
-  let cash = Number(f.startCash) || 0;
-  f.scenarios[f.scenario].months.forEach((mo, i) => {
-    const ca = Number(mo.ca) || 0, ch = Number(mo.charges) || 0, eb = ca - ch, dr = Number(mo.draw) || 0;
-    const inj = (i + 1) === Number(f.injectionMonth) ? (Number(f.capitalInjection) || 0) : 0;
-    cash += eb + inj - dr;
-    rows.push({ m: mo.m, period: mo.period, ca, charges: ch, ebitda: eb, draw: dr, injection: inj, treso: cash });
-  });
-  return rows;
-}
-
-function financeKpis(rows: FinRow[]) {
-  const caTot = rows.reduce((s, r) => s + r.ca, 0);
-  const chTot = rows.reduce((s, r) => s + r.charges, 0);
-  const drawTot = rows.reduce((s, r) => s + r.draw, 0);
-  const be = rows.find((r) => r.ebitda >= 0);
-  return {
-    caTot, chTot, drawTot, ebTot: caTot - chTot,
-    tresoMin: Math.min(...rows.map((r) => r.treso)),
-    tresoMax: Math.max(...rows.map((r) => r.treso)),
-    be: be ? `${be.m} · ${be.period}` : "—",
-  };
-}
 
 // ── CSV (export / import) — port v1 ───────────────────────────────────────────
 function csvField(v: unknown): string {

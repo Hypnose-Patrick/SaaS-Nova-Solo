@@ -5,6 +5,14 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { askAgent } from "@/lib/ai";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { loadFinanceModel, buildBudgetMarkdown } from "@/lib/finance";
+
+// Les 9 blocs du Business Model Canvas (mêmes clés que la page BMC).
+const BMC_LABELS: Record<string, string> = {
+  segments: "Segments clients", valeur: "Proposition de valeur", canaux: "Canaux",
+  relations: "Relations clients", revenus: "Flux de revenus", ressources: "Ressources clés",
+  activites: "Activités clés", partenaires: "Partenaires clés", couts: "Structure de coûts",
+};
 
 const SECTIONS = [
   {
@@ -57,11 +65,18 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function buildAiPrompt(key: SectionKey, sections: Record<string, string>, profile: ReturnType<typeof useUserStore.getState>["profile"]): string {
+function buildAiPrompt(
+  key: SectionKey,
+  sections: Record<string, string>,
+  bmcSummary: string,
+  profile: ReturnType<typeof useUserStore.getState>["profile"],
+): string {
   const ctx = [
     profile?.name     ? `Prénom : ${profile.name}` : null,
     profile?.domaine  ? `Domaine : ${profile.domaine}` : null,
     profile?.situation ? `Situation : ${profile.situation}` : null,
+    [profile?.ville, profile?.canton].filter(Boolean).length ? `Localisation : ${[profile?.ville, profile?.canton].filter(Boolean).join(" ")}` : null,
+    bmcSummary ? `Business Model Canvas de l'utilisateur :\n${bmcSummary}` : null,
     sections.bp_executive  ? `Résumé exécutif : ${sections.bp_executive}` : null,
     sections.bp_offer      ? `Offre : ${sections.bp_offer}` : null,
     sections.bp_market     ? `Marché : ${sections.bp_market}` : null,
@@ -71,7 +86,13 @@ function buildAiPrompt(key: SectionKey, sections: Record<string, string>, profil
   ].filter(Boolean).join("\n");
 
   const sec = SECTIONS.find((s) => s.key === key)!;
-  return `Tu es Hermès-Stratège, expert en plans d'affaires pour indépendants suisse-romands.\n\nContexte disponible :\n${ctx || "(aucun)"}\n\nRédige la section "${sec.title}" (${sec.hint}) en 150–250 mots, ton professionnel mais humain, orienté action et chiffres concrets. Adapte au contexte si disponible, sinon propose un modèle pertinent. Pas de titre, pas de preamble — commence directement par le contenu.`;
+  return `Tu es Hermès-Stratège, expert en plans d'affaires pour indépendants de Suisse romande.\n\n` +
+    `Contexte disponible :\n${ctx || "(aucun)"}\n\n` +
+    `Rédige la section "${sec.title}" (${sec.hint}) en 200–350 mots, ton professionnel mais humain, orienté action et chiffres concrets. ` +
+    `Appuie-toi sur le Business Model Canvas et les données ci-dessus quand ils sont présents. ` +
+    `Ancre tout dans la réalité suisse romande : AVS ~10 %, TVA 8.1 % (seuil d'assujettissement 100'000 CHF de chiffre d'affaires), prévoyance, dispositif LACI/ORP si pertinent. ` +
+    `N'invente AUCUN chiffre absent du contexte : si une donnée manque, reste qualitatif ou signale-la comme « à compléter ». ` +
+    `Pas de titre, pas de préambule — commence directement par le contenu.`;
 }
 
 export function BusinessPlan() {
@@ -81,6 +102,8 @@ export function BusinessPlan() {
   const [editing, setEditing]   = useState<SectionKey | null>(null);
   const [draft, setDraft]       = useState("");
   const [generating, setGenerating] = useState<SectionKey | null>(null);
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [budgetMsg, setBudgetMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.id) fetchBmc(profile.id);
@@ -92,6 +115,14 @@ export function BusinessPlan() {
 
   function sections(): Record<string, string> {
     return Object.fromEntries(SECTIONS.map((s) => [s.key, getContent(s.key)]));
+  }
+
+  // Résumé des 9 blocs BMC remplis — injecté dans le contexte IA.
+  function bmcSummary(): string {
+    return bmc
+      .filter((b) => BMC_LABELS[b.block_key] && b.content)
+      .map((b) => `- ${BMC_LABELS[b.block_key]} : ${b.content}`)
+      .join("\n");
   }
 
   function startEdit(key: SectionKey) {
@@ -109,13 +140,34 @@ export function BusinessPlan() {
     if (!profile?.id) return;
     setGenerating(key);
     try {
-      const text = await askAgent("strategist", buildAiPrompt(key, sections(), profile));
+      const text = await askAgent("strategist", buildAiPrompt(key, sections(), bmcSummary(), profile));
       await upsertBmcBlock({ profile_id: profile.id, block_key: key, content: text });
     } catch {
       // silently ignore — user can retry
     } finally {
       setGenerating(null);
     }
+  }
+
+  // Écart 3 — génère toutes les sections en parallèle (comme la v1).
+  async function generateAll() {
+    if (!profile?.id || generatingAll) return;
+    setGeneratingAll(true);
+    await Promise.allSettled(SECTIONS.map((s) => generate(s.key)));
+    setGeneratingAll(false);
+  }
+
+  // Écart 1 — insère le budget RÉEL de la page Finances dans la section financière.
+  async function insertBudget() {
+    if (!profile?.id) return;
+    setBudgetMsg(null);
+    const f = loadFinanceModel();
+    if (!f) {
+      setBudgetMsg("Renseignez d'abord votre budget dans la page Finances.");
+      return;
+    }
+    await upsertBmcBlock({ profile_id: profile.id, block_key: "bp_financials", content: buildBudgetMarkdown(f) });
+    setBudgetMsg("Budget réel inséré depuis Finances — complétez le commentaire au besoin.");
   }
 
   const filledCount = SECTIONS.filter((s) => getContent(s.key)).length;
@@ -152,7 +204,10 @@ export function BusinessPlan() {
       `h2{font-size:16px;border-bottom:2px solid #a8842c;padding-bottom:6px;margin:0 0 10px;color:#1a1a1a}` +
       `h2 .num{color:#a8842c;font-weight:800;margin-right:8px}` +
       `.content{white-space:pre-wrap}` +
-      `</style></head><body>${cover}${body}</body></html>`
+      `.disclaimer{margin-top:36px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#888;font-style:italic}` +
+      `</style></head><body>${cover}${body}` +
+      `<div class="disclaimer">Document généré avec l'assistance de l'IA Nova Solo — à valider avec votre fiduciaire ou conseiller avant toute soumission à un prêteur, une banque ou l'ORP.</div>` +
+      `</body></html>`
     );
   }
 
@@ -193,8 +248,9 @@ export function BusinessPlan() {
               transition: "width 0.3s ease",
             }} />
           </div>
+          <Button size="sm" variant="gold" loading={generatingAll} onClick={generateAll}>✦ Tout générer</Button>
           <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportWord}>Word</Button>
-          <Button size="sm" variant="gold" disabled={filledCount === 0} onClick={exportPdf}>Exporter PDF</Button>
+          <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportPdf}>PDF</Button>
         </div>
       </div>
 
@@ -203,8 +259,9 @@ export function BusinessPlan() {
         {SECTIONS.map((section) => {
           const content   = getContent(section.key);
           const isEditing = editing === section.key;
-          const isGen     = generating === section.key;
+          const isGen     = generating === section.key || generatingAll;
           const filled    = Boolean(content);
+          const isFinancial = section.key === "bp_financials";
 
           return (
             <Card glass key={section.key}>
@@ -229,6 +286,16 @@ export function BusinessPlan() {
                 <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
                   {!isEditing && (
                     <>
+                      {isFinancial && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={insertBudget}
+                          style={{ fontSize: "var(--text-xs)", padding: "2px 8px" }}
+                        >
+                          📊 Insérer mon budget
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -304,6 +371,12 @@ export function BusinessPlan() {
                     </p>
                   )}
                 </div>
+              )}
+
+              {isFinancial && budgetMsg && (
+                <p style={{ margin: "var(--space-3) 0 0", fontSize: "var(--text-xs)", color: "var(--color-text-secondary)" }}>
+                  {budgetMsg}
+                </p>
               )}
             </Card>
           );
