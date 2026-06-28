@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
+import { callAIStream } from "@/lib/ai";
 import { loadLocal, saveLocal } from "@/lib/local";
 
 // ── CDN Audio (Bunny.net) ──────────────────────────────────────────────────────
@@ -73,7 +74,7 @@ Parle en français clair et chaleureux. Tutoie le joueur. Sois encourageant mais
 Pour chaque coup du joueur, réponds TOUJOURS avec cette structure exacte :
 
 **Coup reçu**
-[Brève appréciation du coup en 1-2 phrases]
+[Brève appréciation du coup en 1-2 phrases${level === "expert" ? " + estimation de l'impact territorial (ex: +2 pts Noir)" : ""}]
 
 **Question d'intention**
 [Une question sur ce qu'il visait avec ce coup]
@@ -87,7 +88,7 @@ Pour chaque coup du joueur, réponds TOUJOURS avec cette structure exacte :
 **Question de réflexion**
 [Une question orientant le prochain coup]
 
-Maximum 5 paragraphes par réponse. Ne jamais faire de pavé de texte.
+Maximum 5 paragraphes par réponse. Ne jamais faire de pavé de texte.${level === "debutant" ? "\nLONGUEUR : 2-3 phrases maximum par section, vocabulaire du quotidien, pas de termes japonais." : ""}
 </structure_per_turn>
 
 <levels>
@@ -635,6 +636,8 @@ export function GobanCoach() {
   // UI
   const [bubbles, setBubbles] = useState<BubbleData[]>([]);
   const [thinking, setThinking] = useState(false);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const streamAccRef = useRef<string>("");
   const [userInput, setUserInput] = useState("");
   const bubblesRef = useRef<HTMLDivElement>(null);
 
@@ -687,25 +690,48 @@ export function GobanCoach() {
   }, [bubbles, thinking]);
 
   // ── AI ────────────────────────────────────────────────────────────────────
-  const callVictor = useCallback(async (userMessage: string): Promise<string | null> => {
-    const sysPart = buildSystemPrompt(level, size, career);
-    const history = convHistory.slice(-10);
-    const fullPrompt = `${sysPart}\n\n---\n${history.map((m) => `${m.role === "user" ? "JOUEUR" : "VICTOR"}: ${m.content}`).join("\n")}\nJOUEUR: ${userMessage}\nVICTOR:`;
-    const resp = await gen("strategist", fullPrompt, { model: MODEL_REASONING });
-    if (resp) {
-      setConvHistory((h) => [...h, { role: "user", content: userMessage }, { role: "assistant", content: resp }]);
-    }
-    return resp;
-  }, [level, size, career, convHistory, gen]);
-
   const addBubble = useCallback((who: BubbleData["who"], text: string) => {
     setBubbles((b) => [...b, { who, text, id: Date.now() + Math.random() }]);
   }, []);
 
+  const callVictor = useCallback(async (userMessage: string): Promise<string | null> => {
+    const sysPart = buildSystemPrompt(level, size, career);
+    const history = convHistory.slice(-10);
+    const fullPrompt = `${sysPart}\n\n---\n${history.map((m) => `${m.role === "user" ? "JOUEUR" : "VICTOR"}: ${m.content}`).join("\n")}\nJOUEUR: ${userMessage}\nVICTOR:`;
+
+    streamAccRef.current = "";
+    setStreamingText("");
+    setThinking(false);
+
+    let result = "";
+    try {
+      result = await callAIStream(
+        { agent: "strategist", messages: [{ role: "user", content: fullPrompt }], model: MODEL_REASONING, stream: true },
+        (accumulated) => {
+          streamAccRef.current = accumulated;
+          setStreamingText(accumulated);
+        },
+      );
+    } catch { /* ignore — fallback below */ }
+
+    // Si le streaming a échoué ou retourné vide (Edge Function non déployée en SSE),
+    // on bascule sur l'appel non-streaming classique.
+    if (!result) {
+      setStreamingText(null);
+      const resp = await gen("strategist", fullPrompt, { model: MODEL_REASONING });
+      result = resp ?? "";
+    }
+
+    setStreamingText(null);
+    if (result) {
+      setConvHistory((h) => [...h, { role: "user", content: userMessage }, { role: "assistant", content: result }]);
+    }
+    return result || null;
+  }, [level, size, career, convHistory, gen]);
+
   const displayVictor = useCallback(async (prompt: string) => {
     setThinking(true);
     const text = await callVictor(prompt);
-    setThinking(false);
     const isFallback = !text;
     addBubble("victor", text ?? FALLBACKS[level][Math.floor(Math.random() * FALLBACKS[level].length)]);
     if (isFallback) playFallbackAudio();
@@ -817,6 +843,13 @@ export function GobanCoach() {
     const recent = moveHistory.slice(-5).map((m) => `${m.num}.${m.color === "B" ? "⚫" : "⚪"}${m.label}`).join(" ");
     const sc = estimateScore(board, captures);
     await displayVictor(`Le joueur demande une analyse de position. Coup n°${moveNum}, goban ${size}×${size}. Derniers coups : ${recent || "aucun"}. Score estimé — Noir: ${sc.B}, Blanc: ${sc.W}. Fais une brève analyse Socratique de 3-5 coups clés.`);
+  }
+
+  async function askHint() {
+    const who = turn === "B" ? "Noir" : "Blanc";
+    const sc = estimateScore(board, captures);
+    const recent = moveHistory.slice(-3).map((m) => `${m.num}.${m.color === "B" ? "⚫" : "⚪"}${m.label}`).join(" ");
+    await displayVictor(`${who} demande un indice avant de jouer (coup n°${moveNum + 1}, goban ${size}×${size}). Score estimé : Noir ${sc.B} / Blanc ${sc.W}. Derniers coups : ${recent || "aucun"}. Donne un indice INDIRECT sans révéler le coup exact : une zone à explorer, une question stratégique, ou une direction. Ne joue PAS le coup.`);
   }
 
   async function endGame() {
@@ -1175,7 +1208,8 @@ export function GobanCoach() {
               {[
                 { label: "⏭ Passer", onClick: passTurn },
                 { label: "↩ Annuler", onClick: undoMove },
-                { label: "🔍 Analyse", onClick: askReview, disabled: loading },
+                { label: "💡 Indice", onClick: askHint, disabled: loading || streamingText !== null },
+                { label: "🔍 Analyse", onClick: askReview, disabled: loading || streamingText !== null },
                 { label: "📖 Règles", onClick: () => setScreen("rules") },
               ].map((btn) => (
                 <button key={btn.label} onClick={btn.onClick} disabled={btn.disabled}
@@ -1224,6 +1258,9 @@ export function GobanCoach() {
             {/* Bubbles */}
             <div ref={bubblesRef} style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
               {bubbles.map((b) => <VictorBubble key={b.id} bubble={b} />)}
+              {streamingText !== null && (
+                <VictorBubble bubble={{ who: "victor", text: streamingText || "…", id: -1 }} />
+              )}
               {thinking && <ThinkingDots />}
             </div>
 

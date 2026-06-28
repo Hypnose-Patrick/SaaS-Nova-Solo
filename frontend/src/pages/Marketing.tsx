@@ -6,8 +6,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
-import { promptMarketingPost, promptEditorialIdeas, promptPortfolioCase, promptMarketingInsights } from "@/lib/lancementPrompts";
+import { promptMarketingPost, promptEditorialIdeas, promptPortfolioCase, promptMarketingInsights, promptSiteVitrine } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal, parseLooseJson } from "@/lib/local";
+import { supabase } from "@/lib/supabase";
 
 const FORMATS = [
   "Post témoignage (parcours / reconversion)",
@@ -91,6 +92,54 @@ export function Marketing() {
 
   // Portfolio
   const [caseStudy, setCaseStudy] = useState<string | null>(() => loadLocal<string | null>("ns_mkt_case", null));
+
+  // Site Vitrine
+  const siteGen = useAiGen();
+  const SITE_SECTIONS = ["services", "apropos", "temoignage", "contact"] as const;
+  type SiteSection = (typeof SITE_SECTIONS)[number];
+  const SITE_SECTION_LABEL: Record<SiteSection, string> = { services: "Services", apropos: "À propos", temoignage: "Témoignage", contact: "Contact" };
+  const [siteCouleur, setSiteCouleur] = useState<string>(() => loadLocal("ns_site_couleur", profile?.accent_color ?? "#C5A572"));
+  const [siteAccroche, setSiteAccroche] = useState<string>(() => loadLocal("ns_site_accroche", profile?.slogan ?? ""));
+  const [siteOffres, setSiteOffres] = useState<string>(() => loadLocal("ns_site_offres", ""));
+  const [siteTemoignage, setSiteTemoignage] = useState<string>(() => loadLocal("ns_site_temoignage", ""));
+  const [siteSections, setSiteSections] = useState<SiteSection[]>(() => loadLocal<SiteSection[]>("ns_site_sections", ["services", "apropos", "contact"]));
+  const [siteHtml, setSiteHtml] = useState<string | null>(() => loadLocal<string | null>("ns_site_html", null));
+
+  function toggleSiteSection(s: SiteSection) {
+    setSiteSections((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+  }
+
+  async function generateSite() {
+    saveLocal("ns_site_couleur", siteCouleur);
+    saveLocal("ns_site_accroche", siteAccroche);
+    saveLocal("ns_site_offres", siteOffres);
+    saveLocal("ns_site_temoignage", siteTemoignage);
+    saveLocal("ns_site_sections", siteSections);
+    const r = await siteGen.gen("communicant", promptSiteVitrine(profile, {
+      couleur: siteCouleur,
+      accroche: siteAccroche,
+      offres: siteOffres,
+      temoignage: siteTemoignage,
+      sections: siteSections,
+    }));
+    if (r) {
+      // Extract HTML — strip markdown code fences if the model adds them
+      const clean = r.replace(/^```html?\n?/i, "").replace(/\n?```$/, "").trim();
+      setSiteHtml(clean);
+      saveLocal("ns_site_html", clean);
+    }
+  }
+
+  function downloadSite() {
+    if (!siteHtml) return;
+    const blob = new Blob([siteHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mon-site-vitrine.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // Insights IA + audit de présence en ligne
   const [insights, setInsights] = useState<Insight[]>(() => loadLocal<Insight[]>("ns_mkt_insights", []));
@@ -310,6 +359,112 @@ export function Marketing() {
           error={portfolio.error}
           emptyHint="La preuve sociale est le carburant du coaching : situation AVANT → travail réalisé → résultat APRÈS chiffré → témoignage."
         />
+      </Card>
+
+      {/* Site Vitrine une page */}
+      <Card glass title="Mon Site Vitrine" action={
+        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          {siteHtml && <Button size="sm" variant="ghost" onClick={downloadSite}>⬇ Télécharger HTML</Button>}
+          <Button size="sm" variant="gold" loading={siteGen.loading} onClick={generateSite} disabled={!siteOffres.trim()}>
+            {siteHtml ? "Régénérer" : "Générer mon site"}
+          </Button>
+        </div>
+      }>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginBottom: "var(--space-4)" }}>
+          Génère une page HTML autonome alimentée par vos données de profil. Téléchargez-la ou hébergez-la sur votre propre serveur.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+          <div>
+            <label style={LBL}>Couleur principale</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+              <input
+                type="color"
+                value={siteCouleur}
+                onChange={(e) => setSiteCouleur(e.target.value)}
+                style={{ width: 40, height: 36, padding: 2, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", background: "transparent" }}
+              />
+              <input
+                value={siteCouleur}
+                onChange={(e) => setSiteCouleur(e.target.value)}
+                placeholder="#C5A572"
+                style={{ ...FIELD, marginTop: 0, flex: 1 }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={LBL}>Accroche hero</label>
+            <input value={siteAccroche} onChange={(e) => setSiteAccroche(e.target.value)} placeholder={profile?.slogan ?? "Votre tagline…"} style={{ ...FIELD, marginTop: "var(--space-2)" }} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: "var(--space-4)" }}>
+          <label style={LBL}>Offres / services <span style={{ color: "var(--color-danger)" }}>*</span></label>
+          <textarea
+            value={siteOffres}
+            onChange={(e) => setSiteOffres(e.target.value)}
+            placeholder="Ex : Coaching de reconversion (3 mois, CHF 3 500), Bilan de compétences (4 séances, CHF 890), Atelier collectif transitions professionnelles…"
+            style={{ ...TA, minHeight: 80 }}
+          />
+        </div>
+
+        <div style={{ marginTop: "var(--space-4)" }}>
+          <label style={LBL}>Sections à inclure</label>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginTop: "var(--space-2)" }}>
+            {SITE_SECTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => toggleSiteSection(s)}
+                style={{
+                  padding: "6px 12px", borderRadius: 6, border: "1px solid",
+                  borderColor: siteSections.includes(s) ? "var(--color-gold)" : "rgba(255,255,255,0.1)",
+                  background: siteSections.includes(s) ? "rgba(197,165,114,0.15)" : "rgba(255,255,255,0.04)",
+                  color: siteSections.includes(s) ? "var(--color-gold)" : "var(--color-text-secondary)",
+                  fontSize: "var(--text-xs)", cursor: "pointer", transition: "all 0.15s",
+                }}
+              >{SITE_SECTION_LABEL[s]}</button>
+            ))}
+          </div>
+        </div>
+
+        {siteSections.includes("temoignage") && (
+          <div style={{ marginTop: "var(--space-4)" }}>
+            <label style={LBL}>Témoignage client</label>
+            <textarea
+              value={siteTemoignage}
+              onChange={(e) => setSiteTemoignage(e.target.value)}
+              placeholder="« Grâce à Patrick, j'ai décroché un poste en 6 semaines. Son approche m'a redonné confiance. » — Marie D., responsable RH reconvertie"
+              style={{ ...TA, minHeight: 60 }}
+            />
+          </div>
+        )}
+
+        {siteGen.error && <p style={{ fontSize: "var(--text-sm)", color: "var(--color-danger)", marginTop: "var(--space-3)" }}>{siteGen.error}</p>}
+
+        {siteGen.loading && (
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: "var(--space-4)" }}>
+            ✦ Génération de votre site en cours…
+          </p>
+        )}
+
+        {siteHtml && !siteGen.loading && (
+          <div style={{ marginTop: "var(--space-4)" }}>
+            <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "var(--tracking-wider)", marginBottom: "var(--space-2)" }}>
+              Aperçu
+            </div>
+            <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, overflow: "hidden" }}>
+              <iframe
+                srcDoc={siteHtml}
+                title="Aperçu site vitrine"
+                style={{ width: "100%", height: 480, border: 0, display: "block" }}
+                sandbox="allow-same-origin"
+              />
+            </div>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: "var(--space-2)" }}>
+              Téléchargez le fichier HTML et hébergez-le sur votre propre domaine, ou partagez-le directement.
+            </p>
+          </div>
+        )}
       </Card>
     </div>
   );

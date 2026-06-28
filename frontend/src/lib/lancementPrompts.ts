@@ -156,6 +156,64 @@ export function promptPortfolioCase(p: Profile | null): string {
   return `${profileContext(p)}\n\nTu es un expert en preuve sociale et copywriting pour indépendants en Suisse romande. Génère une étude de cas (portfolio) professionnelle et crédible pour ${p?.name ?? "le prestataire"} (${p?.domaine ?? "coaching"}). Structure obligatoire : (1) Situation AVANT d'un client fictif mais plausible en Suisse romande, (2) Travail réalisé en 4 étapes type, (3) Résultat APRÈS quantifié (poste obtenu, +X CHF, délai, clarté), (4) Témoignage client authentique entre guillemets avec prénom et secteur. Langue : fr-CH. Ton : authentique, sobre, sans superlatifs creux. Précise discrètement qu'il s'agit d'un exemple illustratif à remplacer par un cas réel.`;
 }
 
+// ── Générateur Site Vitrine une page (Communicant) ──
+export interface SiteVitrineConfig {
+  couleur: string;       // ex: "#C5A572"
+  accroche: string;      // tagline / hero subtitle
+  offres: string;        // description des services/offres
+  temoignage: string;    // témoignage client (optionnel)
+  sections: string[];    // sous-ensemble de ["services","apropos","temoignage","contact"]
+}
+
+export function promptSiteVitrine(p: Profile | null, cfg: SiteVitrineConfig): string {
+  const nom = p?.brand_name ?? p?.name ?? "Votre nom";
+  const email = p?.contact_email ?? p?.email ?? "contact@domaine.ch";
+  const tel = p?.contact_tel ?? "";
+  const adresse = p?.contact_adresse ?? "";
+  const accroche = cfg.accroche || p?.slogan || "Coach & expert en transition de carrière";
+  const couleur = cfg.couleur || p?.accent_color || "#C5A572";
+  const sections = cfg.sections.length ? cfg.sections : ["services", "apropos", "contact"];
+  const hasTemoignage = sections.includes("temoignage") && cfg.temoignage.trim();
+
+  return `Tu es un expert en développement web et design minimaliste pour indépendants en Suisse romande.
+Génère une PAGE HTML COMPLÈTE ET AUTONOME (tout en inline CSS dans <style>, aucune dépendance externe, aucune bibliothèque JS).
+
+IDENTITÉ :
+Nom / marque : ${nom}
+Accroche : ${accroche}
+Domaine : ${p?.domaine ?? "Coaching & accompagnement"}
+Couleur principale : ${couleur}
+Email : ${email}${tel ? `\nTéléphone : ${tel}` : ""}${adresse ? `\nAdresse : ${adresse}` : ""}
+${profileContext(p)}
+
+OFFRES / SERVICES :
+${cfg.offres || "À renseigner dans le profil"}
+
+${hasTemoignage ? `TÉMOIGNAGE CLIENT :\n${cfg.temoignage}` : ""}
+
+SECTIONS À INCLURE (dans cet ordre) :
+1. Hero (toujours inclus) — nom, accroche, CTA "Prendre contact"
+${sections.includes("services") ? "2. Services — liste des offres avec emoji" : ""}
+${sections.includes("apropos") ? "3. À propos — courte présentation humaine" : ""}
+${hasTemoignage ? "4. Témoignage — citation avec prénom et contexte" : ""}
+${sections.includes("contact") ? "5. Contact — email, tel si dispo, bouton mailto" : ""}
+6. Footer (toujours inclus) — nom + © 2025
+
+EXIGENCES TECHNIQUES :
+- Balises complètes : <!DOCTYPE html>, <html lang="fr">, <head> avec charset UTF-8, viewport, <title>, <meta name="description">, meta OG
+- Tout le CSS dans une seule balise <style> dans le <head>
+- Design épuré, professionnel, mobile-first : @media (max-width: 600px) pour les colonnes
+- Navigation sticky avec ancres vers chaque section (#services, #apropos, etc.)
+- Police système : -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif
+- Palette : couleur principale ${couleur} pour les accents, fond blanc ou #fafafa, texte #1a1a1a
+- Boutons CTA en ${couleur} avec texte blanc, border-radius 6px, padding 12px 24px
+- Pas de JavaScript externe — scroll smooth via CSS : html { scroll-behavior: smooth; }
+- Section hero : fond dégradé subtil de blanc vers une teinte très légère de ${couleur}15
+- Responsive : sections en colonne sur mobile
+
+IMPORTANT : Réponds UNIQUEMENT avec le code HTML complet, sans texte autour, sans bloc de code markdown.`;
+}
+
 // ── Contrat de prestation (Juriste) ──
 export function promptContrat(p: Profile | null, type: string, duree: string): string {
   return `${profileContext(p)}\n\nTu es un juriste spécialisé droit suisse des obligations (CO). Rédige un contrat type de prestation de services pour un indépendant en Suisse romande. Type : ${type}. Durée : ${duree}. Contenu obligatoire : identité des parties, description de la prestation, tarifs et modalités de paiement, conditions de résiliation (30 jours), clause de confidentialité, propriété intellectuelle, limitation de responsabilité, mention nLPD, for juridique du canton, droit suisse applicable. Format : texte structuré avec articles numérotés. Ajoute un disclaimer : ce document est un modèle indicatif à faire valider par un avocat.`;

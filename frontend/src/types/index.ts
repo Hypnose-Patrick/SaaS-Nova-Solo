@@ -135,6 +135,7 @@ export interface AiProxyRequest {
   context?: unknown;
   provider?: "openrouter" | "anthropic";
   model?: string;
+  stream?: boolean;
 }
 
 export interface AiProxyResponse {

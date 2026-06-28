@@ -30,6 +30,7 @@ interface AiRequest {
   context?: unknown;
   provider?: "openrouter" | "anthropic";
   model?: string;
+  stream?: boolean;
 }
 
 // Listes blanches : le client ne peut demander qu'un modèle autorisé.
@@ -84,6 +85,43 @@ async function callOpenRouter(
   }
   const data = await res.json();
   return data?.choices?.[0]?.message?.content ?? "";
+}
+
+async function callOpenRouterStream(
+  model: string,
+  system: string,
+  messages: ChatMessage[],
+): Promise<Response> {
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) throw new Error("CONFIG: OPENROUTER_API_KEY absente");
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "X-Title": "Nova Solo",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: 1500,
+      temperature: 0.7,
+      stream: true,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`PROVIDER openrouter ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  return new Response(res.body, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
 }
 
 async function callAnthropic(
@@ -260,6 +298,11 @@ Deno.serve(async (req: Request) => {
         agent: body.agent ?? "nova",
         byok: true,
       });
+    }
+
+    // Streaming SSE — uniquement OpenRouter (Anthropic direct non supporté en streaming ici)
+    if (body.stream && provider === "openrouter") {
+      return await callOpenRouterStream(model, system, safeMessages);
     }
 
     const content = provider === "anthropic"

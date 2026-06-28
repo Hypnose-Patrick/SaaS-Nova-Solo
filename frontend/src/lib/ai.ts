@@ -28,6 +28,49 @@ export async function callAI(payload: AiProxyRequest): Promise<AiProxyResponse> 
   return res.json() as Promise<AiProxyResponse>;
 }
 
+// Streaming SSE : appelle ai-proxy avec stream:true et émet les tokens via onChunk.
+// Retourne le texte complet accumulé.
+export async function callAIStream(
+  payload: import("@/types").AiProxyRequest & { stream: true },
+  onChunk: (accumulated: string) => void,
+): Promise<string> {
+  const authHeader = await getBearerHeader();
+  const res = await fetch(PROXY_URL, {
+    method: "POST",
+    headers: { ...authHeader, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? `Erreur proxy IA ${res.status}`);
+  }
+  if (!res.body) throw new Error("Pas de stream dans la réponse");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6).trim();
+      if (data === "[DONE]") return accumulated;
+      try {
+        const obj = JSON.parse(data);
+        const delta: string = obj?.choices?.[0]?.delta?.content ?? "";
+        if (delta) { accumulated += delta; onChunk(accumulated); }
+      } catch { /* ignore malformed SSE lines */ }
+    }
+  }
+  return accumulated;
+}
+
 // Raccourci pour une question rapide à un agent.
 export async function askAgent(
   agent: AgentKey,
