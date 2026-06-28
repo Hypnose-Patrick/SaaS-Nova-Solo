@@ -91,11 +91,12 @@ export function AiEngineCard() {
 
   return (
     <Card glass>
-      <p style={SECTION_TITLE}>Moteur IA</p>
+      <p style={SECTION_TITLE}>Moteur IA — votre édition</p>
       <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0", lineHeight: "var(--leading-normal)" }}>
-        Par défaut, l'IA passe par notre proxy managé (rien à configurer). En
-        « Apporte ta clé », les appels partent vers <strong>ton</strong> fournisseur avec
-        <strong> ta</strong> clé. Ta clé est chiffrée côté serveur et n'est jamais réaffichée.
+        Deux moteurs, deux éditions. En <strong>Tout-compris (Pro)</strong>, l'IA est incluse —
+        rien à configurer, vous n'y pensez plus. En <strong>Autonome (Solo)</strong>, vous branchez
+        votre propre fournisseur : c'est vous qui le réglez directement (en plus de l'abonnement),
+        et votre clé est chiffrée côté serveur, jamais réaffichée.
       </p>
 
       {loading ? (
@@ -105,13 +106,17 @@ export function AiEngineCard() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <label style={LABEL_STYLE}>Mode</label>
             <select value={mode} onChange={(e) => setMode(e.target.value as AiMode)} style={SELECT_STYLE}>
-              <option value="managed">Managé — proxy inclus (recommandé)</option>
-              <option value="byok_remote">Apporte ta clé — ton fournisseur distant</option>
+              <option value="managed">Tout-compris (Pro) — IA incluse</option>
+              <option value="byok_remote">Autonome (Solo) — votre clé, votre fournisseur</option>
             </select>
           </div>
 
           {isByok && (
             <>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--color-gold-muted)", margin: 0, lineHeight: "var(--leading-normal)" }}>
+                Édition Autonome : les appels IA sont facturés par <strong>votre</strong> fournisseur,
+                pas par Nova Solo. Vous gardez la main sur votre quota et vos modèles.
+              </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <label style={LABEL_STYLE}>Fournisseur</label>
                 <select value={provider} onChange={(e) => setProvider(e.target.value as Provider)} style={SELECT_STYLE}>
