@@ -19,6 +19,7 @@ const SECTIONS: { title: string; items: { to: string; label: string; icon: strin
       { to: "/business-plan", label: "Business Plan", icon: "◻" },
       { to: "/symbolique", label: "Vision symbolique", icon: "✦" },
       { to: "/pricing", label: "Offre & Pricing", icon: "◇" },
+      { to: "/goban-coach", label: "Goban Coach", icon: "⊙" },
     ],
   },
   {
