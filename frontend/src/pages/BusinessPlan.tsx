@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { askAgent } from "@/lib/ai";
+import { printHtml, downloadWord } from "@/lib/exportDoc";
 
 const SECTIONS = [
   {
@@ -155,24 +156,10 @@ export function BusinessPlan() {
     );
   }
 
-  function exportPdf() {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(buildDocHtml());
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 400);
-  }
+  function exportPdf() { printHtml(buildDocHtml()); }
 
   function exportWord() {
-    const base = (profile?.brand_name || profile?.name || "business-plan")
-      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const url = URL.createObjectURL(new Blob(["﻿" + buildDocHtml()], { type: "application/msword" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `business-plan-${base || "nova"}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadWord(`business-plan-${profile?.brand_name || profile?.name || "nova"}`, buildDocHtml());
   }
 
   return (

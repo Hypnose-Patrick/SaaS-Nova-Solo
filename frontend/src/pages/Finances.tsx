@@ -234,6 +234,20 @@ export function Finances() {
   const opexSarlTot = fin.opexSarl.reduce((s, l) => s + (Number(l.montant) || 0), 0);
   const financementTot = fin.financement.reduce((s, l) => s + (Number(l.montant) || 0), 0);
 
+  // Charges sociales : 100 % dérivées des données de CET utilisateur — jamais
+  // de chiffres en dur. AVS ≈ 10 % du revenu net (EBITDA du budget) ; RC et LAMal
+  // repris de SES postes OPEX RI saisis (×12). 0 ou non saisi → tiret.
+  const opexRIMonthly = (rx: RegExp) => fin.opexRI.find((l) => rx.test(l.poste))?.montant || 0;
+  const revNetAnnuel = Math.max(0, k.ebTot);
+  const annualOrDash = (n: number) => (n > 0 ? `${chf(n)} CHF` : "—");
+  const socialRows: [string, string, string][] = [
+    ["AVS/AI/APG", "~10% du revenu net", annualOrDash(Math.round(revNetAnnuel * 0.1))],
+    ["LPP (2e pilier)", "Facultatif (indépendant)", "—"],
+    ["Pilier 3a (déductible)", "Max 7'056 CHF/an", "optionnel"],
+    ["RC professionnelle", "Selon contrat", annualOrDash((opexRIMonthly(/\brc\b|responsabilit/i)) * 12)],
+    ["LAMal (caisse maladie)", "Selon votre caisse", annualOrDash((opexRIMonthly(/lamal|maladie/i)) * 12)],
+  ];
+
   // ── Actions ──
   function setScenario(s: "A" | "B") { update((f) => { f.scenario = s; }); }
   function editMonth(i: number, field: "ca" | "charges" | "draw", v: number) {
@@ -269,48 +283,125 @@ export function Finances() {
     } catch { alert("Export impossible — le navigateur a bloqué le téléchargement."); }
   }
 
-  function importCsv(input: HTMLInputElement) {
-    const file = input.files?.[0]; if (!file) return;
+  // Applique un résultat d'import au modèle et notifie l'utilisateur.
+  function applyImport(res: { next: FinModel; applied: string[] }, source: string) {
+    if (res.applied.length) {
+      saveLocal(FIN_KEY, res.next); setFin(res.next);
+      alert(`Budget importé (${source}) : ${res.applied.join(" · ")} mis à jour.`);
+    } else {
+      alert("Rien à importer. Le fichier doit comporter des colonnes reconnaissables (Mois / CA / Charges), une ligne par mois — ou exporte d'abord un modèle CSV pour retrouver le format.");
+    }
+  }
+
+  // Format « app » (CSV exporté par Nova : sections + M1..M12 + postes OPEX).
+  function parseBudgetCsv(text: string): { next: FinModel; applied: string[] } {
+    const lines = text.replace(/^﻿/, "").split(/\r?\n/);
+    const hdr = lines.find((l) => /(^|;|,)\s*Mois\b/i.test(l) || /Poste\s*[;,]\s*Montant/i.test(l)) || lines[0] || "";
+    const sep = hdr.split(";").length >= hdr.split(",").length ? ";" : ",";
+    let section = "", nPrev = 0; const riNew: OpexLine[] = [], sarlNew: OpexLine[] = [];
+    const next: FinModel = JSON.parse(JSON.stringify(fin));
+    const by: Record<string, FinMonth> = {};
+    next.scenarios[next.scenario].months.forEach((m) => { by[m.m] = m; });
+    lines.forEach((l) => {
+      if (!l.trim()) return;
+      if (/budget\s+pr[ée]visionnel/i.test(l)) { section = "prev"; return; }
+      if (/exploitation.*(raison\s+individuelle|\bRI\b)/i.test(l)) { section = "opexRI"; return; }
+      if (/exploitation.*s[aà]rl/i.test(l)) { section = "opexSarl"; return; }
+      const c = csvSplit(l, sep); if (!c.length) return;
+      const a = (c[0] || "").trim();
+      if (/^mois$/i.test(a) || /^poste$/i.test(a)) return;
+      const code = a.toUpperCase();
+      if (/^M([1-9]|1[0-2])$/.test(code) && by[code]) {
+        const ca = csvNum(c[2]), ch = csvNum(c[3]), dr = csvNum(c[4]);
+        if (ca != null) by[code].ca = ca; if (ch != null) by[code].charges = ch; if (dr != null) by[code].draw = dr;
+        nPrev++; return;
+      }
+      if (section === "opexRI" || section === "opexSarl") {
+        const montant = csvNum(c[1]);
+        if (a && montant != null && !/^total/i.test(a)) (section === "opexRI" ? riNew : sarlNew).push({ poste: a, montant });
+      }
+    });
+    const applied: string[] = [];
+    if (nPrev > 0) applied.push(`${nPrev} mois`);
+    if (riNew.length) { next.opexRI = riNew; applied.push(`${riNew.length} postes RI`); }
+    if (sarlNew.length) { next.opexSarl = sarlNew; applied.push(`${sarlNew.length} postes Sàrl`); }
+    return { next, applied };
+  }
+
+  // Budget Excel « libre » : détecte les colonnes Mois / CA / Charges / Prélèvements
+  // par leur en-tête, puis remplit les mois dans l'ordre (1 ligne = 1 mois).
+  function parseBudgetMatrix(rows: unknown[][]): { next: FinModel; applied: string[] } {
+    const next: FinModel = JSON.parse(JSON.stringify(fin));
+    const months = next.scenarios[next.scenario].months;
+    const norm = (c: unknown) => String(c == null ? "" : c).trim();
+    const numOf = (v: unknown): number | null => {
+      if (typeof v === "number") return isFinite(v) ? Math.round(v) : null;
+      return csvNum(String(v == null ? "" : v).replace(/[^\d.,'\s−-]/g, ""));
+    };
+    const RX_CA = /\bca\b|chiffre|revenu|produit|recette|vente|sales|income|entr[ée]e/i;
+    const RX_CH = /charge|d[ée]pense|co[uû]t|frais|sortie|expense/i;
+    const RX_PER = /mois|month|p[ée]riode|date/i;
+    const RX_DR = /pr[ée]l[èe]v|salaire|r[ée]mun|draw/i;
+    let hi = -1, cCA = -1, cCH = -1, cDR = -1, cPER = -1;
+    for (let r = 0; r < Math.min(rows.length, 15); r++) {
+      const row = rows[r] || []; let ca = -1, ch = -1, dr = -1, per = -1;
+      row.forEach((cell, i) => {
+        const t = norm(cell);
+        if (ca < 0 && RX_CA.test(t)) ca = i;
+        if (ch < 0 && RX_CH.test(t)) ch = i;
+        if (dr < 0 && RX_DR.test(t)) dr = i;
+        if (per < 0 && RX_PER.test(t)) per = i;
+      });
+      if (ca >= 0 || ch >= 0) { hi = r; cCA = ca; cCH = ch; cDR = dr; cPER = per; break; }
+    }
+    if (hi < 0 || (cCA < 0 && cCH < 0)) return { next, applied: [] };
+    let n = 0;
+    for (let r = hi + 1; r < rows.length && n < months.length; r++) {
+      const row = rows[r] || [];
+      if (/^(total|somme|moyenne|cumul)/i.test(norm(row[cPER >= 0 ? cPER : 0]))) continue;
+      const ca = cCA >= 0 ? numOf(row[cCA]) : null;
+      const ch = cCH >= 0 ? numOf(row[cCH]) : null;
+      const dr = cDR >= 0 ? numOf(row[cDR]) : null;
+      if (ca == null && ch == null && dr == null) continue;
+      const mo = months[n];
+      if (ca != null) mo.ca = Math.max(0, ca);
+      if (ch != null) mo.charges = Math.abs(ch);
+      if (dr != null) mo.draw = Math.abs(dr);
+      n++;
+    }
+    return { next, applied: n > 0 ? [`${n} mois`] : [] };
+  }
+
+  function importCsvFile(file: File) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const text = String(e.target?.result || "").replace(/^﻿/, "");
-        const lines = text.split(/\r?\n/);
-        const hdr = lines.find((l) => /(^|;|,)\s*Mois\b/i.test(l) || /Poste\s*[;,]\s*Montant/i.test(l)) || lines[0] || "";
-        const sep = hdr.split(";").length >= hdr.split(",").length ? ";" : ",";
-        let section = "", nPrev = 0; const riNew: OpexLine[] = [], sarlNew: OpexLine[] = [];
-        const next: FinModel = JSON.parse(JSON.stringify(fin));
-        const by: Record<string, FinMonth> = {};
-        next.scenarios[next.scenario].months.forEach((m) => { by[m.m] = m; });
-        lines.forEach((l) => {
-          if (!l.trim()) return;
-          if (/budget\s+pr[ée]visionnel/i.test(l)) { section = "prev"; return; }
-          if (/exploitation.*(raison\s+individuelle|\bRI\b)/i.test(l)) { section = "opexRI"; return; }
-          if (/exploitation.*s[aà]rl/i.test(l)) { section = "opexSarl"; return; }
-          const c = csvSplit(l, sep); if (!c.length) return;
-          const a = (c[0] || "").trim();
-          if (/^mois$/i.test(a) || /^poste$/i.test(a)) return;
-          const code = a.toUpperCase();
-          if (/^M([1-9]|1[0-2])$/.test(code) && by[code]) {
-            const ca = csvNum(c[2]), ch = csvNum(c[3]), dr = csvNum(c[4]);
-            if (ca != null) by[code].ca = ca; if (ch != null) by[code].charges = ch; if (dr != null) by[code].draw = dr;
-            nPrev++; return;
-          }
-          if (section === "opexRI" || section === "opexSarl") {
-            const montant = csvNum(c[1]);
-            if (a && montant != null && !/^total/i.test(a)) (section === "opexRI" ? riNew : sarlNew).push({ poste: a, montant });
-          }
-        });
-        const applied: string[] = [];
-        if (nPrev > 0) applied.push(`${nPrev} mois`);
-        if (riNew.length) { next.opexRI = riNew; applied.push(`${riNew.length} postes RI`); }
-        if (sarlNew.length) { next.opexSarl = sarlNew; applied.push(`${sarlNew.length} postes Sàrl`); }
-        if (applied.length) { saveLocal(FIN_KEY, next); setFin(next); alert("Budget importé : " + applied.join(" · ") + " mis à jour."); }
-        else alert("Rien à importer. Exporte d'abord un modèle CSV pour retrouver le format (sections + en-têtes).");
-      } catch { alert("Fichier illisible. Exporte d'abord un modèle CSV pour le format."); }
-      input.value = "";
+      try { applyImport(parseBudgetCsv(String(e.target?.result || "")), file.name); }
+      catch { alert("Fichier illisible. Exporte d'abord un modèle CSV pour le format."); }
     };
     reader.readAsText(file);
+  }
+
+  async function importExcelFile(file: File) {
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { alert("Classeur Excel vide."); return; }
+      // 1) tente le format export de l'app, 2) sinon mappage tolérant par en-têtes.
+      let res = parseBudgetCsv(XLSX.utils.sheet_to_csv(ws, { FS: ";" }));
+      if (!res.applied.length) {
+        const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false }) as unknown[][];
+        res = parseBudgetMatrix(matrix);
+      }
+      applyImport(res, file.name);
+    } catch { alert("Fichier Excel illisible. Vérifie qu'il s'agit d'un .xlsx/.xls valide."); }
+  }
+
+  function importBudget(input: HTMLInputElement) {
+    const file = input.files?.[0]; input.value = "";
+    if (!file) return;
+    if (/\.xlsx?$/i.test(file.name)) importExcelFile(file);
+    else importCsvFile(file);
   }
 
   async function analyseIA() {
@@ -408,7 +499,7 @@ export function Finances() {
             <Button size="sm" variant="gold" loading={aiLoading} onClick={analyseIA}>✦ Analyser (IA)</Button>
             <Button size="sm" variant="ghost" onClick={exportCsv}>⬇ Excel / Sheets</Button>
             <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "var(--radius-xs)", padding: "var(--space-2) var(--space-4)", textTransform: "uppercase", letterSpacing: "var(--tracking-wider)", fontWeight: 500 }}>
-              ⬆ Importer<input type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={(e) => importCsv(e.target)} />
+              ⬆ Importer Excel / CSV<input type="file" accept=".xlsx,.xls,.csv,text/csv" style={{ display: "none" }} onChange={(e) => importBudget(e.target)} />
             </label>
             <Button size="sm" variant="ghost" onClick={resetCanon}>↺ Canonique</Button>
           </div>
@@ -544,17 +635,14 @@ export function Finances() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr><th style={thStyle}>Poste</th><th style={thStyle}>Taux / Montant</th><th style={{ ...thStyle, textAlign: "right" }}>Estim./an</th></tr></thead>
             <tbody>
-              {[
-                ["AVS/AI/APG", "~10% du revenu net", "5'500 CHF"],
-                ["LPP (2e pilier)", "Facultatif", "— CHF"],
-                ["Pilier 3a (déductible)", "Max 7'056 CHF", "7'056 CHF"],
-                ["RC professionnelle", "Forfait", "~600 CHF"],
-                ["LAMal (caisse maladie)", "Individuelle", "~3'600 CHF"],
-              ].map((r) => (
+              {socialRows.map((r) => (
                 <tr key={r[0]}><td style={tdStyle}>{r[0]}</td><td style={tdStyle}>{r[1]}</td><td style={numTd}>{r[2]}</td></tr>
               ))}
             </tbody>
           </table>
+          <p style={{ fontSize: "10px", color: "var(--color-text-muted)", margin: "var(--space-3) 0 0" }}>
+            Estimations dérivées de votre budget (AVS ≈ 10% du revenu net) et de vos postes RC / LAMal saisis dans le budget d'exploitation ci-dessus. « — » tant que rien n'est renseigné.
+          </p>
         </Card>
       </div>
 

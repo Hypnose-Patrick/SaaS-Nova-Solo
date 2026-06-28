@@ -302,6 +302,51 @@ export async function extractReceipt(
   }
 }
 
+// Une transaction extraite d'un relevé bancaire.
+export interface StatementTx {
+  date: string;        // YYYY-MM-DD
+  description: string;
+  amount: number;      // CHF signé : >0 = crédit/recette, <0 = débit/dépense
+}
+
+// Extrait TOUTES les transactions d'un relevé bancaire (texte brut d'un PDF/CSV).
+// Robuste à la diversité des banques (l'agent financier interprète la mise en page).
+// Renvoie un tableau possiblement vide.
+export async function extractStatement(
+  rawText: string,
+  profileContext?: unknown,
+): Promise<StatementTx[]> {
+  const clipped = rawText.length > 14000 ? rawText.slice(0, 14000) : rawText;
+  const raw = await askAgent(
+    "financier",
+    `Tu es un assistant comptable suisse. Voici le TEXTE BRUT d'un relevé bancaire. ` +
+      `Extrais CHAQUE transaction. Pour chacune : date (YYYY-MM-DD), description courte ` +
+      `(libellé / contrepartie), et montant en CHF en NOMBRE SIGNÉ : positif pour un crédit/entrée, ` +
+      `négatif pour un débit/sortie. Ignore les lignes de solde, totaux, en-têtes et reports. ` +
+      `Relevé : """${clipped}""". ` +
+      `Réponds UNIQUEMENT par un tableau JSON strict, sans texte autour : ` +
+      `[{"date":"YYYY-MM-DD","description":"","amount":0}]. Tableau vide [] si aucune transaction.`,
+    profileContext,
+  );
+  try {
+    const js = firstJson(raw);
+    if (!js) return [];
+    const arr = JSON.parse(js) as unknown;
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((o): StatementTx | null => {
+        const r = (o ?? {}) as Record<string, unknown>;
+        const date = typeof r.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null;
+        const amount = typeof r.amount === "number" ? r.amount : Number(r.amount);
+        if (!date || !isFinite(amount) || amount === 0) return null;
+        return { date, description: typeof r.description === "string" ? r.description : "", amount };
+      })
+      .filter((x): x is StatementTx => x !== null);
+  } catch {
+    return [];
+  }
+}
+
 // Résultat d'extraction renvoyé par l'Edge Function ocr-receipt (vision IA).
 export interface ReceiptOcr {
   fournisseur: string | null;

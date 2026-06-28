@@ -6,7 +6,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
-import { extractReceipt, ocrReceipt } from "@/lib/ai";
+import { extractReceipt, ocrReceipt, extractStatement } from "@/lib/ai";
 import type { ComptaEntry } from "@/types";
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -253,6 +253,67 @@ export function Compta() {
     setImporting(false);
   }
 
+  // Extrait le texte d'un PDF côté navigateur (pdfjs, chargé à la demande).
+  async function pdfToText(file: File): Promise<string> {
+    const pdfjs = await import("pdfjs-dist");
+    const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+    let text = "";
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it) => ("str" in it ? it.str : "")).join(" ") + "\n";
+    }
+    return text;
+  }
+
+  // Import d'un relevé bancaire PDF : texte extrait du PDF puis transactions
+  // identifiées par l'agent financier (gère la diversité des formats de banques).
+  async function importBankPdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !profile?.id) return;
+    setImporting(true);
+    setImportMsg("Lecture du PDF…");
+    try {
+      const text = await pdfToText(file);
+      if (text.replace(/\s/g, "").length < 20) {
+        setImportMsg("PDF sans texte exploitable (probablement scanné). Exportez un CSV depuis votre banque, ou utilisez « Photo de quittance » pour un reçu unique.");
+        setImporting(false);
+        return;
+      }
+      setImportMsg("Analyse des transactions (IA)…");
+      const txs = await extractStatement(text, profile ?? {});
+      if (txs.length === 0) {
+        setImportMsg("Aucune transaction détectée dans ce PDF.");
+        setImporting(false);
+        return;
+      }
+      const rows: Array<Omit<ComptaEntry, "id" | "created_at">> = txs.map((t) => ({
+        profile_id: profile.id,
+        date: t.date,
+        description: t.description || "Import bancaire",
+        amount: Math.abs(t.amount),
+        type: t.amount >= 0 ? "revenu" : "depense",
+        tva: null,
+        fournisseur: null,
+        category: null,
+        receipt_url: null,
+      }));
+      const { data } = await supabase.from("compta_entries").insert(rows).select();
+      if (data) {
+        useAppStore.setState((s) => ({
+          compta: [...(data as ComptaEntry[]), ...s.compta].sort((a, b) => b.date.localeCompare(a.date)),
+        }));
+      }
+      setImportMsg(`${rows.length} transaction${rows.length > 1 ? "s" : ""} importée${rows.length > 1 ? "s" : ""} depuis le PDF. Vérifiez et corrigez si besoin.`);
+    } catch (err) {
+      setImportMsg(`Lecture du PDF impossible (${err instanceof Error ? err.message : "erreur"}).`);
+    }
+    setImporting(false);
+  }
+
   // Export CSV des écritures filtrées (sécurisé contre l'injection de formules)
   function csvField(s: string | number): string {
     const v = String(s ?? "");
@@ -445,13 +506,19 @@ export function Compta() {
 
         <Card glass title="Import / export">
           <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>
-            Importez un relevé bancaire CSV (colonnes Date · Description · Montant ; séparateur «;», «,» ou tabulation). Le signe du montant détermine recette / dépense.
+            Importez un relevé bancaire <strong>CSV</strong> (colonnes Date · Description · Montant) ou <strong>PDF</strong>. Le PDF est lu et ses transactions extraites par l'IA. Le signe du montant détermine recette / dépense.
           </p>
           <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             <label style={{ display: "inline-flex" }}>
-              <input type="file" accept=".csv,.txt" onChange={importBankCsv} style={{ display: "none" }} />
+              <input type="file" accept=".csv,.txt" onChange={importBankCsv} style={{ display: "none" }} disabled={importing} />
               <span style={{ display: "inline-flex", alignItems: "center", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)", cursor: importing ? "wait" : "pointer", opacity: importing ? 0.6 : 1 }}>
                 {importing ? "Import…" : "📂 Importer CSV"}
+              </span>
+            </label>
+            <label style={{ display: "inline-flex" }}>
+              <input type="file" accept="application/pdf,.pdf" onChange={importBankPdf} style={{ display: "none" }} disabled={importing} />
+              <span style={{ display: "inline-flex", alignItems: "center", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)", cursor: importing ? "wait" : "pointer", opacity: importing ? 0.6 : 1 }}>
+                {importing ? "Import…" : "📄 Importer PDF"}
               </span>
             </label>
             <Button size="sm" variant="ghost" disabled={filtered.length === 0} onClick={exportCsv}>

@@ -11,6 +11,9 @@ export function adminClient(): SupabaseClient {
     throw new Error("CONFIG: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY absentes");
   }
   return createClient(url, serviceKey, {
+    // Nova vit dans le schéma « nova » : user_ai_config / user_telegram_config
+    // y résident. Le service_role contourne la RLS mais doit viser le bon schéma.
+    db: { schema: "nova" },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
