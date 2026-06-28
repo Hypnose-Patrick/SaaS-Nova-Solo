@@ -12,7 +12,7 @@ import { loadLocal, saveLocal } from "@/lib/local";
 // Files expected: welcome-debutant.mp3, welcome-intermediaire.mp3, welcome-expert.mp3
 //   fb-debutant-1..3.mp3, fb-inter-1..2.mp3, fb-expert-1.mp3
 //   endgame-noir.mp3, endgame-blanc.mp3, endgame-egal.mp3, rule-0..5.mp3
-const BUNNY_BASE = "";
+const BUNNY_BASE = "https://nova-solo.b-cdn.net/";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const BOARD_SIZES = [9, 13, 19] as const;
@@ -1060,6 +1060,12 @@ export function GobanCoach() {
               <div style={{ display: "flex", gap: 10 }}>
                 <Button variant="gold" onClick={() => answerDiag(true)}>✅ Oui</Button>
                 <Button variant="ghost" onClick={() => answerDiag(false)}>❌ Non</Button>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <button onClick={() => { resetDiag(); setScreen("setup"); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-xs)", color: "var(--color-text-muted)", padding: 0 }}>
+                  ← Retour sans sauvegarder
+                </button>
               </div>
             </>
           ) : (
