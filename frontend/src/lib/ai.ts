@@ -137,6 +137,123 @@ export async function prospectDossier(
   );
 }
 
+// ── Simulation Swarm — panel de personas qui débattent d'une décision ──
+// Orchestration multi-agents : génération du panel → vote de chaque persona →
+// synthèse Nova. Personas dérivés du profil de l'abonné, aucun défaut personnel.
+
+export interface SwarmPersona {
+  name: string;   // ex. « Prénom, âge, trait caractéristique »
+  profil: string; // 1 phrase : situation + rapport à la décision
+}
+
+export type SwarmVote = "oui" | "non" | "nuance";
+
+export interface SwarmVerdict {
+  vote: SwarmVote;
+  argument: string;  // 2–3 phrases du point de vue du persona
+  objection: string; // principale réserve, 1 phrase
+}
+
+export type SwarmPersonaVerdict = SwarmPersona & SwarmVerdict;
+
+function firstJson(raw: string): string | null {
+  const m = raw.match(/[[{][\s\S]*[\]}]/);
+  return m ? m[0] : null;
+}
+
+// Phase 1 — génère un panel de personas-clients variés pour le marché du profil.
+export async function swarmPanel(
+  question: string,
+  count: number,
+  profileContext: unknown,
+): Promise<SwarmPersona[]> {
+  const raw = await askAgent(
+    "strategist",
+    `Génère un panel de ${count} personas-clients réalistes, distincts et représentatifs ` +
+      `du marché correspondant au profil fourni (Suisse romande). Ils serviront à tester la décision : ` +
+      `« ${question} ». Varie âges, situations, budgets et postures (enthousiaste, prudent, sceptique, contraint). ` +
+      `Réponds UNIQUEMENT par un tableau JSON strict, sans texte autour : ` +
+      `[{"name":"Prénom, âge, trait","profil":"une phrase sur sa situation et son rapport à la décision"}]. ` +
+      `N'invente aucun fait sur l'utilisateur ; appuie-toi sur le marché de son activité.`,
+    profileContext,
+  );
+  const json = firstJson(raw);
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json) as unknown;
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((o) => {
+        const p = o as Partial<SwarmPersona>;
+        return {
+          name: typeof p.name === "string" ? p.name.trim() : "",
+          profil: typeof p.profil === "string" ? p.profil.trim() : "",
+        };
+      })
+      .filter((p) => p.name)
+      .slice(0, count);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeVote(v: unknown): SwarmVote {
+  const s = String(v ?? "").toLowerCase();
+  if (/(^|[^a-z])oui|favorable|^yes/.test(s)) return "oui";
+  if (/non|contre|défavorable|refus/.test(s)) return "non";
+  return "nuance";
+}
+
+// Phase 2 — un persona vote et argumente sur la décision (appel par persona).
+export async function swarmVerdict(
+  persona: SwarmPersona,
+  question: string,
+  profileContext: unknown,
+): Promise<SwarmVerdict> {
+  const raw = await askAgent(
+    "commercial",
+    `Incarne ce persona-client : ${persona.name} — ${persona.profil}. ` +
+      `Réagis à la décision suivante du point de vue de CE persona : « ${question} ». ` +
+      `Donne ton vote (oui / non / nuancé), un argument honnête en 2–3 phrases, et ta principale réserve. ` +
+      `Reste réaliste et critique, n'enjolive pas. ` +
+      `Réponds UNIQUEMENT par un objet JSON strict : ` +
+      `{"vote":"oui|non|nuance","argument":"...","objection":"..."}.`,
+    profileContext,
+  );
+  const fallback: SwarmVerdict = { vote: "nuance", argument: raw.trim().slice(0, 400), objection: "" };
+  const json = firstJson(raw);
+  if (!json) return fallback;
+  try {
+    const o = JSON.parse(json) as Partial<SwarmVerdict>;
+    return {
+      vote: normalizeVote(o.vote),
+      argument: typeof o.argument === "string" && o.argument ? o.argument.trim() : fallback.argument,
+      objection: typeof o.objection === "string" ? o.objection.trim() : "",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+// Phase 3 — Nova synthétise les votes en 2–3 actions concrètes.
+export async function swarmRecommendation(
+  question: string,
+  verdicts: SwarmPersonaVerdict[],
+  profileContext: unknown,
+): Promise<string> {
+  const digest = verdicts
+    .map((v) => `- ${v.name} [${v.vote}] : ${v.objection || v.argument}`)
+    .join("\n");
+  return askAgent(
+    "nova",
+    `Une simulation « swarm » vient de tester la décision « ${question} » auprès d'un panel de personas. ` +
+      `Voici leurs votes et réserves :\n${digest}\n\n` +
+      `Synthétise les 3 points de friction majeurs, puis recommande 2 à 3 actions concrètes et activables ` +
+      `pour lever ces freins. Sois direct et opérationnel. N'invente aucun chiffre.`,
+    profileContext,
+  );
+}
+
 // Extraction de reçu / quittance par IA à partir du texte collé.
 // Renvoie des champs structurés pour préremplir une écriture comptable.
 export interface ReceiptExtraction {

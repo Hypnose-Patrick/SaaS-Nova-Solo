@@ -31,6 +31,7 @@ const SECTIONS: { title: string; items: { to: string; label: string; icon: strin
       { to: "/marketing", label: "Marketing & Visibilité", icon: "◫" },
       { to: "/mirrorfisch", label: "Test d'audience", icon: "◎" },
       { to: "/hermes", label: "Cabinet Hermès", icon: "♟" },
+      { to: "/simulation", label: "Simulation Swarm", icon: "◍" },
     ],
   },
   {
