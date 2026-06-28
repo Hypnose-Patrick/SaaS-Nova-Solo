@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
-import { researchProspect } from "@/lib/ai";
+import { researchProspect, prospectEmail, prospectObjections, prospectDossier, PROSPECT_EMAIL_TEMPLATES, type ProspectEmailTemplate } from "@/lib/ai";
 import type { Prospect, ProspectColumn, SonCas } from "@/types";
 
 const COLUMNS: { key: ProspectColumn; label: string }[] = [
@@ -49,12 +49,73 @@ export function Pipeline() {
   const [researching, setResearching] = useState<string | null>(null);
   const [researchResult, setResearchResult] = useState<Record<string, string>>({});
 
+  // Mail IA de prise de contact
+  const [emailOpen, setEmailOpen] = useState<string | null>(null);
+  const [emailing, setEmailing] = useState<string | null>(null);
+  const [emailTpl, setEmailTpl] = useState<Record<string, ProspectEmailTemplate>>({});
+  const [emailResult, setEmailResult] = useState<Record<string, string>>({});
+
+  // Panneau « Objections » / « Dossier » IA (un seul ouvert par carte).
+  const [panelOpen, setPanelOpen] = useState<{ id: string; kind: "obj" | "dossier" } | null>(null);
+  const [genBusy, setGenBusy] = useState<string | null>(null);
+  const [objResult, setObjResult] = useState<Record<string, string>>({});
+  const [dossierResult, setDossierResult] = useState<Record<string, string>>({});
+
+  // Glisser-déposer entre colonnes
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<ProspectColumn | null>(null);
+
   useEffect(() => {
     if (profile?.id) fetchProspects(profile.id);
   }, [profile?.id]);
 
   function prospectsByColumn(col: ProspectColumn) {
     return prospects.filter((p) => p.column_key === col);
+  }
+
+  async function dropOn(col: ProspectColumn) {
+    const id = dragId;
+    setDragOver(null);
+    setDragId(null);
+    if (!id) return;
+    const p = prospects.find((x) => x.id === id);
+    if (!p || p.column_key === col) return;
+    await moveProspect(id, col);
+  }
+
+  async function genEmail(p: Prospect) {
+    setEmailing(p.id);
+    try {
+      const tpl = emailTpl[p.id] ?? "direct";
+      const r = await prospectEmail(p.name, p.company, p.soncas, tpl, { profile });
+      setEmailResult((m) => ({ ...m, [p.id]: r }));
+    } finally {
+      setEmailing(null);
+    }
+  }
+
+  function togglePanel(id: string, kind: "obj" | "dossier") {
+    setPanelOpen((o) => (o?.id === id && o.kind === kind ? null : { id, kind }));
+  }
+
+  async function genObjections(p: Prospect) {
+    setGenBusy(`${p.id}:obj`);
+    try {
+      const r = await prospectObjections(p.name, p.company, p.soncas, { profile });
+      setObjResult((m) => ({ ...m, [p.id]: r }));
+    } finally {
+      setGenBusy(null);
+    }
+  }
+
+  async function genDossier(p: Prospect) {
+    setGenBusy(`${p.id}:dossier`);
+    try {
+      const r = await prospectDossier(p.name, p.company, p.soncas, p.est_value, { profile });
+      setDossierResult((m) => ({ ...m, [p.id]: r }));
+    } finally {
+      setGenBusy(null);
+    }
   }
 
   async function addProspect() {
@@ -115,6 +176,7 @@ export function Pipeline() {
             <span style={{ color: "var(--color-gold)" }}>
               {totalPipeline.toLocaleString("fr-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 })}
             </span>
+            <span style={{ color: "var(--color-text-muted)" }}> · glissez une carte entre les étapes</span>
           </p>
         </div>
         <Button size="sm" variant="gold" onClick={() => setShowForm(!showForm)}>
@@ -162,7 +224,20 @@ export function Pipeline() {
             const cards = prospectsByColumn(col.key);
             const colValue = cards.reduce((s, p) => s + p.est_value, 0);
             return (
-              <div key={col.key} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 180 }}>
+              <div
+                key={col.key}
+                onDragOver={(e) => { e.preventDefault(); if (dragOver !== col.key) setDragOver(col.key); }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver((d) => (d === col.key ? null : d)); }}
+                onDrop={() => dropOn(col.key)}
+                style={{
+                  display: "flex", flexDirection: "column", gap: "var(--space-2)", minWidth: 180,
+                  borderRadius: "var(--radius-sm)",
+                  outline: dragOver === col.key ? "1px dashed var(--color-gold)" : "1px dashed transparent",
+                  outlineOffset: 4,
+                  background: dragOver === col.key ? "rgba(197,165,114,0.05)" : "transparent",
+                  transition: "background var(--transition-fast)",
+                }}
+              >
                 {/* En-tête colonne */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-2) 0" }}>
                   <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: col.key === "gagne" ? "var(--color-success)" : col.key === "perdu" ? "var(--color-danger)" : "var(--color-text-muted)" }}>
@@ -183,6 +258,9 @@ export function Pipeline() {
                   {cards.map((p) => (
                     <div
                       key={p.id}
+                      draggable
+                      onDragStart={() => setDragId(p.id)}
+                      onDragEnd={() => { setDragId(null); setDragOver(null); }}
                       style={{
                         background: "var(--color-bg-surface)",
                         border: "var(--border-subtle)",
@@ -191,7 +269,9 @@ export function Pipeline() {
                         display: "flex",
                         flexDirection: "column",
                         gap: "var(--space-2)",
-                        transition: "border-color var(--transition-fast)",
+                        cursor: "grab",
+                        opacity: dragId === p.id ? 0.5 : 1,
+                        transition: "border-color var(--transition-fast), opacity var(--transition-fast)",
                       }}
                     >
                       <div style={{ fontWeight: 500, fontSize: "var(--text-sm)", color: "var(--color-text-primary)" }}>{p.name}</div>
@@ -221,6 +301,30 @@ export function Pipeline() {
                         >
                           IA
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEmailOpen((o) => (o === p.id ? null : p.id))}
+                          style={{ fontSize: 10, padding: "2px 6px" }}
+                        >
+                          ✉ Mail
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePanel(p.id, "obj")}
+                          style={{ fontSize: 10, padding: "2px 6px" }}
+                        >
+                          ⚔ Objections
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePanel(p.id, "dossier")}
+                          style={{ fontSize: 10, padding: "2px 6px" }}
+                        >
+                          📄 Dossier
+                        </Button>
                       </div>
 
                       {/* Résultat recherche IA */}
@@ -228,6 +332,78 @@ export function Pipeline() {
                         <p style={{ fontSize: 10, color: "var(--color-text-secondary)", background: "rgba(197,165,114,0.06)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)", maxHeight: 120, overflow: "auto" }}>
                           {researchResult[p.id]}
                         </p>
+                      )}
+
+                      {/* Panneau mail IA */}
+                      {emailOpen === p.id && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "var(--border-subtle)", paddingTop: "var(--space-2)" }}>
+                          <select
+                            value={emailTpl[p.id] ?? "direct"}
+                            onChange={(e) => setEmailTpl((m) => ({ ...m, [p.id]: e.target.value as ProspectEmailTemplate }))}
+                            style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", color: "var(--color-text-primary)", fontSize: 10, padding: "3px 6px", outline: "none" }}
+                          >
+                            {PROSPECT_EMAIL_TEMPLATES.map((t) => (
+                              <option key={t.key} value={t.key}>{t.label}</option>
+                            ))}
+                          </select>
+                          <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                            <Button size="sm" variant="gold" loading={emailing === p.id} onClick={() => genEmail(p)} style={{ fontSize: 10, padding: "2px 6px" }}>
+                              {emailResult[p.id] ? "Régénérer" : "Générer le mail"}
+                            </Button>
+                            {emailResult[p.id] && (
+                              <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(emailResult[p.id])} style={{ fontSize: 10, padding: "2px 6px" }}>
+                                Copier
+                              </Button>
+                            )}
+                          </div>
+                          {emailResult[p.id] && (
+                            <p style={{ fontSize: 10, color: "var(--color-text-secondary)", background: "rgba(197,165,114,0.06)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)", whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto" }}>
+                              {emailResult[p.id]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Panneau guide d'objections */}
+                      {panelOpen?.id === p.id && panelOpen.kind === "obj" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "var(--border-subtle)", paddingTop: "var(--space-2)" }}>
+                          <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                            <Button size="sm" variant="gold" loading={genBusy === `${p.id}:obj`} onClick={() => genObjections(p)} style={{ fontSize: 10, padding: "2px 6px" }}>
+                              {objResult[p.id] ? "Régénérer" : "Guide d'objections"}
+                            </Button>
+                            {objResult[p.id] && (
+                              <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(objResult[p.id])} style={{ fontSize: 10, padding: "2px 6px" }}>
+                                Copier
+                              </Button>
+                            )}
+                          </div>
+                          {objResult[p.id] && (
+                            <p style={{ fontSize: 10, color: "var(--color-text-secondary)", background: "rgba(197,165,114,0.06)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)", whiteSpace: "pre-wrap", maxHeight: 180, overflow: "auto" }}>
+                              {objResult[p.id]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Panneau dossier de proposition */}
+                      {panelOpen?.id === p.id && panelOpen.kind === "dossier" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "var(--border-subtle)", paddingTop: "var(--space-2)" }}>
+                          <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                            <Button size="sm" variant="gold" loading={genBusy === `${p.id}:dossier`} onClick={() => genDossier(p)} style={{ fontSize: 10, padding: "2px 6px" }}>
+                              {dossierResult[p.id] ? "Régénérer" : "Générer le dossier"}
+                            </Button>
+                            {dossierResult[p.id] && (
+                              <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(dossierResult[p.id])} style={{ fontSize: 10, padding: "2px 6px" }}>
+                                Copier
+                              </Button>
+                            )}
+                          </div>
+                          {dossierResult[p.id] && (
+                            <p style={{ fontSize: 10, color: "var(--color-text-secondary)", background: "rgba(197,165,114,0.06)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)", whiteSpace: "pre-wrap", maxHeight: 180, overflow: "auto" }}>
+                              {dossierResult[p.id]}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}

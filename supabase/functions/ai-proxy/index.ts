@@ -14,6 +14,8 @@
 
 import { handleOptions, json } from "../_shared/cors.ts";
 import { requireUser } from "../_shared/auth.ts";
+import { adminClient } from "../_shared/admin.ts";
+import { decryptSecret } from "../_shared/crypto.ts";
 import { sanitize, sanitizeText } from "../_shared/sanitize.ts";
 import { systemFor } from "./agents.ts";
 
@@ -33,20 +35,20 @@ interface AiRequest {
 // Listes blanches : le client ne peut demander qu'un modèle autorisé.
 const ALLOWED_MODELS: Record<string, Set<string>> = {
   openrouter: new Set([
-    "anthropic/claude-3.5-sonnet",
-    "anthropic/claude-3.5-haiku",
+    "anthropic/claude-sonnet-4.6",
+    "anthropic/claude-haiku-4.5",
     "openai/gpt-4o-mini",
     "google/gemini-flash-1.5",
   ]),
   anthropic: new Set([
-    "claude-3-5-sonnet-latest",
-    "claude-3-5-haiku-latest",
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5-20251001",
   ]),
 };
 
 const DEFAULT_MODEL: Record<string, string> = {
-  openrouter: "anthropic/claude-3.5-haiku",
-  anthropic: "claude-3-5-haiku-latest",
+  openrouter: "anthropic/claude-haiku-4.5",
+  anthropic: "claude-haiku-4-5-20251001",
 };
 
 function pickModel(provider: string, requested?: string): string {
@@ -114,12 +116,80 @@ async function callAnthropic(
   return data?.content?.[0]?.text ?? "";
 }
 
+// --- BYOK : appel au fournisseur de l'abonné avec SA clé (déchiffrée serveur) ---
+
+// Endpoint compatible OpenAI (OpenAI · OpenRouter · Groq · Together · …).
+async function callOpenAICompatible(
+  baseUrl: string,
+  model: string,
+  key: string,
+  system: string,
+  messages: ChatMessage[],
+): Promise<string> {
+  const url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "X-Title": "Nova Solo",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: 1500,
+      temperature: 0.7,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`PROVIDER byok ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
+// Anthropic direct avec la clé de l'abonné.
+async function callAnthropicByok(
+  baseUrl: string,
+  model: string,
+  key: string,
+  system: string,
+  messages: ChatMessage[],
+): Promise<string> {
+  const url = baseUrl.replace(/\/+$/, "") + "/v1/messages";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, system, messages, max_tokens: 1500 }),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`PROVIDER byok ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return data?.content?.[0]?.text ?? "";
+}
+
+interface AiConfigRow {
+  mode: string;
+  provider: string | null;
+  base_url: string | null;
+  model: string | null;
+  key_ciphertext: string | null;
+  key_iv: string | null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return handleOptions();
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
 
   try {
-    await requireUser(req); // 401 si non authentifié
+    const user = await requireUser(req); // 401 si non authentifié
 
     const body = (await req.json()) as AiRequest;
     const provider = body.provider ??
@@ -151,6 +221,45 @@ Deno.serve(async (req: Request) => {
 
     if (safeMessages.length === 0) {
       return json({ error: "Aucun message fourni" }, 400);
+    }
+
+    // --- BYOK : si l'abonné a configuré son propre fournisseur distant, on
+    // route vers SA clé (déchiffrée serveur), pas la clé plateforme. ---
+    const { data: cfg } = await adminClient()
+      .from("user_ai_config")
+      .select("mode,provider,base_url,model,key_ciphertext,key_iv")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const config = cfg as AiConfigRow | null;
+
+    if (config?.mode === "byok_remote" && config.key_ciphertext && config.key_iv) {
+      const userKey = await decryptSecret({
+        ciphertext: config.key_ciphertext,
+        iv: config.key_iv,
+      });
+      const userModel = config.model ?? "gpt-4o-mini";
+      const byokContent = config.provider === "anthropic"
+        ? await callAnthropicByok(
+            config.base_url ?? "https://api.anthropic.com",
+            userModel,
+            userKey,
+            system,
+            safeMessages,
+          )
+        : await callOpenAICompatible(
+            config.base_url ?? "",
+            userModel,
+            userKey,
+            system,
+            safeMessages,
+          );
+      return json({
+        content: byokContent,
+        provider: config.provider,
+        model: userModel,
+        agent: body.agent ?? "nova",
+        byok: true,
+      });
     }
 
     const content = provider === "anthropic"

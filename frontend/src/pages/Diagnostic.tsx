@@ -1,8 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useUserStore } from "@/stores/useUserStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { callAI } from "@/lib/ai";
+import type { AgentKey } from "@/types";
+import { parseLooseJson, loadLocal, saveLocal } from "@/lib/local";
+import { promptCascadeBmc, promptCascadeBp, promptCascadeCv, promptCascadePricingOffer } from "@/lib/lancementPrompts";
+
+type CascadeKey = "bmc" | "bp" | "cv" | "pricing";
+type CascadeStatus = "idle" | "loading" | "done" | "skipped" | "error";
+type FillResult = "done" | "skipped" | "error";
+interface CvFields { profil: string; skills: string; exp: string; formation: string; langues: string }
+const CASCADE_META: { key: CascadeKey; label: string; to: string }[] = [
+  { key: "bmc", label: "Business Model Canvas", to: "/bmc" },
+  { key: "bp", label: "Business Plan", to: "/business-plan" },
+  { key: "cv", label: "CV personnalisé", to: "/cv" },
+  { key: "pricing", label: "Offre & Pricing", to: "/pricing" },
+];
 
 interface DiagResult {
   forces:  string[];
@@ -63,6 +79,12 @@ function parseDiag(raw: string): DiagResult | null {
 export function Diagnostic() {
   const profile = useUserStore((s) => s.profile);
   const { updateProfile } = useUserStore();
+  const { upsertBmcBlock, fetchBmc } = useAppStore();
+
+  // Charge les blocs existants pour que la cascade ne remplisse que ce qui est vide.
+  useEffect(() => {
+    if (profile?.id) fetchBmc(profile.id);
+  }, [profile?.id]);
 
   const [q1, setQ1] = useState(profile?.situation ?? "");
   const [q2, setQ2] = useState("");
@@ -72,6 +94,81 @@ export function Diagnostic() {
   const [rawFallback, setRawFallback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"form" | "result">("form");
+  const [cascade, setCascade] = useState<Record<CascadeKey, CascadeStatus>>({ bmc: "idle", bp: "idle", cv: "idle", pricing: "idle" });
+
+  function diagText(): string {
+    return [
+      `SITUATION : ${q1}`,
+      `BLOCAGES : ${q2}`,
+      `VISION 12 MOIS : ${q3}`,
+      result ? `CAP : ${result.cap}` : "",
+      result ? `FORCES : ${result.forces.join(" · ")}` : "",
+      result ? `FREINS : ${result.freins.join(" · ")}` : "",
+    ].filter(Boolean).join("\n");
+  }
+
+  async function genJson<T>(agent: AgentKey, prompt: string): Promise<T | null> {
+    try {
+      const r = await callAI({ agent, messages: [{ role: "user", content: prompt }] });
+      return parseLooseJson<T>(r.content);
+    } catch { return null; }
+  }
+
+  async function fillBmcLike(prompt: string, keys: string[]): Promise<FillResult> {
+    if (!profile?.id) return "error";
+    // On ne remplit que les blocs encore vides : les contenus déjà saisis par
+    // l'utilisateur sont préservés (cascade non destructive).
+    const existing = useAppStore.getState().bmc;
+    const empty = keys.filter((k) => !(existing.find((b) => b.block_key === k)?.content ?? "").trim());
+    if (!empty.length) return "skipped";
+    const data = await genJson<Record<string, string>>("nova", prompt);
+    if (!data) return "error";
+    const id = profile.id;
+    const wrote = empty.filter((k) => data[k]);
+    await Promise.all(wrote.map((k) => upsertBmcBlock({ profile_id: id, block_key: k, content: String(data[k]) })));
+    return wrote.length ? "done" : "error";
+  }
+
+  async function fillCv(): Promise<FillResult> {
+    const cur = loadLocal<CvFields>("ns_cv_fields", { profil: "", skills: "", exp: "", formation: "", langues: "Français (langue maternelle), Anglais (B2), Allemand (B1)" });
+    // déjà rempli → on n'écrase pas
+    if (cur.profil.trim() && cur.skills.trim() && cur.exp.trim() && cur.formation.trim()) return "skipped";
+    const data = await genJson<Partial<CvFields>>("communicant", promptCascadeCv(profile, diagText()));
+    if (!data) return "error";
+    saveLocal("ns_cv_fields", {
+      ...cur,
+      profil: cur.profil.trim() ? cur.profil : (data.profil ?? cur.profil),
+      skills: cur.skills.trim() ? cur.skills : (data.skills ?? cur.skills),
+      exp: cur.exp.trim() ? cur.exp : (data.exp ?? cur.exp),
+      formation: cur.formation.trim() ? cur.formation : (data.formation ?? cur.formation),
+    });
+    return "done";
+  }
+
+  async function fillPricing(): Promise<FillResult> {
+    if (loadLocal<string>("ns_pricing_offre", "").trim()) return "skipped"; // déjà saisie → on conserve
+    try {
+      const r = await callAI({ agent: "financier", messages: [{ role: "user", content: promptCascadePricingOffer(profile, diagText()) }] });
+      if (r.content?.trim()) { saveLocal("ns_pricing_offre", r.content.trim()); return "done"; }
+      return "error";
+    } catch { return "error"; }
+  }
+
+  async function runCascade() {
+    setCascade({ bmc: "loading", bp: "loading", cv: "loading", pricing: "loading" });
+    const tasks: [CascadeKey, Promise<FillResult>][] = [
+      ["bmc", fillBmcLike(promptCascadeBmc(profile, diagText()), ["partenaires", "activites", "valeur", "relations", "segments", "ressources", "canaux", "couts", "revenus"])],
+      ["bp", fillBmcLike(promptCascadeBp(profile, diagText()), ["bp_executive", "bp_offer", "bp_market", "bp_commercial", "bp_financials", "bp_roadmap"])],
+      ["cv", fillCv()],
+      ["pricing", fillPricing()],
+    ];
+    await Promise.all(tasks.map(async ([k, pr]) => {
+      try { const st = await pr; setCascade((c) => ({ ...c, [k]: st })); }
+      catch { setCascade((c) => ({ ...c, [k]: "error" })); }
+    }));
+  }
+
+  const cascadeBusy = Object.values(cascade).some((s) => s === "loading");
 
   async function generate() {
     if (!q1.trim() || !q2.trim() || !q3.trim()) {
@@ -277,6 +374,44 @@ export function Diagnostic() {
               </Card>
             </>
           ) : null}
+
+          {/* Cascade — pré-remplissage des modules */}
+          {(result || rawFallback) && (
+            <Card glass>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
+                <div style={{ maxWidth: 460 }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "var(--text-base)", color: "var(--color-text-primary)" }}>✦ Pré-remplir mes modules</p>
+                  <p style={{ margin: "var(--space-1) 0 0", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
+                    À partir de ce diagnostic, je rédige un premier jet de ton <strong>BMC</strong>, ton <strong>Business Plan</strong>, ton <strong>CV</strong> et ton <strong>offre</strong>. Seuls les blocs encore vides sont remplis — <strong>tes contenus déjà saisis sont conservés</strong>.
+                  </p>
+                </div>
+                <Button variant="gold" loading={cascadeBusy} onClick={runCascade}>
+                  {Object.values(cascade).some((s) => s === "done") ? "Relancer le pré-remplissage" : "Pré-remplir les 4 modules"}
+                </Button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                {CASCADE_META.map((m) => {
+                  const st = cascade[m.key];
+                  const icon = st === "done" ? "✓" : st === "skipped" ? "✓" : st === "loading" ? "⏳" : st === "error" ? "⚠" : "○";
+                  const color = st === "done" ? "var(--color-success)" : st === "skipped" ? "var(--color-text-muted)" : st === "error" ? "var(--color-danger)" : st === "loading" ? "var(--color-gold)" : "var(--color-text-muted)";
+                  return (
+                    <div key={m.key} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", fontSize: "var(--text-sm)" }}>
+                      <span style={{ color, width: 16, textAlign: "center" }}>{icon}</span>
+                      <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>{m.label}</span>
+                      {st === "skipped" && <span style={{ color: "var(--color-text-muted)", fontSize: "var(--text-xs)" }}>déjà rempli — conservé</span>}
+                      {(st === "done" || st === "skipped") && <Link to={m.to} style={{ color: "var(--color-gold)", fontSize: "var(--text-xs)" }}>Ouvrir →</Link>}
+                      {st === "error" && <span style={{ color: "var(--color-danger)", fontSize: "var(--text-xs)" }}>échec — réessayer</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              {!profile?.id && (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--color-warning)", margin: "var(--space-3) 0 0" }}>
+                  ⚠️ BMC et Business Plan nécessitent d'être connecté (profil chargé). CV et Offre fonctionnent hors-ligne.
+                </p>
+              )}
+            </Card>
+          )}
 
           {/* Régénérer */}
           <div style={{ display: "flex", gap: "var(--space-3)", paddingTop: "var(--space-2)" }}>

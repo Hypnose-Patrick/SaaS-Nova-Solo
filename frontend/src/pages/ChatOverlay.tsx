@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChatStore } from "@/stores/useChatStore";
 import { useUserStore } from "@/stores/useUserStore";
 import { Button } from "@/components/ui/Button";
@@ -14,13 +14,62 @@ const AGENTS: { key: AgentKey; label: string }[] = [
   { key: "technicien", label: "Tech." },
 ];
 
+// Raccourcis de démarrage — questions génériques, sans donnée personnelle.
+const SHORTCUTS: Partial<Record<AgentKey, string[]>> = {
+  nova: [
+    "Par où commencer aujourd'hui ?",
+    "Quelles sont mes priorités cette semaine ?",
+    "Aide-moi à clarifier mon offre",
+  ],
+  juriste: ["Quel statut juridique choisir ?", "Mes obligations TVA en Suisse ?"],
+  strategist: ["Challenge mon modèle économique", "Quels segments viser en priorité ?"],
+  financier: ["Comment fixer mon prix ?", "Quel est mon seuil de rentabilité ?"],
+  communicant: ["Aide-moi à écrire un post LinkedIn", "Affûte mon pitch en une phrase"],
+  commercial: ["Comment décrocher mes premiers clients ?", "Réponds à l'objection « c'est trop cher »"],
+  technicien: ["Quels outils pour démarrer ?", "Comment automatiser mes relances ?"],
+};
+
+// Typage minimal de la Web Speech API (absente de lib.dom).
+interface SpeechResultLike {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+interface SpeechEventLike {
+  resultIndex: number;
+  results: ArrayLike<SpeechResultLike>;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((e: SpeechEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function getSpeechCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
 export function ChatOverlay() {
   const { messages, thinking, open, activeAgent, setOpen, setAgent, send } =
     useChatStore();
   const profile = useUserStore((s) => s.profile);
   const [text, setText] = useState("");
+  const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  const speechSupported = useMemo(() => Boolean(getSpeechCtor()), []);
 
   useEffect(() => {
     if (open) {
@@ -29,12 +78,26 @@ export function ChatOverlay() {
     }
   }, [open, messages.length]);
 
+  // Coupe la dictée si l'overlay se ferme ou se démonte.
+  useEffect(() => {
+    if (!open && recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    return () => recognitionRef.current?.stop();
+  }, [open]);
+
   if (!open) return null;
 
-  function handleSend() {
-    if (!text.trim() || !profile?.id || thinking) return;
-    send(text.trim(), profile.id);
+  function submit(value: string) {
+    const v = value.trim();
+    if (!v || !profile?.id || thinking) return;
+    recognitionRef.current?.stop();
+    send(v, profile.id);
     setText("");
+  }
+
+  function handleSend() {
+    submit(text);
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -43,6 +106,34 @@ export function ChatOverlay() {
       handleSend();
     }
   }
+
+  function toggleDictation() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const Ctor = getSpeechCtor();
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "fr-CH";
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      let chunk = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) chunk += e.results[i][0].transcript;
+      }
+      const clean = chunk.trim();
+      if (clean) setText((t) => (t ? `${t} ${clean}` : clean));
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setListening(true);
+  }
+
+  const shortcuts = SHORTCUTS[activeAgent] ?? SHORTCUTS.nova ?? [];
 
   return (
     <div
@@ -150,19 +241,43 @@ export function ChatOverlay() {
         }}
       >
         {messages.length === 0 && (
-          <p
-            style={{
-              color: "var(--color-text-muted)",
-              fontSize: "var(--text-sm)",
-              textAlign: "center",
-              marginTop: "var(--space-8)",
-            }}
-          >
-            Posez votre question à{" "}
-            <span style={{ color: "var(--color-gold)" }}>
-              {AGENTS.find((a) => a.key === activeAgent)?.label}
-            </span>
-          </p>
+          <div style={{ marginTop: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-3)", alignItems: "center" }}>
+            <p
+              style={{
+                color: "var(--color-text-muted)",
+                fontSize: "var(--text-sm)",
+                textAlign: "center",
+                margin: 0,
+              }}
+            >
+              Posez votre question à{" "}
+              <span style={{ color: "var(--color-gold)" }}>
+                {AGENTS.find((a) => a.key === activeAgent)?.label}
+              </span>
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%" }}>
+              {shortcuts.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => submit(s)}
+                  disabled={thinking}
+                  style={{
+                    textAlign: "left",
+                    padding: "var(--space-2) var(--space-3)",
+                    borderRadius: "var(--radius-sm)",
+                    border: "var(--border-subtle)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "var(--color-text-secondary)",
+                    fontSize: "var(--text-xs)",
+                    cursor: thinking ? "default" : "pointer",
+                    transition: "all var(--transition-fast)",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {messages.map((m) => (
           <div
@@ -223,12 +338,12 @@ export function ChatOverlay() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Votre question… (Entrée pour envoyer)"
+          placeholder={listening ? "Dictée en cours… parlez" : "Votre question… (Entrée pour envoyer)"}
           rows={2}
           style={{
             flex: 1,
             background: "var(--color-bg-input)",
-            border: "var(--border-subtle)",
+            border: listening ? "1px solid var(--color-gold)" : "var(--border-subtle)",
             borderRadius: "var(--radius-sm)",
             color: "var(--color-text-primary)",
             fontFamily: "var(--font-body)",
@@ -239,16 +354,41 @@ export function ChatOverlay() {
             lineHeight: "var(--leading-normal)",
           }}
         />
-        <Button
-          size="sm"
-          variant="gold"
-          onClick={handleSend}
-          loading={thinking}
-          disabled={!text.trim()}
-          style={{ alignSelf: "flex-end" }}
-        >
-          →
-        </Button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", alignSelf: "flex-end" }}>
+          {speechSupported && (
+            <button
+              onClick={toggleDictation}
+              aria-label={listening ? "Arrêter la dictée" : "Dicter à la voix"}
+              title={listening ? "Arrêter la dictée" : "Dicter à la voix"}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: "var(--radius-sm)",
+                border: listening ? "1px solid var(--color-gold)" : "var(--border-subtle)",
+                background: listening ? "rgba(197,165,114,0.15)" : "transparent",
+                color: listening ? "var(--color-gold)" : "var(--color-text-muted)",
+                cursor: "pointer",
+                fontSize: 15,
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all var(--transition-fast)",
+              }}
+            >
+              {listening ? "■" : "🎤"}
+            </button>
+          )}
+          <Button
+            size="sm"
+            variant="gold"
+            onClick={handleSend}
+            loading={thinking}
+            disabled={!text.trim()}
+          >
+            →
+          </Button>
+        </div>
       </div>
     </div>
   );

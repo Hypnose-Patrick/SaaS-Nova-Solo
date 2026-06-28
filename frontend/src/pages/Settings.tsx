@@ -4,6 +4,13 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import type { Profile } from "@/types";
+import { useAiGen } from "@/lib/useAiGen";
+import { promptBio } from "@/lib/lancementPrompts";
+import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
+import { AiEngineCard } from "@/components/settings/AiEngineCard";
+import { TelegramCard } from "@/components/settings/TelegramCard";
+
+const MAX_LOGO_BYTES = 500 * 1024; // 500 Ko — stocké en data URL dans le profil
 
 type Statut = Profile["statut"];
 
@@ -53,6 +60,7 @@ interface FormState {
   brand_name: string;
   slogan: string;
   accent_color: string;
+  logo_url: string;
   bio: string;
   contact_email: string;
   contact_tel: string;
@@ -75,7 +83,8 @@ function profileToForm(p: Profile): FormState {
     is_laci:         p.is_laci ?? false,
     brand_name:      p.brand_name ?? "",
     slogan:          p.slogan ?? "",
-    accent_color:    p.accent_color ?? "#c5a572",
+    accent_color:    p.accent_color ?? DEFAULT_ACCENT,
+    logo_url:        p.logo_url ?? "",
     bio:             p.bio ?? "",
     contact_email:   p.contact_email ?? "",
     contact_tel:     p.contact_tel ?? "",
@@ -93,10 +102,42 @@ export function Settings() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { loading: bioLoading, gen } = useAiGen();
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  async function improveBio() {
+    if (!form?.bio.trim()) return;
+    const r = await gen("communicant", promptBio(form.bio));
+    if (r) setF({ bio: r });
+  }
+
+  // Applique la couleur en direct pendant l'édition (aperçu avant sauvegarde).
+  function changeAccent(hex: string) {
+    setF({ accent_color: hex });
+    applyAccent(hex);
+  }
+
+  function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setLogoError(null);
+    if (!file.type.startsWith("image/")) { setLogoError("Format non supporté — choisissez une image."); return; }
+    if (file.size > MAX_LOGO_BYTES) { setLogoError("Logo trop lourd (max 500 Ko)."); return; }
+    const reader = new FileReader();
+    reader.onload = () => setF({ logo_url: String(reader.result) });
+    reader.readAsDataURL(file);
+  }
 
   useEffect(() => {
     if (profile) setForm(profileToForm(profile));
   }, [profile]);
+
+  // En quittant les Réglages, on rétablit la couleur réellement enregistrée
+  // (au cas où l'utilisateur a prévisualisé sans sauvegarder).
+  useEffect(() => {
+    return () => applyAccent(profile?.accent_color);
+  }, [profile?.accent_color]);
 
   function setF(patch: Partial<FormState>) {
     setForm((f) => f ? { ...f, ...patch } : f);
@@ -117,6 +158,7 @@ export function Settings() {
       brand_name:      form.brand_name || null,
       slogan:          form.slogan || null,
       accent_color:    form.accent_color || null,
+      logo_url:        form.logo_url || null,
       bio:             form.bio || null,
       contact_email:   form.contact_email || null,
       contact_tel:     form.contact_tel || null,
@@ -156,7 +198,7 @@ export function Settings() {
             label="Nom complet"
             value={form.name}
             onChange={(e) => setF({ name: e.target.value })}
-            placeholder="Patrick Beiner"
+            placeholder="Ex. Marie Dupont"
           />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <label style={LABEL_STYLE}>Statut</label>
@@ -213,6 +255,34 @@ export function Settings() {
       {/* Section : Marque */}
       <Card glass>
         <p style={SECTION_TITLE}>Marque</p>
+
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+          <div style={{ width: 72, height: 72, borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+            {form.logo_url ? (
+              <img src={form.logo_url} alt="Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            ) : (
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>Logo</span>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <label style={{ display: "inline-flex" }}>
+                <input type="file" accept="image/*" onChange={uploadLogo} style={{ display: "none" }} />
+                <span style={{ display: "inline-flex", alignItems: "center", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-sm)", border: "var(--border-subtle)", background: "var(--color-bg-input)", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)", cursor: "pointer" }}>
+                  {form.logo_url ? "Changer le logo" : "Téléverser un logo"}
+                </span>
+              </label>
+              {form.logo_url && (
+                <Button size="sm" variant="ghost" onClick={() => setF({ logo_url: "" })}>Retirer</Button>
+              )}
+            </div>
+            <span style={{ fontSize: "var(--text-xs)", color: logoError ? "var(--color-danger)" : "var(--color-text-muted)" }}>
+              {logoError ?? "PNG ou SVG, fond transparent de préférence — max 500 Ko."}
+            </span>
+          </div>
+        </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
           <Input
             label="Nom de marque"
@@ -232,17 +302,30 @@ export function Settings() {
               <input
                 type="color"
                 value={form.accent_color}
-                onChange={(e) => setF({ accent_color: e.target.value })}
+                onChange={(e) => changeAccent(e.target.value)}
                 style={{ width: 40, height: 36, border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", background: "none", cursor: "pointer", padding: 2 }}
               />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
                 {form.accent_color}
               </span>
+              {form.accent_color.toLowerCase() !== DEFAULT_ACCENT && (
+                <button
+                  onClick={() => changeAccent(DEFAULT_ACCENT)}
+                  style={{ background: "none", border: "none", color: "var(--color-text-muted)", fontSize: "var(--text-xs)", cursor: "pointer", textDecoration: "underline" }}
+                >
+                  réinitialiser
+                </button>
+              )}
             </div>
           </div>
         </div>
         <div style={{ marginTop: "var(--space-4)" }}>
-          <label style={LABEL_STYLE}>Bio / Pitch</label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <label style={LABEL_STYLE}>Bio / Pitch</label>
+            <Button size="sm" variant="ghost" loading={bioLoading} onClick={improveBio} disabled={!form.bio.trim()}>
+              Améliorer avec l'IA
+            </Button>
+          </div>
           <textarea
             value={form.bio}
             onChange={(e) => setF({ bio: e.target.value })}
@@ -276,7 +359,7 @@ export function Settings() {
             type="email"
             value={form.contact_email}
             onChange={(e) => setF({ contact_email: e.target.value })}
-            placeholder="patrick@monactivite.ch"
+            placeholder="vous@monactivite.ch"
           />
           <Input
             label="Téléphone"
@@ -365,6 +448,12 @@ export function Settings() {
           </div>
         )}
       </Card>
+
+      {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
+      <AiEngineCard />
+
+      {/* Section : Notifications Telegram (bot personnel de l'abonné) */}
+      <TelegramCard />
 
       {/* Bouton global */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>

@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { challengeBmcBlock } from "@/lib/ai";
+import { AiResult } from "@/components/ui/AiResult";
+import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
+import { promptBmcGlobal, promptBmcEnrich, BMC_GUIDE } from "@/lib/lancementPrompts";
+import { loadLocal, saveLocal } from "@/lib/local";
 
 const BLOCKS = [
   { key: "partenaires", label: "Partenaires clés",     area: "partenaires" },
@@ -25,10 +29,38 @@ export function Bmc() {
   const [editing, setEditing] = useState<BlockKey | null>(null);
   const [draft, setDraft] = useState("");
   const [challenging, setChallenging] = useState<BlockKey | null>(null);
+  const { loading: gLoading, error: gError, gen } = useAiGen();
+  const [global, setGlobal] = useState<string | null>(() => loadLocal<string | null>("ns_bmc_global", null));
+  const [enriching, setEnriching] = useState<BlockKey | null>(null);
+  const [enrichDraft, setEnrichDraft] = useState<Record<string, string>>({});
+
+  async function enrich(key: BlockKey, label: string) {
+    setEnriching(key);
+    const r = await gen("strategist", promptBmcEnrich(profile, label, getBlock(key)?.content ?? ""), { model: MODEL_REASONING });
+    setEnriching(null);
+    if (r) setEnrichDraft((d) => ({ ...d, [key]: r }));
+  }
+
+  async function applyEnrich(key: BlockKey) {
+    const draft = enrichDraft[key];
+    if (!draft || !profile?.id) return;
+    await upsertBmcBlock({ profile_id: profile.id, block_key: key, content: draft });
+    setEnrichDraft((d) => { const n = { ...d }; delete n[key]; return n; });
+  }
+
+  function dismissEnrich(key: BlockKey) {
+    setEnrichDraft((d) => { const n = { ...d }; delete n[key]; return n; });
+  }
 
   useEffect(() => {
     if (profile?.id) fetchBmc(profile.id);
   }, [profile?.id]);
+
+  async function analyzeGlobal() {
+    const resume = BLOCKS.map((b) => `${b.label} : ${getBlock(b.key)?.content ?? "—"}`).join("\n");
+    const r = await gen("strategist", promptBmcGlobal(profile, resume), { model: MODEL_REASONING });
+    if (r) { setGlobal(r); saveLocal("ns_bmc_global", r); }
+  }
 
   function getBlock(key: BlockKey) {
     return bmc.find((b) => b.block_key === key);
@@ -119,10 +151,26 @@ export function Bmc() {
               }}
               onClick={() => !isEditing && startEdit(block.key)}
             >
-              {/* Titre */}
-              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: "var(--color-gold-muted)" }}>
-                {block.label}
-              </span>
+              {/* Titre + priorité */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)" }}>
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: "var(--color-gold-muted)" }}>
+                  {block.label}
+                </span>
+                {BMC_GUIDE[block.key] && (
+                  <span style={{ fontSize: "9px", color: "var(--color-text-muted)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", padding: "1px 5px", flexShrink: 0 }}>Prio. {BMC_GUIDE[block.key].prio}</span>
+                )}
+              </div>
+
+              {/* Guide d'enrichissement */}
+              {BMC_GUIDE[block.key] && (
+                <details onClick={(e) => e.stopPropagation()} style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  <summary style={{ cursor: "pointer", color: "var(--color-gold-muted)" }}>Comment enrichir ce bloc</summary>
+                  <div style={{ marginTop: 4, lineHeight: 1.5 }}>
+                    {BMC_GUIDE[block.key].guide}
+                    <div style={{ marginTop: 4, color: "var(--color-gold)" }}><span style={{ fontWeight: 700 }}>📊 À mesurer :</span> {BMC_GUIDE[block.key].kpi}</div>
+                  </div>
+                </details>
+              )}
 
               {/* Contenu ou textarea */}
               {isEditing ? (
@@ -162,31 +210,62 @@ export function Bmc() {
                     {data?.content ?? "Cliquer pour remplir…"}
                   </p>
 
-                  {/* Challenge IA */}
-                  {data?.content && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  {/* Actions IA : Enrichir + Challenge */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                       <Button
                         size="sm"
                         variant="ghost"
-                        loading={challenging === block.key}
-                        onClick={(e) => { e.stopPropagation(); challenge(block.key); }}
+                        loading={enriching === block.key}
+                        onClick={(e) => { e.stopPropagation(); enrich(block.key, block.label); }}
                         style={{ fontSize: "10px" }}
                       >
-                        Challenge Stratège
+                        ✦ Enrichir
                       </Button>
-                      {data.challenge && (
-                        <p style={{ fontSize: "10px", color: "var(--color-gold)", background: "rgba(197,165,114,0.08)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)" }}>
-                          {data.challenge}
-                        </p>
+                      {data?.content && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          loading={challenging === block.key}
+                          onClick={(e) => { e.stopPropagation(); challenge(block.key); }}
+                          style={{ fontSize: "10px" }}
+                        >
+                          ⚡ Challenge
+                        </Button>
                       )}
                     </div>
-                  )}
+
+                    {data?.challenge && (
+                      <p style={{ fontSize: "10px", color: "var(--color-gold)", background: "rgba(197,165,114,0.08)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)", margin: 0, lineHeight: "var(--leading-normal)" }}>
+                        {data.challenge}
+                      </p>
+                    )}
+
+                    {enrichDraft[block.key] && (
+                      <div onClick={(e) => e.stopPropagation()} style={{ fontSize: "10px", background: "rgba(197,165,114,0.08)", borderRadius: "var(--radius-xs)", padding: "var(--space-2)" }}>
+                        <div style={{ fontWeight: 700, color: "var(--color-gold)", marginBottom: 4 }}>✦ Proposition enrichie</div>
+                        <div style={{ whiteSpace: "pre-wrap", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{enrichDraft[block.key]}</div>
+                        <div style={{ display: "flex", gap: "var(--space-2)", marginTop: 6 }}>
+                          <Button size="sm" variant="gold" onClick={(e) => { e.stopPropagation(); applyEnrich(block.key); }} style={{ fontSize: "10px" }}>✓ Insérer</Button>
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismissEnrich(block.key); }} style={{ fontSize: "10px" }}>Ignorer</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
           );
         })}
       </div>
+
+      <Card glass title="Analyse globale du canvas" action={
+        <Button size="sm" variant="gold" loading={gLoading} onClick={analyzeGlobal}>
+          {global ? "Réanalyser" : "Analyser"}
+        </Button>
+      }>
+        <AiResult content={global} loading={gLoading} error={gError} emptyHint="Cohérence globale notée /10, 3 forces, 3 risques et 2 recommandations prioritaires." />
+      </Card>
     </div>
   );
 }

@@ -57,7 +57,7 @@ async function visionAnthropic(b64: string, mime: string): Promise<string> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-4-6",
       max_tokens: 600,
       messages: [{
         role: "user",
@@ -84,7 +84,7 @@ async function visionOpenRouter(b64: string, mime: string): Promise<string> {
       "X-Title": "Nova Solo",
     },
     body: JSON.stringify({
-      model: "anthropic/claude-3.5-sonnet",
+      model: "anthropic/claude-sonnet-4.6",
       max_tokens: 600,
       messages: [{
         role: "user",

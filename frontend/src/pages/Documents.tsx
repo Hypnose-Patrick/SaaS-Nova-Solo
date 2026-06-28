@@ -3,8 +3,13 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useUserStore } from "@/stores/useUserStore";
 import { supabase } from "@/lib/supabase";
+import { askAgent } from "@/lib/ai";
 
 const BUCKET = "nova-docs";
+
+// Extensions dont le contenu est lisible en texte → analysables par l'IA.
+const TEXT_EXTS = ["txt", "csv", "md", "json", "log", "tsv"];
+const MAX_ANALYZE_CHARS = 6000;
 
 interface StorageFile {
   name: string;
@@ -38,6 +43,9 @@ export function Documents() {
   const [uploading, setUploading] = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [signing, setSigning]   = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<Record<string, string>>({});
+  const [openName, setOpenName]  = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const folder = profile?.user_id ?? null;
@@ -87,6 +95,31 @@ export function Documents() {
     const { error: err } = await supabase.storage.from(BUCKET).remove([`${folder}/${name}`]);
     if (err) { setError(err.message); return; }
     setFiles((f) => f.filter((file) => file.name !== name));
+    setAnalysis((a) => { const next = { ...a }; delete next[name]; return next; });
+  }
+
+  // Analyse IA d'un document texte : télécharge le contenu et le résume.
+  async function analyzeDoc(name: string) {
+    if (!folder) return;
+    setError(null);
+    if (analysis[name]) { setOpenName(openName === name ? null : name); return; }
+    setAnalyzing(name);
+    try {
+      const { data, error: dErr } = await supabase.storage.from(BUCKET).download(`${folder}/${name}`);
+      if (dErr || !data) throw new Error(dErr?.message ?? "Téléchargement impossible");
+      let text = (await data.text()).slice(0, MAX_ANALYZE_CHARS);
+      if (!text.trim()) throw new Error("Document vide");
+      const reply = await askAgent(
+        "nova",
+        `Analyse ce document professionnel intitulé « ${name} ». Donne : (1) le type de document, (2) un résumé en 3-4 points clés, (3) une catégorie de classement suggérée, (4) toute action ou échéance à ne pas manquer si présente. Sois concis. Document :\n"""${text}"""`,
+        profile ?? {},
+      );
+      setAnalysis((a) => ({ ...a, [name]: reply }));
+      setOpenName(name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Analyse impossible.");
+    }
+    setAnalyzing(null);
   }
 
   const totalSize = files.reduce((s, f) => s + ((f.metadata?.size as number) ?? 0), 0);
@@ -179,15 +212,16 @@ export function Documents() {
                 ? new Date(file.updated_at).toLocaleDateString("fr-CH", { day: "2-digit", month: "short", year: "numeric" })
                 : "—";
 
+              const canAnalyze = TEXT_EXTS.includes(ext);
+
               return (
+                <div key={file.name} style={{ borderBottom: "var(--border-subtle)" }}>
                 <div
-                  key={file.name}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "40px 1fr 80px 160px 120px",
                     gap: "var(--space-3)",
                     padding: "var(--space-3)",
-                    borderBottom: "var(--border-subtle)",
                     alignItems: "center",
                   }}
                 >
@@ -235,6 +269,18 @@ export function Documents() {
 
                   {/* Actions */}
                   <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                    {canAnalyze && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={analyzing === file.name}
+                        onClick={() => analyzeDoc(file.name)}
+                        style={{ fontSize: "var(--text-xs)", padding: "2px 8px" }}
+                        title="Analyser le contenu par IA"
+                      >
+                        {analysis[file.name] ? (openName === file.name ? "Masquer" : "Analyse ✦") : "Analyser"}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -253,6 +299,19 @@ export function Documents() {
                     </button>
                   </div>
                 </div>
+
+                {/* Panneau d'analyse IA */}
+                {openName === file.name && analysis[file.name] && (
+                  <div style={{ padding: "var(--space-3) var(--space-4) var(--space-4)", margin: "0 var(--space-3) var(--space-3)", background: "var(--color-bg-input)", borderRadius: "var(--radius-sm)", borderLeft: "3px solid var(--color-gold)" }}>
+                    <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, letterSpacing: "var(--tracking-wide)", textTransform: "uppercase", color: "var(--color-gold)", marginBottom: "var(--space-2)" }}>
+                      Analyse IA
+                    </div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", whiteSpace: "pre-wrap" }}>
+                      {analysis[file.name]}
+                    </div>
+                  </div>
+                )}
+                </div>
               );
             })}
           </div>
@@ -262,6 +321,7 @@ export function Documents() {
       {/* Note sécurité */}
       <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", paddingTop: "var(--space-2)" }}>
         Vos fichiers sont stockés dans un bucket privé — inaccessibles sans authentification. Les liens d'ouverture expirent après 1 heure.
+        Les fichiers texte (txt, csv, md, json…) peuvent être analysés par Nova directement depuis la liste.
       </p>
     </div>
   );

@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { ChatOverlay } from "@/pages/ChatOverlay";
+import { useUserStore } from "@/stores/useUserStore";
+import { applyAccent } from "@/lib/theme";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Tableau de bord",
@@ -20,6 +23,12 @@ const PAGE_TITLES: Record<string, string> = {
 export function AppShell() {
   const { pathname } = useLocation();
   const title = PAGE_TITLES[pathname] ?? "Nova Solo";
+  const accent = useUserStore((s) => s.profile?.accent_color);
+
+  // Recolore l'interface dès que la couleur d'accent du profil change.
+  useEffect(() => {
+    applyAccent(accent);
+  }, [accent]);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--color-bg-primary)" }}>
