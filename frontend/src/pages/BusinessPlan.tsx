@@ -14,6 +14,9 @@ const BMC_LABELS: Record<string, string> = {
   activites: "Activités clés", partenaires: "Partenaires clés", couts: "Structure de coûts",
 };
 
+// Structure alignée sur le template officiel d'une banque cantonale suisse
+// (BCVS « Aide à la rédaction Business Plan ») : 10 sections attendues dans
+// un dossier de crédit / cautionnement. `aiGuide` ancre la rédaction IA.
 const SECTIONS = [
   {
     key:         "bp_executive",
@@ -21,41 +24,79 @@ const SECTIONS = [
     title:       "Résumé exécutif",
     hint:        "Qui vous êtes, votre offre, pour qui, pourquoi maintenant.",
     placeholder: "Coach certifié spécialisé dans la reconversion des cadres suisses romands. Offre de 3 séances diagnostics + suivi mensuel à CHF 450/mois. Différenciation : approche intégrant hypnose et stratégie concrète…",
+    aiGuide:     "Synthèse d'une page : projet, porteur, marché, besoin de financement et rentabilité visée. C'est la première chose que lit le conseiller bancaire.",
+  },
+  {
+    key:         "bp_founder",
+    num:         "02",
+    title:       "Porteur de projet",
+    hint:        "Parcours, formation, expérience, compétences clés, motivation.",
+    placeholder: "15 ans en RH dont 6 comme responsable formation. Certifié coach ICF + praticien PNL. Réseau actif dans l'industrie romande. Motivation : accompagner les transitions que j'ai moi-même vécues…",
+    aiGuide:     "Mets en avant la crédibilité et la légitimité du porteur (formation, expérience, certifications, réseau) — c'est un critère décisif pour une banque ou un cautionnement. Reste factuel, pas de superlatifs gratuits.",
   },
   {
     key:         "bp_offer",
-    num:         "02",
+    num:         "03",
     title:       "Offre & Positionnement",
     hint:        "Services, tarifs, packages, argument de différenciation clé.",
     placeholder: "Séances individuelles à CHF 150 (1h). Package Lancement 3 mois : CHF 1 200. Formation en ligne : CHF 297. Positionnement premium local-first…",
+    aiGuide:     "Décris le problème résolu et la valeur ajoutée concrète. Distingue l'offre de la concurrence locale.",
   },
   {
     key:         "bp_market",
-    num:         "03",
+    num:         "04",
     title:       "Marché cible",
     hint:        "Profil client idéal (ICP), besoins, taille du marché, concurrence.",
     placeholder: "ICP : 35–55 ans, cadre ou indépendant romand, en transition ou stagnation professionnelle. Budget disponible CHF 200–500/mois. Concurrents directs : coaches généralistes, plateformes en ligne (Malt, CoachHub)…",
+    aiGuide:     "Quantifie le marché si des chiffres existent dans le contexte ; sinon reste qualitatif. Nomme 2–3 concurrents et le positionnement relatif.",
   },
   {
     key:         "bp_commercial",
-    num:         "04",
+    num:         "05",
     title:       "Stratégie commerciale",
     hint:        "Canaux d'acquisition, script de vente, fidélisation, objectifs trimestriels.",
     placeholder: "Canaux : réseau LinkedIn, bouche-à-oreille, partenariats RH, contenu organique. Objectif T1 : 5 clients. Conversion : 1 RDV offert → proposition → suivi. Fidélisation : check-in mensuel gratuit…",
+    aiGuide:     "Canaux d'acquisition réalistes pour un indépendant romand, tunnel de conversion, et objectifs trimestriels mesurables.",
+  },
+  {
+    key:         "bp_legal",
+    num:         "06",
+    title:       "Forme juridique",
+    hint:        "Structure choisie (RI / Sàrl / SA) et justification.",
+    placeholder: "Démarrage en raison individuelle (pas de capital minimum, comptabilité simplifiée, inscription au RC dès CHF 100'000 de CA). Passage en Sàrl envisagé à M12 pour limiter la responsabilité…",
+    aiGuide:     "Compare raison individuelle, Sàrl et éventuellement SA selon la situation. Repères suisses : RI = responsabilité illimitée, pas de capital minimum, inscription au registre du commerce obligatoire dès 100'000 CHF de CA ; Sàrl = capital 20'000 CHF, responsabilité limitée ; SA = capital 100'000 CHF (50'000 libérés). Justifie le choix retenu. N'affirme rien sur la fiscalité personnelle exacte (renvoie à la fiduciaire).",
+  },
+  {
+    key:         "bp_organisation",
+    num:         "07",
+    title:       "Organisation & ressources",
+    hint:        "Équipe, partenaires, sous-traitants, locaux, outils, assurances.",
+    placeholder: "Solo la première année. Comptabilité déléguée à une fiduciaire. Bureau partagé à Lausanne. Partenaires : 2 thérapeutes pour orientation croisée. Assurance RC professionnelle + LAA…",
+    aiGuide:     "Décris les ressources humaines et matérielles, les partenaires clés et les externalisations (fiduciaire, etc.). Mentionne les assurances pertinentes (RC pro, LAA, perte de gain) sans inventer de montants.",
   },
   {
     key:         "bp_financials",
-    num:         "05",
+    num:         "08",
     title:       "Plan financier",
     hint:        "CA mensuel cible, charges, point mort, projection 12 mois.",
     placeholder: "CA cible M6 : CHF 5 000/mois. Charges fixes : CHF 2 200 (loyer bureau partagé, assurances, outils). Point mort : 5 clients/mois. Projection M12 : CHF 8 000 (10 clients + produit en ligne)…",
+    aiGuide:     "Appuie-toi STRICTEMENT sur le budget réel injecté depuis Finances s'il est présent. Commente liquidités, point mort et besoin de financement. N'invente aucun chiffre.",
+  },
+  {
+    key:         "bp_risks",
+    num:         "09",
+    title:       "Risques & mesures",
+    hint:        "Principaux risques et plan B (analyse demandée par les banques).",
+    placeholder: "Risque : montée en charge clients plus lente que prévu → réserve de trésorerie 3 mois + activité de transition à temps partiel. Risque : dépendance à un canal → diversifier dès M4…",
+    aiGuide:     "Identifie 3–5 risques concrets (commercial, financier, dépendance, santé/disponibilité du solo) et pour chacun une mesure d'atténuation réaliste. Section explicitement attendue dans un dossier bancaire.",
   },
   {
     key:         "bp_roadmap",
-    num:         "06",
+    num:         "10",
     title:       "Roadmap 12 mois",
     hint:        "Jalons clés, milestones, ressources nécessaires.",
     placeholder: "M1–2 : Positionnement + 3 premiers clients. M3–4 : Stabiliser 6 clients récurrents. M5–6 : Lancer produit digital. M7–9 : Atteindre point mort. M10–12 : Recruter 1 partenaire ou déléguer admin…",
+    aiGuide:     "Jalons trimestriels concrets et mesurables, alignés sur le plan financier (point mort, lancements).",
   },
 ] as const;
 
@@ -71,24 +112,24 @@ function buildAiPrompt(
   bmcSummary: string,
   profile: ReturnType<typeof useUserStore.getState>["profile"],
 ): string {
+  // Contexte = profil + BMC + toutes les autres sections déjà remplies.
+  const sectionCtx = SECTIONS
+    .filter((s) => s.key !== key && sections[s.key])
+    .map((s) => `${s.title} : ${sections[s.key]}`);
   const ctx = [
     profile?.name     ? `Prénom : ${profile.name}` : null,
     profile?.domaine  ? `Domaine : ${profile.domaine}` : null,
     profile?.situation ? `Situation : ${profile.situation}` : null,
     [profile?.ville, profile?.canton].filter(Boolean).length ? `Localisation : ${[profile?.ville, profile?.canton].filter(Boolean).join(" ")}` : null,
     bmcSummary ? `Business Model Canvas de l'utilisateur :\n${bmcSummary}` : null,
-    sections.bp_executive  ? `Résumé exécutif : ${sections.bp_executive}` : null,
-    sections.bp_offer      ? `Offre : ${sections.bp_offer}` : null,
-    sections.bp_market     ? `Marché : ${sections.bp_market}` : null,
-    sections.bp_commercial ? `Commercial : ${sections.bp_commercial}` : null,
-    sections.bp_financials ? `Finances : ${sections.bp_financials}` : null,
-    sections.bp_roadmap    ? `Roadmap : ${sections.bp_roadmap}` : null,
+    ...sectionCtx,
   ].filter(Boolean).join("\n");
 
   const sec = SECTIONS.find((s) => s.key === key)!;
   return `Tu es Hermès-Stratège, expert en plans d'affaires pour indépendants de Suisse romande.\n\n` +
     `Contexte disponible :\n${ctx || "(aucun)"}\n\n` +
     `Rédige la section "${sec.title}" (${sec.hint}) en 200–350 mots, ton professionnel mais humain, orienté action et chiffres concrets. ` +
+    `Consigne pour cette section : ${sec.aiGuide} ` +
     `Appuie-toi sur le Business Model Canvas et les données ci-dessus quand ils sont présents. ` +
     `Ancre tout dans la réalité suisse romande : AVS ~10 %, TVA 8.1 % (seuil d'assujettissement 100'000 CHF de chiffre d'affaires), prévoyance, dispositif LACI/ORP si pertinent. ` +
     `N'invente AUCUN chiffre absent du contexte : si une donnée manque, reste qualitatif ou signale-la comme « à compléter ». ` +
@@ -191,6 +232,22 @@ export function BusinessPlan() {
       return `<section><h2><span class="num">${s.num}</span> ${escapeHtml(s.title)}</h2>` +
         `<div class="content">${escapeHtml(content)}</div></section>`;
     }).join("");
+    // Annexe — pièces usuelles d'un dossier de crédit / cautionnement (Suisse romande).
+    const CHECKLIST = [
+      "Business plan (ce document)",
+      "Budget de trésorerie / prévisionnel financier (tableur)",
+      "CV du porteur de projet",
+      "Extrait du registre du commerce (si déjà inscrit)",
+      "Copie d'une pièce d'identité",
+      "Justificatifs de fonds propres (relevés, attestations)",
+      "Devis et offres (en cas de crédit d'investissement)",
+      "Comparatif de la forme juridique retenue",
+    ];
+    const checklist =
+      `<section class="checklist"><h2>Pièces à joindre à votre demande</h2>` +
+      `<p class="note">Liste indicative pour un dossier de crédit ou de cautionnement auprès d'une banque cantonale romande. ` +
+      `Confirmez les pièces exactes auprès de votre conseiller.</p>` +
+      `<ul>${CHECKLIST.map((c) => `<li>☐ ${escapeHtml(c)}</li>`).join("")}</ul></section>`;
     return (
       `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)} — Business Plan</title>` +
       `<style>` +
@@ -204,8 +261,12 @@ export function BusinessPlan() {
       `h2{font-size:16px;border-bottom:2px solid #a8842c;padding-bottom:6px;margin:0 0 10px;color:#1a1a1a}` +
       `h2 .num{color:#a8842c;font-weight:800;margin-right:8px}` +
       `.content{white-space:pre-wrap}` +
+      `.checklist{page-break-before:always}` +
+      `.checklist ul{list-style:none;padding:0;margin:8px 0 0}` +
+      `.checklist li{padding:4px 0;font-size:13px}` +
+      `.checklist .note{font-size:11px;color:#666;margin:0}` +
       `.disclaimer{margin-top:36px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#888;font-style:italic}` +
-      `</style></head><body>${cover}${body}` +
+      `</style></head><body>${cover}${body}${checklist}` +
       `<div class="disclaimer">Document généré avec l'assistance de l'IA Nova Solo — à valider avec votre fiduciaire ou conseiller avant toute soumission à un prêteur, une banque ou l'ORP.</div>` +
       `</body></html>`
     );
