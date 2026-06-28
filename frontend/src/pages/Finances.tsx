@@ -234,6 +234,20 @@ export function Finances() {
   const opexSarlTot = fin.opexSarl.reduce((s, l) => s + (Number(l.montant) || 0), 0);
   const financementTot = fin.financement.reduce((s, l) => s + (Number(l.montant) || 0), 0);
 
+  // Charges sociales : 100 % dérivées des données de CET utilisateur — jamais
+  // de chiffres en dur. AVS ≈ 10 % du revenu net (EBITDA du budget) ; RC et LAMal
+  // repris de SES postes OPEX RI saisis (×12). 0 ou non saisi → tiret.
+  const opexRIMonthly = (rx: RegExp) => fin.opexRI.find((l) => rx.test(l.poste))?.montant || 0;
+  const revNetAnnuel = Math.max(0, k.ebTot);
+  const annualOrDash = (n: number) => (n > 0 ? `${chf(n)} CHF` : "—");
+  const socialRows: [string, string, string][] = [
+    ["AVS/AI/APG", "~10% du revenu net", annualOrDash(Math.round(revNetAnnuel * 0.1))],
+    ["LPP (2e pilier)", "Facultatif (indépendant)", "—"],
+    ["Pilier 3a (déductible)", "Max 7'056 CHF/an", "optionnel"],
+    ["RC professionnelle", "Selon contrat", annualOrDash((opexRIMonthly(/\brc\b|responsabilit/i)) * 12)],
+    ["LAMal (caisse maladie)", "Selon votre caisse", annualOrDash((opexRIMonthly(/lamal|maladie/i)) * 12)],
+  ];
+
   // ── Actions ──
   function setScenario(s: "A" | "B") { update((f) => { f.scenario = s; }); }
   function editMonth(i: number, field: "ca" | "charges" | "draw", v: number) {
@@ -621,17 +635,14 @@ export function Finances() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr><th style={thStyle}>Poste</th><th style={thStyle}>Taux / Montant</th><th style={{ ...thStyle, textAlign: "right" }}>Estim./an</th></tr></thead>
             <tbody>
-              {[
-                ["AVS/AI/APG", "~10% du revenu net", "5'500 CHF"],
-                ["LPP (2e pilier)", "Facultatif", "— CHF"],
-                ["Pilier 3a (déductible)", "Max 7'056 CHF", "7'056 CHF"],
-                ["RC professionnelle", "Forfait", "~600 CHF"],
-                ["LAMal (caisse maladie)", "Individuelle", "~3'600 CHF"],
-              ].map((r) => (
+              {socialRows.map((r) => (
                 <tr key={r[0]}><td style={tdStyle}>{r[0]}</td><td style={tdStyle}>{r[1]}</td><td style={numTd}>{r[2]}</td></tr>
               ))}
             </tbody>
           </table>
+          <p style={{ fontSize: "10px", color: "var(--color-text-muted)", margin: "var(--space-3) 0 0" }}>
+            Estimations dérivées de votre budget (AVS ≈ 10% du revenu net) et de vos postes RC / LAMal saisis dans le budget d'exploitation ci-dessus. « — » tant que rien n'est renseigné.
+          </p>
         </Card>
       </div>
 
