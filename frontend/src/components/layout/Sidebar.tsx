@@ -49,22 +49,30 @@ export function Sidebar() {
           borderBottom: "var(--border-subtle)",
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--text-xl)",
-            color: "var(--color-gold)",
-            letterSpacing: "var(--tracking-tight)",
-          }}
-        >
-          Nova Solo
-        </span>
-        {profile?.brand_name && (
+        {profile?.logo_url ? (
+          <img
+            src={profile.logo_url}
+            alt={profile.brand_name ?? "Logo"}
+            style={{ maxHeight: 40, maxWidth: "100%", objectFit: "contain", display: "block" }}
+          />
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--text-xl)",
+              color: "var(--color-gold)",
+              letterSpacing: "var(--tracking-tight)",
+            }}
+          >
+            {profile?.brand_name || "Nova Solo"}
+          </span>
+        )}
+        {profile?.logo_url && profile?.brand_name && (
           <div
             style={{
               fontSize: "var(--text-xs)",
               color: "var(--color-text-muted)",
-              marginTop: "var(--space-1)",
+              marginTop: "var(--space-2)",
               letterSpacing: "var(--tracking-wide)",
             }}
           >
