@@ -98,7 +98,7 @@ function profileToForm(p: Profile): FormState {
 }
 
 export function Settings() {
-  const { profile, updateProfile, loading } = useUserStore();
+  const { profile, updateProfile, loading, error } = useUserStore();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -172,6 +172,17 @@ export function Settings() {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  if (!form && error) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxWidth: 560 }}>
+        <p style={{ color: "var(--color-danger)", fontFamily: "var(--font-body)", fontSize: "var(--text-sm)" }}>
+          Impossible de charger votre profil : {error}
+        </p>
+        <Button variant="gold" onClick={() => window.location.reload()}>Réessayer</Button>
+      </div>
+    );
   }
 
   if (loading || !form) {

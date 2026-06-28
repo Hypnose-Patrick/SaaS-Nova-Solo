@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+
+// Le client Nova cible le schéma « nova » ; le composant Auth est typé pour
+// « public » mais n'utilise que l'auth (pas la BDD). Cast sûr.
+const authClient = supabase as unknown as SupabaseClient;
 
 const APP_URL =
   import.meta.env.VITE_APP_URL ??
@@ -115,7 +120,7 @@ export function Login() {
           </div>
 
           <Auth
-            supabaseClient={supabase}
+            supabaseClient={authClient}
             appearance={{
               theme: ThemeSupa,
               variables: {

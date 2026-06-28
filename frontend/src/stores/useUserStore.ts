@@ -5,6 +5,7 @@ import type { Profile } from "@/types";
 interface UserState {
   profile: Profile | null;
   loading: boolean;
+  error: string | null;
   fetchProfile: (userId: string) => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   reset: () => void;
@@ -13,32 +14,42 @@ interface UserState {
 export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
   loading: false,
+  error: null,
 
   fetchProfile: async (userId) => {
-    set({ loading: true });
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("fetchProfile:", error.message);
-      set({ loading: false });
-      return;
-    }
-
-    if (!data) {
-      // Premier login : créer le profil
-      const { data: session } = await supabase.auth.getUser();
-      const { data: created } = await supabase
+    set({ loading: true, error: null });
+    try {
+      const { data, error } = await supabase
         .from("profiles")
-        .insert({ user_id: userId, email: session.user?.email ?? null })
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+
+      if (data) {
+        set({ profile: data as Profile, loading: false });
+        return;
+      }
+
+      // Premier login : créer le profil. upsert(onConflict user_id) est
+      // idempotent — App.tsx peut appeler fetchProfile deux fois au démarrage
+      // (getSession + onAuthStateChange) sans créer de doublon ni planter.
+      const { data: session } = await supabase.auth.getUser();
+      const { data: created, error: upErr } = await supabase
+        .from("profiles")
+        .upsert(
+          { user_id: userId, email: session.user?.email ?? null },
+          { onConflict: "user_id" },
+        )
         .select()
         .single();
-      set({ profile: created ?? null, loading: false });
-    } else {
-      set({ profile: data as Profile, loading: false });
+      if (upErr) throw upErr;
+      set({ profile: created as Profile, loading: false });
+    } catch (err) {
+      // Ne JAMAIS laisser la page bloquée sur « Chargement… » en silence.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("fetchProfile:", msg);
+      set({ loading: false, error: msg });
     }
   },
 
@@ -54,5 +65,5 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!error && data) set({ profile: data as Profile });
   },
 
-  reset: () => set({ profile: null, loading: false }),
+  reset: () => set({ profile: null, loading: false, error: null }),
 }));
