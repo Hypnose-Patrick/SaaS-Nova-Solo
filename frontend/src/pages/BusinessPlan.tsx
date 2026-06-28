@@ -52,6 +52,10 @@ const SECTIONS = [
 
 type SectionKey = (typeof SECTIONS)[number]["key"];
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function buildAiPrompt(key: SectionKey, sections: Record<string, string>, profile: ReturnType<typeof useUserStore.getState>["profile"]): string {
   const ctx = [
     profile?.name     ? `Prénom : ${profile.name}` : null,
@@ -115,6 +119,62 @@ export function BusinessPlan() {
 
   const filledCount = SECTIONS.filter((s) => getContent(s.key)).length;
 
+  // Construit le document complet (page de garde + sections remplies) en HTML.
+  function buildDocHtml(): string {
+    const title = profile?.brand_name || profile?.name || "Business Plan";
+    const subtitle = [profile?.domaine, [profile?.ville, profile?.canton].filter(Boolean).join(" ")]
+      .filter(Boolean).join(" · ");
+    const today = new Date().toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
+    const logo = profile?.logo_url
+      ? `<img src="${profile.logo_url}" alt="" style="max-height:90px;max-width:260px;object-fit:contain;margin-bottom:24px" />`
+      : "";
+    const cover =
+      `<div class="cover">${logo}<div class="ctitle">${escapeHtml(title)}</div>` +
+      (subtitle ? `<div class="csub">${escapeHtml(subtitle)}</div>` : "") +
+      `<div class="cdoc">Business Plan</div><div class="cdate">${escapeHtml(today)}</div></div>`;
+    const body = SECTIONS.map((s) => {
+      const content = getContent(s.key);
+      if (!content) return "";
+      return `<section><h2><span class="num">${s.num}</span> ${escapeHtml(s.title)}</h2>` +
+        `<div class="content">${escapeHtml(content)}</div></section>`;
+    }).join("");
+    return (
+      `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)} — Business Plan</title>` +
+      `<style>` +
+      `body{font-family:Calibri,Arial,sans-serif;color:#1a1a1a;line-height:1.6;font-size:13px;max-width:780px;margin:0 auto;padding:0 32px}` +
+      `.cover{text-align:center;padding:120px 0 80px;page-break-after:always}` +
+      `.ctitle{font-size:30px;font-weight:800;letter-spacing:.5px}` +
+      `.csub{font-size:15px;color:#555;margin-top:8px}` +
+      `.cdoc{margin-top:48px;font-size:20px;color:#a8842c;font-weight:700;text-transform:uppercase;letter-spacing:3px}` +
+      `.cdate{margin-top:8px;color:#888;font-size:13px}` +
+      `section{margin-bottom:28px}` +
+      `h2{font-size:16px;border-bottom:2px solid #a8842c;padding-bottom:6px;margin:0 0 10px;color:#1a1a1a}` +
+      `h2 .num{color:#a8842c;font-weight:800;margin-right:8px}` +
+      `.content{white-space:pre-wrap}` +
+      `</style></head><body>${cover}${body}</body></html>`
+    );
+  }
+
+  function exportPdf() {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(buildDocHtml());
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
+  }
+
+  function exportWord() {
+    const base = (profile?.brand_name || profile?.name || "business-plan")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const url = URL.createObjectURL(new Blob(["﻿" + buildDocHtml()], { type: "application/msword" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `business-plan-${base || "nova"}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 820 }}>
       {/* Header */}
@@ -146,6 +206,8 @@ export function BusinessPlan() {
               transition: "width 0.3s ease",
             }} />
           </div>
+          <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportWord}>Word</Button>
+          <Button size="sm" variant="gold" disabled={filledCount === 0} onClick={exportPdf}>Exporter PDF</Button>
         </div>
       </div>
 
