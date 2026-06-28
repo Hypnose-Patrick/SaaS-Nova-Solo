@@ -99,6 +99,44 @@ export async function prospectEmail(
   );
 }
 
+// Guide de traitement des objections (commercial) — adapté au profil SONCAS.
+export async function prospectObjections(
+  prospectName: string,
+  company: string | null,
+  soncas: string | null,
+  profileContext: unknown,
+): Promise<string> {
+  return askAgent(
+    "commercial",
+    `Prépare un guide de traitement des objections pour l'entretien avec ${prospectName}${company ? ` (${company})` : ""}. ` +
+      `Liste les 4 à 5 objections les plus probables (prix, temps, confiance, besoin réel, timing) ` +
+      `et, pour chacune : une reformulation empathique, une réponse argumentée, puis une question de relance. ` +
+      `${soncas ? `Adapte le ton au levier de motivation dominant « ${soncas} » (SONCAS). ` : ""}` +
+      `Fr-CH, concret, sans jargon. N'invente aucun fait sur le prospect ni son entreprise.`,
+    profileContext,
+  );
+}
+
+// Mini-dossier de proposition personnalisé pour un prospect (commercial).
+export async function prospectDossier(
+  prospectName: string,
+  company: string | null,
+  soncas: string | null,
+  estValue: number,
+  profileContext: unknown,
+): Promise<string> {
+  return askAgent(
+    "commercial",
+    `Rédige un dossier de proposition commerciale concis et structuré destiné à ${prospectName}${company ? ` (${company})` : ""}. ` +
+      `Structure : 1) Contexte & enjeu perçu, 2) Proposition de valeur, 3) Modalités (déroulé, livrables), ` +
+      `4) Investissement${estValue > 0 ? ` (ordre de grandeur ~${Math.round(estValue)} CHF)` : ""}, 5) Prochaine étape. ` +
+      `${soncas ? `Mets en avant le levier « ${soncas} » (SONCAS). ` : ""}` +
+      `Fr-CH, ton professionnel et chaleureux. Appuie-toi uniquement sur les informations du profil fourni, ` +
+      `n'invente aucun fait sur le prospect.`,
+    profileContext,
+  );
+}
+
 // Extraction de reçu / quittance par IA à partir du texte collé.
 // Renvoie des champs structurés pour préremplir une écriture comptable.
 export interface ReceiptExtraction {
