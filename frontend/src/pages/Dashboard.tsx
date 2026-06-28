@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -15,10 +16,38 @@ const RITUELS = [
   "Relancer 1 prospect en attente",
 ];
 
+// Étapes génériques du soutien à l'indépendance (art. 71a–71d LACI).
+// Informationnel — chaque assuré coche son avancement réel (per-tenant, démarre vide).
+const LACI_71A_STEPS = [
+  "S'annoncer à l'ORP et déclarer son projet d'activité indépendante",
+  "Obtenir l'accord du conseiller ORP pour la phase de planification",
+  "Élaborer le business plan (jusqu'à 90 indemnités journalières spécifiques)",
+  "Faire expertiser le projet par un organisme reconnu",
+  "Déposer la demande de soutien (art. 71a–71d LACI)",
+  "Lancer l'activité avant la fin du délai-cadre d'indemnisation",
+];
+
 export function Dashboard() {
+  const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
   const { compta, fetchCompta, events, fetchEvents } = useAppStore();
   const setOpen = useChatStore((s) => s.setOpen);
+  const setAgent = useChatStore((s) => s.setAgent);
+
+  const isLaci = profile?.is_laci || profile?.statut === "laci";
+  const [laciDone, setLaciDone] = useState<boolean[]>(() =>
+    loadLocal("ns_laci_71a", LACI_71A_STEPS.map(() => false)),
+  );
+  function toggleLaci(i: number) {
+    const next = laciDone.map((v, j) => (j === i ? !v : v));
+    setLaciDone(next);
+    saveLocal("ns_laci_71a", next);
+  }
+  const laciCount = laciDone.filter(Boolean).length;
+  function askJuristeLaci() {
+    setAgent("juriste");
+    setOpen(true);
+  }
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const [rituels, setRituels] = useState<{ day: string; done: boolean[] }>(() =>
@@ -103,6 +132,53 @@ export function Dashboard() {
         )}
       </div>
 
+      {/* Plan de route & LACI (art. 71a) — uniquement si demandeur d'emploi */}
+      {isLaci && (
+        <Card title={`Plan de route & LACI · ${laciCount}/${LACI_71A_STEPS.length}`} glass style={{ borderColor: "rgba(197,165,114,0.25)" }}>
+          <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-xs)", margin: "0 0 var(--space-3)", lineHeight: "var(--leading-normal)" }}>
+            Soutien à l'activité indépendante (art. 71a–71d LACI). Repères généraux —
+            confirmez chaque modalité auprès de votre ORP et de votre caisse de chômage.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            {LACI_71A_STEPS.map((step, i) => (
+              <label
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "var(--space-2)",
+                  fontSize: "var(--text-sm)",
+                  color: laciDone[i] ? "var(--color-text-muted)" : "var(--color-text-secondary)",
+                  cursor: "pointer",
+                  textDecoration: laciDone[i] ? "line-through" : "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={laciDone[i] ?? false}
+                  onChange={() => toggleLaci(i)}
+                  style={{ marginTop: 3, accentColor: "var(--color-gold)" }}
+                />
+                <span>
+                  <span style={{ color: "var(--color-gold)", fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", marginRight: 6 }}>
+                    {i + 1}.
+                  </span>
+                  {step}
+                </span>
+              </label>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
+            <Button size="sm" variant="ghost" onClick={() => navigate("/business-plan")}>
+              Ouvrir le business plan
+            </Button>
+            <Button size="sm" variant="ghost" onClick={askJuristeLaci}>
+              Questions ? Demander au Juriste
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Agenda + actions rapides */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "var(--space-6)" }}>
         <Card title="Prochains rendez-vous">
@@ -167,13 +243,13 @@ export function Dashboard() {
               <Button size="sm" variant="gold" onClick={() => setOpen(true)} style={{ width: "100%", justifyContent: "center" }}>
                 Parler à Nova
               </Button>
-              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+              <Button size="sm" variant="ghost" onClick={() => navigate("/facture")} style={{ width: "100%", justifyContent: "center" }}>
                 Nouvelle facture
               </Button>
-              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+              <Button size="sm" variant="ghost" onClick={() => navigate("/pipeline")} style={{ width: "100%", justifyContent: "center" }}>
                 Ajouter prospect
               </Button>
-              <Button size="sm" variant="ghost" style={{ width: "100%", justifyContent: "center" }}>
+              <Button size="sm" variant="ghost" onClick={() => navigate("/compta")} style={{ width: "100%", justifyContent: "center" }}>
                 Saisir dépense
               </Button>
             </div>
