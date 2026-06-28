@@ -7,6 +7,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptContrat } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
+import { printHtml, downloadWord } from "@/lib/exportDoc";
 
 const TYPES = ["Prestation de coaching", "Mandat de conseil", "Formation / atelier", "Prestation de services récurrente"];
 const DUREES = ["Ponctuel (one-shot)", "3 mois", "6 mois", "12 mois reconductible"];
@@ -43,24 +44,21 @@ export function Contrat() {
 
   const fileBase = `contrat_${type.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 
-  function exportPdf() {
-    if (!result) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
+  function buildDocHtml(): string {
     const heading = profile?.brand_name || profile?.name || "Contrat de prestation";
-    w.document.write(
+    return (
       `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(fileBase)}</title>` +
       `<style>body{font-family:Calibri,Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 24px;color:#1a1a1a;line-height:1.6;font-size:13px}` +
       `h1{font-size:18px;text-align:center;margin:0 0 4px}.meta{text-align:center;color:#555;font-size:12px;margin-bottom:24px}` +
       `pre{white-space:pre-wrap;font-family:inherit;font-size:13px;margin:0}</style></head><body>` +
       `<h1>${escapeHtml(heading)}</h1>` +
       `<div class="meta">${escapeHtml(type)} · ${escapeHtml(duree)}</div>` +
-      `<pre>${escapeHtml(result)}</pre></body></html>`,
+      `<pre>${escapeHtml(result || "")}</pre></body></html>`
     );
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 300);
   }
+
+  function exportPdf() { if (result) printHtml(buildDocHtml()); }
+  function exportWord() { if (result) downloadWord(fileBase, buildDocHtml()); }
 
   function downloadTxt() {
     if (!result) return;
@@ -115,6 +113,7 @@ export function Contrat() {
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
               <Button size="sm" variant="ghost" onClick={copyText}>{copied ? "Copié ✓" : "Copier"}</Button>
               <Button size="sm" variant="ghost" onClick={downloadTxt}>.txt</Button>
+              <Button size="sm" variant="ghost" onClick={exportWord}>Word</Button>
               <Button size="sm" variant="gold" onClick={exportPdf}>Imprimer / PDF</Button>
             </div>
           ) : undefined}

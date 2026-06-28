@@ -7,6 +7,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptCvGenerate, promptCvImprove, CV_TYPES, type CvType } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
+import { printHtml, downloadWord } from "@/lib/exportDoc";
 
 const TA: React.CSSProperties = {
   width: "100%", minHeight: 72, marginTop: "var(--space-2)",
@@ -79,14 +80,12 @@ export function Cv() {
   const subtitle = [profile?.situation, profile?.domaine].filter(Boolean).join(" · ");
   const contactLine = [profile?.contact_email || profile?.email, profile?.contact_tel, profile?.ville].filter(Boolean).join("  ·  ");
 
-  function printCv() {
-    const w = window.open("", "_blank");
-    if (!w) return;
+  function buildDocHtml(): string {
     const block = (title: string, body: string) =>
       body.trim()
         ? `<h2>${escapeHtml(title)}</h2><div class="b">${escapeHtml(body)}</div>`
         : "";
-    w.document.write(
+    return (
       `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>CV — ${escapeHtml(fullName)}</title>` +
       `<style>body{font-family:Calibri,Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 24px;color:#1a1a1a;line-height:1.5;font-size:13px}` +
       `.name{font-size:22px;font-weight:800;text-align:center}.sub{text-align:center;color:#4f46e5;font-weight:600;font-size:13px;margin-top:2px}` +
@@ -97,12 +96,12 @@ export function Cv() {
       (contactLine ? `<div class="contact">${escapeHtml(contactLine)}</div>` : "") +
       block("Profil", f.profil) + block("Compétences clés", f.skills) +
       block("Expérience", f.exp) + block("Formation", f.formation) + block("Langues", f.langues) +
-      `</body></html>`,
+      `</body></html>`
     );
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 250);
   }
+
+  function printCv() { printHtml(buildDocHtml()); }
+  function exportWordCv() { downloadWord(`cv-${fullName}`, buildDocHtml()); }
 
   const previewSection = (title: string, body: string) => (
     <div style={{ marginBottom: "var(--space-3)" }}>
@@ -155,7 +154,12 @@ export function Cv() {
 
         {/* Colonne aperçu */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", position: "sticky", top: "var(--space-4)" }}>
-          <Card glass title="Aperçu" action={<Button size="sm" variant="ghost" onClick={printCv}>Imprimer / PDF</Button>}>
+          <Card glass title="Aperçu" action={
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              <Button size="sm" variant="ghost" onClick={exportWordCv}>Word</Button>
+              <Button size="sm" variant="ghost" onClick={printCv}>Imprimer / PDF</Button>
+            </div>
+          }>
             <div style={{ textAlign: "center", marginBottom: "var(--space-4)" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", color: "var(--color-text-primary)" }}>{fullName}</div>
               {subtitle && <div style={{ fontSize: "var(--text-sm)", color: "var(--color-gold-muted)", fontWeight: 600, marginTop: 2 }}>{subtitle}</div>}

@@ -9,6 +9,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptDossier, DOSSIER_TEMPLATES, type DossierTemplate, type DossierRecipient } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
+import { printHtml, downloadWord, slugify } from "@/lib/exportDoc";
 
 const LBL: React.CSSProperties = {
   fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)",
@@ -50,23 +51,20 @@ export function Dossier() {
     if (r) { setDossier(r); saveLocal("ns_dossier_result", r); }
   }
 
-  function exportPdf() {
-    if (!dossier) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
+  function buildDocHtml(): string {
     const title = profile?.brand_name || tplLabel;
     const recipLine = [recip.nom, recip.fonction, recip.org].filter(Boolean).join(" · ");
-    w.document.write(
+    return (
       `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
       `<style>body{font-family:Georgia,'Times New Roman',serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}h1{font-size:24px;margin-bottom:4px}.sub{color:#777;margin-bottom:6px}.recip{color:#555;font-size:13px;margin-bottom:28px}@media print{body{margin:0}}</style>` +
       `</head><body><h1>${escapeHtml(title)}</h1><div class="sub">${escapeHtml(profile?.name ?? "")}${profile?.ville ? " · " + escapeHtml(profile.ville) : ""} — ${escapeHtml(tplLabel)}</div>` +
       (recipLine ? `<div class="recip">À l'attention de : ${escapeHtml(recipLine)}</div>` : "") +
-      `${escapeHtml(dossier)}</body></html>`,
+      `${escapeHtml(dossier || "")}</body></html>`
     );
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 250);
   }
+
+  function exportPdf() { if (dossier) printHtml(buildDocHtml()); }
+  function exportWord() { if (dossier) downloadWord(`dossier-${slugify(tplLabel)}`, buildDocHtml()); }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 820 }}>
@@ -108,6 +106,7 @@ export function Dossier() {
           <Button variant="gold" loading={loading} onClick={generate}>
             {dossier ? "Régénérer le dossier" : `Générer — ${tplLabel}`}
           </Button>
+          {dossier && <Button variant="ghost" onClick={exportWord}>Word</Button>}
           {dossier && <Button variant="ghost" onClick={exportPdf}>Exporter en PDF</Button>}
         </div>
       </Card>
