@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { RoiSimulator } from "@/components/dashboard/RoiSimulator";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatStore } from "@/stores/useChatStore";
@@ -290,6 +291,9 @@ export function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Simulateur ROI — valeur tangible des modules utilisés */}
+      <RoiSimulator />
 
       {/* Bien-être & Résilience — le risque n°1 du solo, c'est l'isolement */}
       <Card title="Bien-être & Résilience" glass>
