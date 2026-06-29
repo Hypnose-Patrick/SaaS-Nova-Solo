@@ -9,6 +9,8 @@ import { promptBio } from "@/lib/lancementPrompts";
 import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
 import { AiEngineCard } from "@/components/settings/AiEngineCard";
 import { TelegramCard } from "@/components/settings/TelegramCard";
+import { SubscribeButton } from "@/components/SubscribeButton";
+import { useSearchParams } from "react-router-dom";
 
 const MAX_LOGO_BYTES = 500 * 1024; // 500 Ko — stocké en data URL dans le profil
 
@@ -100,6 +102,8 @@ function profileToForm(p: Profile): FormState {
 export function Settings() {
   const { profile, updateProfile, loading, error } = useUserStore();
   const [form, setForm] = useState<FormState | null>(null);
+  const [searchParams] = useSearchParams();
+  const subscriptionFeedback = searchParams.get("subscription");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const { loading: bioLoading, gen } = useAiGen();
@@ -458,6 +462,25 @@ export function Settings() {
             </span>
           </div>
         )}
+      </Card>
+
+      {/* Section : Abonnement */}
+      <Card glass>
+        <p style={SECTION_TITLE}>Abonnement</p>
+        {subscriptionFeedback === "success" && (
+          <div style={{ marginBottom: "var(--space-4)", padding: "var(--space-3)", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-sm)", color: "#22c55e" }}>
+            Abonnement activé — bienvenue dans Nova Solo !
+          </div>
+        )}
+        {subscriptionFeedback === "cancelled" && (
+          <div style={{ marginBottom: "var(--space-4)", padding: "var(--space-3)", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
+            Paiement annulé — aucun prélèvement effectué.
+          </div>
+        )}
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0" }}>
+          Accès complet à Nova Solo — tous les modules, l'IA illimitée, les exports.
+        </p>
+        <SubscribeButton subscriptionStatus={profile?.subscription_status} />
       </Card>
 
       {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
