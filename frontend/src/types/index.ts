@@ -26,6 +26,10 @@ export interface Profile {
   profil: string | null;
   pricing_tarif: number | null;
   pricing_clients: number | null;
+  stripe_customer_id: string | null;
+  subscription_status: string | null;
+  subscription_id: string | null;
+  subscription_end: string | null;
   created_at: string;
   updated_at: string;
 }
