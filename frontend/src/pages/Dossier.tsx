@@ -10,6 +10,7 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptDossier, DOSSIER_TEMPLATES, type DossierTemplate, type DossierRecipient } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord, slugify } from "@/lib/exportDoc";
+import { ExportGate } from "@/components/ExportGate";
 
 const LBL: React.CSSProperties = {
   fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)",
@@ -106,8 +107,12 @@ export function Dossier() {
           <Button variant="gold" loading={loading} onClick={generate}>
             {dossier ? "Régénérer le dossier" : `Générer — ${tplLabel}`}
           </Button>
-          {dossier && <Button variant="ghost" onClick={exportWord}>Word</Button>}
-          {dossier && <Button variant="ghost" onClick={exportPdf}>Exporter en PDF</Button>}
+          {dossier && (
+            <ExportGate>
+              <Button variant="ghost" onClick={exportWord}>Word</Button>
+              <Button variant="ghost" onClick={exportPdf}>Exporter en PDF</Button>
+            </ExportGate>
+          )}
         </div>
       </Card>
 
@@ -119,3 +124,4 @@ export function Dossier() {
     </div>
   );
 }
+
