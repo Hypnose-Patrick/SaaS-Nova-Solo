@@ -8,6 +8,7 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptCvGenerate, promptCvImprove, CV_TYPES, type CvType } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { ExportGate } from "@/components/ExportGate";
 
 const TA: React.CSSProperties = {
   width: "100%", minHeight: 72, marginTop: "var(--space-2)",
@@ -156,8 +157,10 @@ export function Cv() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", position: "sticky", top: "var(--space-4)" }}>
           <Card glass title="Aperçu" action={
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
-              <Button size="sm" variant="ghost" onClick={exportWordCv}>Word</Button>
-              <Button size="sm" variant="ghost" onClick={printCv}>Imprimer / PDF</Button>
+              <ExportGate>
+                <Button size="sm" variant="ghost" onClick={exportWordCv}>Word</Button>
+                <Button size="sm" variant="ghost" onClick={printCv}>Imprimer / PDF</Button>
+              </ExportGate>
             </div>
           }>
             <div style={{ textAlign: "center", marginBottom: "var(--space-4)" }}>
@@ -214,3 +217,4 @@ function Field({ label, k, f, patch, improve, improvingKey, loading, multiline, 
     </div>
   );
 }
+
