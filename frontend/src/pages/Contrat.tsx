@@ -8,6 +8,7 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptContrat } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { ExportGate } from "@/components/ExportGate";
 
 const TYPES = ["Prestation de coaching", "Mandat de conseil", "Formation / atelier", "Prestation de services récurrente"];
 const DUREES = ["Ponctuel (one-shot)", "3 mois", "6 mois", "12 mois reconductible"];
@@ -113,8 +114,10 @@ export function Contrat() {
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
               <Button size="sm" variant="ghost" onClick={copyText}>{copied ? "Copié ✓" : "Copier"}</Button>
               <Button size="sm" variant="ghost" onClick={downloadTxt}>.txt</Button>
-              <Button size="sm" variant="ghost" onClick={exportWord}>Word</Button>
-              <Button size="sm" variant="gold" onClick={exportPdf}>Imprimer / PDF</Button>
+              <ExportGate>
+                <Button size="sm" variant="ghost" onClick={exportWord}>Word</Button>
+                <Button size="sm" variant="gold" onClick={exportPdf}>Imprimer / PDF</Button>
+              </ExportGate>
             </div>
           ) : undefined}
         >
@@ -124,3 +127,4 @@ export function Contrat() {
     </div>
   );
 }
+
