@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { askAgent } from "@/lib/ai";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
 import { loadFinanceModel, buildBudgetMarkdown } from "@/lib/finance";
+import { ExportGate } from "@/components/ExportGate";
 
 // Les 9 blocs du Business Model Canvas (mêmes clés que la page BMC).
 const BMC_LABELS: Record<string, string> = {
@@ -310,8 +311,10 @@ export function BusinessPlan() {
             }} />
           </div>
           <Button size="sm" variant="gold" loading={generatingAll} onClick={generateAll}>✦ Tout générer</Button>
-          <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportWord}>Word</Button>
-          <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportPdf}>PDF</Button>
+          <ExportGate>
+            <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportWord}>Word</Button>
+            <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportPdf}>PDF</Button>
+          </ExportGate>
         </div>
       </div>
 
@@ -446,3 +449,4 @@ export function BusinessPlan() {
     </div>
   );
 }
+
