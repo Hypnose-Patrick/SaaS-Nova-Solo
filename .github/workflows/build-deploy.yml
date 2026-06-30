@@ -66,6 +66,9 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./landing/
           server-dir: /public_html/
+          # Hostinger ferme parfois le socket de contrôle → timeout transitoire.
+          # 60s (au lieu de 30s par défaut) réduit ces échecs aléatoires.
+          timeout: 60000
           exclude: |
             **/.git*
             **/.git*/**
