@@ -43,7 +43,7 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.ch";
+    const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.com";
 
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
@@ -64,7 +64,10 @@ serve(async (req) => {
       payment_method_types: ["card"],
       line_items: [{ price: Deno.env.get("STRIPE_PRICE_ID")!, quantity: 1 }],
       mode: "subscription",
-      success_url: `${appUrl}/?subscription=success`,
+      // `/` est servi par Hostinger comme la landing (via .htaccess) — il faut une
+      // route SPA, sinon l'utilisateur retombe sur la landing après paiement.
+      // /login (connecté) passe le gate → dashboard une fois l'abonnement actif.
+      success_url: `${appUrl}/login?subscription=success`,
       cancel_url: `${appUrl}/subscribe?subscription=cancelled`,
       locale: "fr",
     });

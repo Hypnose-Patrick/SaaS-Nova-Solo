@@ -19,7 +19,7 @@ if (!import.meta.env.VITE_APP_URL && window.location.hostname !== "localhost") {
 async function signInWithGoogle() {
   await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: window.location.origin },
+    options: { redirectTo: `${window.location.origin}/login` },
   });
 }
 
@@ -155,7 +155,7 @@ export function Login() {
               },
             }}
             providers={[]}
-            redirectTo={window.location.origin}
+            redirectTo={`${window.location.origin}/login`}
             localization={{
               variables: {
                 sign_in: {
@@ -183,7 +183,7 @@ export function Login() {
             marginTop: "var(--space-6)",
           }}
         >
-          Vos données restent privées — stockage Suisse, conforme nLPD.
+          Vos données restent privées — hébergées dans l'UE (Supabase), conformes nLPD et RGPD.
         </p>
 
         <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
