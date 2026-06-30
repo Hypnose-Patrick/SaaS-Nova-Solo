@@ -121,7 +121,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")
+              : (profile?.subscription_status === "active" || profile?.subscription_status === "trialing" || profile?.is_admin)
                 ? <Navigate to="/" replace />
                 : <Subscribe />
           }
@@ -131,7 +131,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : (profile && profile.subscription_status !== "active" && profile.subscription_status !== "trialing")
+              : (profile && profile.subscription_status !== "active" && profile.subscription_status !== "trialing" && !profile.is_admin)
                 ? <Navigate to="/subscribe" replace />
                 : <ProtectedRoutes />
           }

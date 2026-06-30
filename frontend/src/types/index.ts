@@ -31,6 +31,7 @@ export interface Profile {
   subscription_id: string | null;
   subscription_end: string | null;
   plan: "solo" | "pro" | null;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }
