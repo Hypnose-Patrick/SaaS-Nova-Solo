@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="doc-title">CV</title>
+<style>
+
+/* ═══════════════════════════════════════════════════════════
+   CV SUISSE ROMAND — Template print-ready A4
+   Placeholders {{VARIABLE}} remplacés côté serveur/app
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:      #8b6f47;
+  --text:        #1a1a2e;
+  --text-muted:  #5c5c7a;
+  --text-subtle: #8a8aa0;
+  --bg:          #f5f0e8;
+  --border:      rgba(26, 26, 46, 0.10);
+  --font-head:   Georgia, 'Times New Roman', serif;
+  --font-body:   Calibri, 'Helvetica Neue', Arial, sans-serif;
+  --page-w:      210mm;
+  --page-h:      297mm;
+  --mg-h:        13mm;
+  --mg-v:        11mm;
+}
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Centrage écran ── */
+.cv-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 72px;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* ── Feuille A4 ── */
+.cv-page {
+  width: var(--page-w);
+  min-height: var(--page-h);
+  background: #ffffff;
+  box-shadow: 0 2px 32px rgba(26,26,46,0.10), 0 1px 6px rgba(26,26,46,0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════
+   EN-TÊTE
+═══════════════════════════════════════════ */
+.cv-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--mg-v) var(--mg-h) 8mm;
+  border-bottom: 1.5px solid var(--accent);
+}
+
+.header-left { flex: 1; min-width: 0; }
+
+.cv-name {
+  font-family: var(--font-head);
+  font-size: 34px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 5px;
+}
+
+.cv-subtitle {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 9px;
+}
+
+.cv-contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.cv-contacts a { color: var(--text-muted); text-decoration: none; }
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.contact-icon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.header-right img {
+  max-height: 56px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.header-right:empty { display: none; }
+
+/* ═══════════════════════════════════════════
+   CORPS — deux colonnes
+═══════════════════════════════════════════ */
+.cv-body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0;
+}
+
+/* Colonne principale (Profil + Expérience) */
+.col-main {
+  flex: 1;
+  min-width: 0;
+  padding: 7mm var(--mg-h) var(--mg-v);
+  border-right: 1px solid var(--border);
+}
+
+/* Colonne latérale (Compétences + Formation + Langues) */
+.col-side {
+  width: 66mm;
+  flex-shrink: 0;
+  padding: 7mm 11mm var(--mg-v) 10mm;
+  background: #fdfcfa;
+}
+
+/* ═══════════════════════════════════════════
+   SECTIONS
+═══════════════════════════════════════════ */
+.cv-section { margin-bottom: 8mm; }
+.cv-section:last-child { margin-bottom: 0; }
+
+.section-title {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--accent);
+}
+
+.section-content { }
+
+/* ── Typographie du contenu ── */
+.section-content p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-wrap: pretty;
+}
+
+.section-content p:last-child { margin-bottom: 0; }
+
+/* Listes génériques */
+.section-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.section-content li {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+  padding-left: 14px;
+  position: relative;
+}
+
+.section-content li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.section-content strong { font-weight: 600; }
+.section-content em { font-style: italic; color: var(--text-muted); }
+
+/* ── Entrées d'expérience ── */
+.job-entry {
+  margin-bottom: 9px;
+  break-inside: avoid;
+}
+
+.job-entry:last-child { margin-bottom: 0; }
+
+.job-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 1px;
+}
+
+.job-title {
+  font-family: var(--font-head);
+  font-size: 13.5px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.job-date {
+  font-size: 11px;
+  color: var(--text-subtle);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-style: italic;
+}
+
+.job-company {
+  font-size: 11.5px;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.job-body { }
+
+.job-body p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.58;
+  margin-bottom: 4px;
+}
+
+.job-body ul {
+  list-style: none;
+  padding: 0;
+  margin: 3px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.job-body li {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-left: 13px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.job-body li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+.job-body strong { font-weight: 600; color: var(--text); }
+
+/* ── Entrées de formation ── */
+.edu-entry {
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+.edu-entry:last-child { margin-bottom: 0; }
+
+.edu-title {
+  font-family: var(--font-head);
+  font-size: 12.5px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 1px;
+}
+
+.edu-school {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── h3 (sous-section générique) ── */
+.section-content h3 {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin: 10px 0 4px;
+}
+
+/* ── Séparateur hr ── */
+.section-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+/* ═══════════════════════════════════════════
+   BOUTON ÉCRAN
+═══════════════════════════════════════════ */
+.screen-only { display: block; }
+
+.print-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  z-index: 9999;
+  transition: opacity .2s;
+}
+.print-btn:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════
+   IMPRESSION
+═══════════════════════════════════════════ */
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; font-size: 13px; }
+
+  .cv-wrap { padding: 0; background: #fff; }
+  .cv-page { width: 100%; box-shadow: none; min-height: 0; }
+  .col-side { background: #fafaf8; }
+  .screen-only { display: none !important; }
+
+  .cv-section { break-inside: auto; }
+  .job-entry, .edu-entry { break-inside: avoid; }
+  .section-title { break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     BLOC PRÉVISUALISATION — supprimer avant déploiement
+     ═══════════════════════════════════════════ -->
+<script id="preview-data">
+window.__PREVIEW = {
+  LOGO_URL:     '',
+  ACCENT_COLOR: '#7a5f39',
+  NAME:         'Sophie Renard-Martin',
+  SUBTITLE:     'Coaching exécutif · Développement du leadership',
+  EMAIL:        'sophie.renard@exemple.ch',
+  TEL:          '+41 79 234 56 78',
+  VILLE:        'Lausanne',
+  WEBSITE:      'sophie-renard.ch',
+  PROFIL:       "Coach certifiée ICF (PCC) et formatrice expérimentée, j'accompagne depuis quinze ans les cadres et dirigeants dans leur développement professionnel. Mon approche intègre les neurosciences, la PNL et l'approche systémique pour des transformations durables.\n\nReconnue pour ma capacité à créer un espace de confiance propice au changement, j'interviens en entreprise et en cabinet privé, en français et en anglais.",
+  SKILLS:       "- Coaching individuel & d'équipe\n- PNL — Praticien certifié NLPU\n- Approche systémique & solution\n- Gestion du stress et performance\n- Facilitation de groupes\n- Bilans de compétences certifiés",
+  EXP:          "## Directrice pédagogique | PNL-Formation SA | 2019 – présent\n**Lausanne, Suisse**\nDéveloppement et pilotage des programmes de formation certifiants en coaching et PNL. Management d'une équipe de 8 formateurs.\n- Conception de 4 cursus certifiants ICF/NLPU\n- Développement de 12 partenariats entreprises\n- Satisfaction participants : 97 %\n\n## Coach exécutive | Indépendante | 2015 – 2019\n**Lausanne & Genève**\nAccompagnement de cadres supérieurs et dirigeants dans leurs transitions professionnelles et le développement de leur leadership.\n- Plus de 200 coachés en 4 ans\n- Partenaire certifiée pour 3 cabinets RH romands\n\n## Responsable RH & Formation | BCV | 2010 – 2015\n**Lausanne**\nPilotage de la politique de développement des compétences pour 800 collaborateurs.",
+  FORMATION:    "## Master en Sciences de l'Éducation\nUniversité de Lausanne · 2008\n\n## PCC — Professional Certified Coach\nInternational Coaching Federation · 2016\n\n## Praticien certifié PNL\nNLPU, Santa Cruz (USA) · 2014",
+  LANGUES:      "- **Français** — Langue maternelle\n- **Anglais** — Courant (C1)\n- **Allemand** — Intermédiaire (B2)"
+};
+</script>
+
+<!-- ═══════════════════════════════════════════
+     DONNÉES SERVEUR — placeholders bruts
+     ═══════════════════════════════════════════ -->
+<script>
+var D = Object.assign({
+  LOGO_URL:     '{{LOGO_URL}}',
+  ACCENT_COLOR: '{{ACCENT_COLOR}}',
+  NAME:         '{{NAME}}',
+  SUBTITLE:     '{{SUBTITLE}}',
+  EMAIL:        '{{EMAIL}}',
+  TEL:          '{{TEL}}',
+  VILLE:        '{{VILLE}}',
+  WEBSITE:      '{{WEBSITE}}',
+  PROFIL:       '{{PROFIL}}',
+  SKILLS:       '{{SKILLS}}',
+  EXP:          '{{EXP}}',
+  FORMATION:    '{{FORMATION}}',
+  LANGUES:      '{{LANGUES}}'
+}, window.__PREVIEW || {});
+</script>
+
+<!-- ═══════════════════════════════════════════
+     STRUCTURE DU CV
+     ═══════════════════════════════════════════ -->
+<div class="cv-wrap">
+  <div class="cv-page">
+
+    <!-- EN-TÊTE -->
+    <header class="cv-header">
+      <div class="header-left">
+        <h1 class="cv-name" id="cv-name"></h1>
+        <div class="cv-subtitle" id="cv-subtitle"></div>
+        <div class="cv-contacts" id="cv-contacts"></div>
+      </div>
+      <div class="header-right" id="header-right"></div>
+    </header>
+
+    <!-- CORPS -->
+    <div class="cv-body">
+
+      <!-- Colonne principale -->
+      <div class="col-main">
+
+        <section class="cv-section">
+          <h2 class="section-title">Profil</h2>
+          <div class="section-content" id="profil-content"></div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="section-title">Expérience professionnelle</h2>
+          <div class="section-content" id="exp-content"></div>
+        </section>
+
+      </div>
+
+      <!-- Colonne latérale -->
+      <div class="col-side">
+
+        <section class="cv-section">
+          <h2 class="section-title">Compétences</h2>
+          <div class="section-content" id="skills-content"></div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="section-title">Formation</h2>
+          <div class="section-content" id="formation-content"></div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="section-title">Langues</h2>
+          <div class="section-content" id="langues-content"></div>
+        </section>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Bouton impression -->
+<button class="print-btn screen-only" onclick="window.print()">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+    <rect x="6" y="14" width="12" height="8"></rect>
+  </svg>
+  Exporter PDF
+</button>
+
+<!-- ═══════════════════════════════════════════
+     LOGIQUE
+     ═══════════════════════════════════════════ -->
+<script>
+(function () {
+
+  /* ── Utilitaires ── */
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function isPlaceholder(v) {
+    return !v || (typeof v === 'string' && v.indexOf('{{') !== -1);
+  }
+
+  function val(key) {
+    var v = D[key];
+    return isPlaceholder(v) ? '' : v;
+  }
+
+  /* Gras et italique inline */
+  function inline(s) {
+    return String(s)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/_(.+?)_/g, '<em>$1</em>');
+  }
+
+  /* ── Rendu logo ── */
+  function renderLogo() {
+    var el = document.getElementById('header-right');
+    var url = val('LOGO_URL');
+    if (url && url.trim()) {
+      el.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(val('NAME')) + '">';
+    } else {
+      el.innerHTML = '';
+    }
+  }
+
+  /* ── Parser générique : paragraphes + listes ── */
+  function parseGeneric(raw) {
+    if (!raw) return '';
+    var lines = raw.split('\n');
+    var html = '';
+    var paraLines = [];
+    var inList = false;
+
+    function flushPara() {
+      if (paraLines.length) {
+        html += '<p>' + paraLines.map(inline).join('<br>') + '</p>';
+        paraLines = [];
+      }
+    }
+    function flushList() {
+      if (inList) { html += '</ul>'; inList = false; }
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].replace(/\r$/, '').trimEnd();
+      if (line.startsWith('### ')) {
+        flushPara(); flushList();
+        html += '<h3>' + inline(line.slice(4)) + '</h3>';
+      } else if (/^[-*•] /.test(line)) {
+        flushPara();
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inline(line.slice(2)) + '</li>';
+      } else if (line.startsWith('---')) {
+        flushPara(); flushList();
+        html += '<hr>';
+      } else if (line.trim() === '') {
+        flushPara(); flushList();
+      } else {
+        flushList();
+        paraLines.push(line);
+      }
+    }
+    flushPara(); flushList();
+    return html;
+  }
+
+  /* ── Parser expérience : ## Titre | Société | Date ── */
+  function parseExperience(raw) {
+    if (!raw) return '';
+
+    /* Découper en blocs d'entrées séparés par ## */
+    var blocks = raw.split(/^## /m).filter(function (b) { return b.trim(); });
+    var html = '';
+
+    for (var b = 0; b < blocks.length; b++) {
+      var block = blocks[b];
+      var blockLines = block.split('\n');
+      var firstLine = blockLines[0].trimEnd();
+      var rest = blockLines.slice(1);
+
+      /* Analyse de la ligne titre */
+      var parts = firstLine.split('|').map(function (p) { return p.trim(); });
+      var jobTitle   = parts[0] || '';
+      var jobCompany = parts[1] || '';
+      var jobDate    = parts[2] || '';
+
+      /* Corps du bloc */
+      var bodyLines = [];
+      var inList = false;
+      var bodyHtml = '';
+      var paraLines = [];
+
+      function flushPara2() {
+        if (paraLines.length) {
+          bodyHtml += '<p>' + paraLines.map(inline).join('<br>') + '</p>';
+          paraLines = [];
+        }
+      }
+      function flushList2() {
+        if (inList) { bodyHtml += '</ul>'; inList = false; }
+      }
+
+      for (var i = 0; i < rest.length; i++) {
+        var line = rest[i].replace(/\r$/, '').trimEnd();
+        /* Ignorer les lignes de localisation en gras seul */
+        if (/^\*\*[^*]+\*\*$/.test(line)) {
+          flushPara2(); flushList2();
+          bodyHtml += '<p class="job-location">' + inline(line) + '</p>';
+          continue;
+        }
+        if (/^[-*•] /.test(line)) {
+          flushPara2();
+          if (!inList) { bodyHtml += '<ul>'; inList = true; }
+          bodyHtml += '<li>' + inline(line.slice(2)) + '</li>';
+        } else if (line.trim() === '') {
+          flushPara2(); flushList2();
+        } else {
+          flushList2();
+          paraLines.push(line);
+        }
+      }
+      flushPara2(); flushList2();
+
+      html += '<div class="job-entry">';
+      html += '<div class="job-header">';
+      html += '<span class="job-title">' + esc(jobTitle) + '</span>';
+      if (jobDate) html += '<span class="job-date">' + esc(jobDate) + '</span>';
+      html += '</div>';
+      if (jobCompany) html += '<div class="job-company">' + esc(jobCompany) + '</div>';
+      if (bodyHtml) html += '<div class="job-body">' + bodyHtml + '</div>';
+      html += '</div>';
+    }
+
+    return html || parseGeneric(raw);
+  }
+
+  /* ── Parser formation : ## Diplôme\nÉcole · Année ── */
+  function parseFormation(raw) {
+    if (!raw) return '';
+    var blocks = raw.split(/^## /m).filter(function (b) { return b.trim(); });
+    if (!blocks.length) return parseGeneric(raw);
+
+    var html = '';
+    for (var b = 0; b < blocks.length; b++) {
+      var block = blocks[b];
+      var blockLines = block.split('\n').filter(function (l) { return l.trimEnd(); });
+      var titre = blockLines[0] ? blockLines[0].trimEnd() : '';
+      var ecole = blockLines[1] ? blockLines[1].trimEnd() : '';
+
+      html += '<div class="edu-entry">';
+      html += '<div class="edu-title">' + inline(esc(titre)) + '</div>';
+      if (ecole) html += '<div class="edu-school">' + inline(esc(ecole)) + '</div>';
+      html += '</div>';
+    }
+    return html;
+  }
+
+  /* ── Contacts ── */
+  function renderContacts() {
+    var el = document.getElementById('cv-contacts');
+    var items = [];
+
+    /* Icône SVG inline */
+    var icons = {
+      email: '<svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,14 22,4"/></svg>',
+      tel:   '<svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 4.1 5.18 2 2 0 0 1 6.09 3h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L10.09 11a16 16 0 0 0 6.91 6.91l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+      ville: '<svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+      web:   '<svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
+    };
+
+    var email   = val('EMAIL');
+    var tel     = val('TEL');
+    var ville   = val('VILLE');
+    var website = val('WEBSITE');
+
+    if (email)   items.push('<div class="contact-item">' + icons.email + '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a></div>');
+    if (tel)     items.push('<div class="contact-item">' + icons.tel   + '<span>' + esc(tel) + '</span></div>');
+    if (ville)   items.push('<div class="contact-item">' + icons.ville + '<span>' + esc(ville) + '</span></div>');
+    if (website) items.push('<div class="contact-item">' + icons.web   + '<a href="https://' + esc(website) + '" target="_blank">' + esc(website) + '</a></div>');
+
+    el.innerHTML = items.join('');
+  }
+
+  /* ── Initialisation ── */
+  function init() {
+    /* Accent color */
+    var accent = val('ACCENT_COLOR');
+    if (accent) document.documentElement.style.setProperty('--accent', accent);
+
+    /* Titre onglet */
+    var name = val('NAME');
+    document.getElementById('doc-title').textContent = name ? 'CV – ' + name : 'CV';
+
+    /* En-tête */
+    document.getElementById('cv-name').textContent = name;
+    document.getElementById('cv-subtitle').textContent = val('SUBTITLE');
+    renderContacts();
+    renderLogo();
+
+    /* Sections */
+    document.getElementById('profil-content').innerHTML    = parseGeneric(val('PROFIL'));
+    document.getElementById('exp-content').innerHTML       = parseExperience(val('EXP'));
+    document.getElementById('skills-content').innerHTML    = parseGeneric(val('SKILLS'));
+    document.getElementById('formation-content').innerHTML = parseFormation(val('FORMATION'));
+    document.getElementById('langues-content').innerHTML   = parseGeneric(val('LANGUES'));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+
+</body>
+</html>

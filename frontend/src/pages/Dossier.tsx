@@ -10,7 +10,9 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptDossier, DOSSIER_TEMPLATES, type DossierTemplate, type DossierRecipient } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord, slugify } from "@/lib/exportDoc";
+import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
+import dossierTemplateHtml from "@/lib/templates/dossier.html?raw";
 
 const LBL: React.CSSProperties = {
   fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)",
@@ -53,15 +55,21 @@ export function Dossier() {
   }
 
   function buildDocHtml(): string {
-    const title = profile?.brand_name || tplLabel;
-    const recipLine = [recip.nom, recip.fonction, recip.org].filter(Boolean).join(" · ");
-    return (
-      `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
-      `<style>body{font-family:Georgia,'Times New Roman',serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}h1{font-size:24px;margin-bottom:4px}.sub{color:#777;margin-bottom:6px}.recip{color:#555;font-size:13px;margin-bottom:28px}@media print{body{margin:0}}</style>` +
-      `</head><body><h1>${escapeHtml(title)}</h1><div class="sub">${escapeHtml(profile?.name ?? "")}${profile?.ville ? " · " + escapeHtml(profile.ville) : ""} — ${escapeHtml(tplLabel)}</div>` +
-      (recipLine ? `<div class="recip">À l'attention de : ${escapeHtml(recipLine)}</div>` : "") +
-      `${escapeHtml(dossier || "")}</body></html>`
-    );
+    return fillTemplate(dossierTemplateHtml, {
+      LOGO_URL:        profile?.logo_url      ?? "",
+      ACCENT_COLOR:    profile?.accent_color  ?? "#8b6f47",
+      BRAND_NAME:      profile?.brand_name    ?? profile?.name ?? "",
+      NAME:            profile?.name          ?? "",
+      EMAIL:           profile?.contact_email ?? profile?.email ?? "",
+      TEL:             profile?.contact_tel   ?? "",
+      VILLE:           profile?.ville         ?? "",
+      WEBSITE:         profile?.website       ?? "",
+      TEMPLATE_LABEL:  tplLabel,
+      RECIP_NOM:       recip.nom,
+      RECIP_FONCTION:  recip.fonction,
+      RECIP_ORG:       recip.org,
+      CONTENT:         dossier ?? "",
+    });
   }
 
   function exportPdf() { if (dossier) printHtml(buildDocHtml()); }

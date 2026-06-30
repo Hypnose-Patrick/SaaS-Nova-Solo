@@ -8,7 +8,9 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptCvGenerate, promptCvImprove, CV_TYPES, type CvType } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
+import cvTemplateHtml from "@/lib/templates/cv.html?raw";
 
 const TA: React.CSSProperties = {
   width: "100%", minHeight: 72, marginTop: "var(--space-2)",
@@ -82,23 +84,21 @@ export function Cv() {
   const contactLine = [profile?.contact_email || profile?.email, profile?.contact_tel, profile?.ville].filter(Boolean).join("  ·  ");
 
   function buildDocHtml(): string {
-    const block = (title: string, body: string) =>
-      body.trim()
-        ? `<h2>${escapeHtml(title)}</h2><div class="b">${escapeHtml(body)}</div>`
-        : "";
-    return (
-      `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>CV — ${escapeHtml(fullName)}</title>` +
-      `<style>body{font-family:Calibri,Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 24px;color:#1a1a1a;line-height:1.5;font-size:13px}` +
-      `.name{font-size:22px;font-weight:800;text-align:center}.sub{text-align:center;color:#4f46e5;font-weight:600;font-size:13px;margin-top:2px}` +
-      `.contact{text-align:center;color:#64748b;font-size:11px;margin:4px 0 14px}h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6366f1;border-top:1px solid #e2e8f0;padding-top:8px;margin:12px 0 4px}` +
-      `.b{white-space:pre-wrap}@media print{body{margin:0}}</style></head><body>` +
-      `<div class="name">${escapeHtml(fullName)}</div>` +
-      (subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : "") +
-      (contactLine ? `<div class="contact">${escapeHtml(contactLine)}</div>` : "") +
-      block("Profil", f.profil) + block("Compétences clés", f.skills) +
-      block("Expérience", f.exp) + block("Formation", f.formation) + block("Langues", f.langues) +
-      `</body></html>`
-    );
+    return fillTemplate(cvTemplateHtml, {
+      LOGO_URL:     profile?.logo_url     ?? "",
+      ACCENT_COLOR: profile?.accent_color ?? "#8b6f47",
+      NAME:         fullName,
+      SUBTITLE:     subtitle,
+      EMAIL:        profile?.contact_email ?? profile?.email ?? "",
+      TEL:          profile?.contact_tel   ?? "",
+      VILLE:        profile?.ville         ?? "",
+      WEBSITE:      profile?.website       ?? "",
+      PROFIL:       f.profil,
+      SKILLS:       f.skills,
+      EXP:          f.exp,
+      FORMATION:    f.formation,
+      LANGUES:      f.langues,
+    });
   }
 
   function printCv() { printHtml(buildDocHtml()); }

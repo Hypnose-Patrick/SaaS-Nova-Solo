@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="doc-title">Business Plan</title>
+<style>
+
+/* ═══════════════════════════════════════════════════════════
+   BUSINESS PLAN — Template print-ready A4
+   Placeholders {{VARIABLE}} remplacés côté serveur/app
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:       #7a5f39;
+  --accent-soft:  rgba(122, 95, 57, 0.08);
+  --text:         #1a1a2e;
+  --text-muted:   #5c5c7a;
+  --text-subtle:  #8a8aa0;
+  --bg:           #f5f0e8;
+  --bg-surface:   #fdfcfa;
+  --border:       rgba(26, 26, 46, 0.10);
+  --font-head:    Georgia, 'Times New Roman', serif;
+  --font-body:    Calibri, 'Helvetica Neue', Arial, sans-serif;
+  --page-w:       210mm;
+  --margin-h:     18mm;
+  --margin-v:     12mm;
+}
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Centrage écran ── */
+.pages-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 20px 80px;
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* ── Feuille A4 ── */
+.page-shell {
+  width: var(--page-w);
+  background: #fff;
+  box-shadow: 0 2px 32px rgba(26,26,46,0.09), 0 1px 6px rgba(26,26,46,0.06);
+}
+
+/* ═══════════════════════════════════════════
+   PAGE DE GARDE
+═══════════════════════════════════════════ */
+.cover {
+  min-height: 297mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--margin-v) var(--margin-h);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bande accent latérale gauche */
+.cover::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: var(--accent);
+}
+
+.cover-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+  padding: 20mm 0;
+}
+
+.cover-logo-zone {
+  margin-bottom: 12mm;
+  min-height: 16mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-logo-zone img {
+  max-height: 72px;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.cover-brand-fallback {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: normal;
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+
+.cover-doc-type {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.cover-title {
+  font-family: var(--font-head);
+  font-size: 42px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: 6mm;
+  text-wrap: balance;
+}
+
+.cover-domaine {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10mm;
+  font-style: italic;
+}
+
+.cover-rule {
+  width: 60px;
+  height: 2px;
+  background: var(--accent);
+  margin: 0 auto 10mm;
+}
+
+.cover-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+.cover-meta strong { color: var(--text); font-weight: 600; }
+
+.cover-footer {
+  width: 100%;
+  padding-top: 8mm;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.cover-footer-left {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.cover-footer-right {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-subtle);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER/FOOTER RÉCURRENTS (table thead/tfoot)
+═══════════════════════════════════════════ */
+.doc-frame {
+  width: 100%;
+  border-collapse: collapse;
+}
+.doc-frame td { padding: 0; }
+
+.pad-top, .pad-bottom { display: none; }
+
+.running-header,
+.running-footer { display: none; }
+
+/* ═══════════════════════════════════════════
+   SOMMAIRE
+═══════════════════════════════════════════ */
+.toc-section {
+  padding: 12mm var(--margin-h) 10mm;
+}
+
+.toc-heading {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--accent);
+  margin-bottom: 8mm;
+}
+
+.toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.toc-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+}
+
+.toc-num {
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: normal;
+  min-width: 28px;
+  flex-shrink: 0;
+}
+
+.toc-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  color: var(--text);
+  font-weight: normal;
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════
+   SECTIONS DE CONTENU
+═══════════════════════════════════════════ */
+.bp-section {
+  padding: 10mm var(--margin-h) 8mm;
+}
+
+.bp-section + .bp-section {
+  border-top: 2px solid var(--accent-soft);
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 7mm;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--accent);
+}
+
+.section-num {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: normal;
+  color: var(--accent);
+  line-height: 1;
+  opacity: 0.5;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: normal;
+  color: var(--accent);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.section-content { }
+
+/* ── Typographie du corps ── */
+.section-content h2 {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: normal;
+  color: var(--text);
+  margin: 16px 0 6px;
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-content h2::before {
+  content: '';
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 1.5px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.section-content h3 {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin: 14px 0 5px;
+}
+
+.section-content p {
+  font-size: 13px;
+  line-height: 1.68;
+  color: var(--text);
+  margin-bottom: 10px;
+  text-wrap: pretty;
+}
+
+.section-content p:last-child { margin-bottom: 0; }
+
+.section-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.section-content li {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  padding-left: 16px;
+  position: relative;
+  text-wrap: pretty;
+}
+
+.section-content li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 9px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.section-content strong { font-weight: 600; }
+.section-content em { font-style: italic; color: var(--text-muted); }
+
+.section-content blockquote {
+  margin: 14px 0;
+  padding: 12px 16px;
+  border-left: 2px solid var(--accent);
+  background: var(--accent-soft);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  break-inside: avoid;
+}
+
+.section-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* Tableau financier simple */
+.section-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 12px 0;
+  break-inside: avoid;
+}
+.section-content th {
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-align: left;
+}
+.section-content td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.section-content tr:last-child td { border-bottom: none; }
+.section-content tr:nth-child(even) td { background: var(--bg-surface); }
+
+/* ── Header running (screen-only, en haut du main) ── */
+.doc-screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6mm var(--margin-h) 5mm;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.dsh-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dsh-logo img {
+  max-height: 20px;
+  max-width: 80px;
+  object-fit: contain;
+}
+
+.dsh-brand {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dsh-sep { width: 1px; height: 14px; background: var(--border); }
+
+.dsh-doc {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-subtle);
+}
+
+/* ── Bouton impression ── */
+.screen-only { display: block; }
+
+.print-btn {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--accent); color: #fff;
+  border: none; padding: 10px 20px;
+  border-radius: 5px;
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.05em;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  z-index: 9999; transition: opacity .2s;
+}
+.print-btn:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════
+   IMPRESSION
+═══════════════════════════════════════════ */
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+
+  .pages-wrap { padding: 0; background: #fff; gap: 0; display: block; }
+  .page-shell { width: 100%; box-shadow: none; }
+  .screen-only { display: none !important; }
+  .doc-screen-header { display: none !important; }
+
+  /* Couverture : saut de page après */
+  .cover {
+    page-break-after: always;
+    break-after: page;
+    min-height: 0;
+  }
+
+  /* Doc-frame : marges récurrentes via thead/tfoot */
+  .pad-top {
+    display: table-cell;
+    height: 14mm;
+    vertical-align: middle;
+    padding: 0 18mm;
+    border-bottom: 1px solid rgba(26,26,46,0.1);
+  }
+  .pad-bottom {
+    display: table-cell;
+    height: 10mm;
+    vertical-align: middle;
+    padding: 0 18mm;
+    border-top: 1px solid rgba(26,26,46,0.1);
+  }
+
+  /* Header récurrent */
+  .running-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .rh-left {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .rh-logo img { max-height: 18px; max-width: 70px; object-fit: contain; }
+  .rh-brand {
+    font-family: var(--font-body); font-size: 10px;
+    font-weight: 600; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .rh-sep { width: 1px; height: 12px; background: var(--border); }
+  .rh-doc {
+    font-family: var(--font-head); font-size: 10px;
+    font-style: italic; color: var(--text-subtle);
+  }
+
+  /* Footer récurrent */
+  .running-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .rf-brand {
+    font-family: var(--font-body); font-size: 10px;
+    color: var(--text-subtle);
+  }
+  .rf-date {
+    font-family: var(--font-head); font-size: 10px;
+    font-style: italic; color: var(--text-subtle);
+  }
+
+  /* Sommaire et sections */
+  .toc-section {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .bp-section {
+    page-break-before: always;
+    break-before: page;
+    page-break-inside: avoid; /* heuristique */
+  }
+  /* Premier section : pas de saut avant (suit le toc) */
+  .bp-section:first-child {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  h2, h3, .section-header { break-after: avoid; }
+  blockquote, ul, table { break-inside: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  .section-content h2, .section-content h3 { break-after: avoid; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     BLOC PRÉVISUALISATION — supprimer avant déploiement
+     ═══════════════════════════════════════════ -->
+<script id="preview-data">
+window.__PREVIEW = {
+  LOGO_URL:       '',
+  ACCENT_COLOR:   '#6b5230',
+  BRAND_NAME:     'PNL-Formation SA',
+  NAME:           'Patrick Beiner',
+  DOMAINE:        'Formation professionnelle & coaching',
+  VILLE:          'Lausanne',
+  EMAIL:          'contact@pnl-formation.org',
+  DATE:           '30 juin 2026',
+
+  SECTION_RESUME:      "PNL-Formation SA est un cabinet de formation certifiante spécialisé dans le coaching, la PNL et le développement professionnel. Fondé à Lausanne en 2015, le cabinet accompagne aujourd'hui plus de 300 participants par an à travers des programmes intensifs et certifiants reconnus par les instances ICF et NLPU.\n\nLe présent business plan présente la stratégie de développement 2026–2028, incluant l'expansion digitale, le lancement de deux nouvelles certifications et l'entrée sur le marché genevois.",
+  SECTION_MARCHE:      "## Taille du marché\nLe marché suisse romand de la formation professionnelle représente **CHF 2,3 milliards** annuels (OFS 2024), dont environ 15 % adressés aux formations en soft skills, coaching et leadership.\n\n## Tendances clés\n- Fort développement du e-learning et des formats hybrides\n- Demande croissante pour des certifications reconnues internationalement\n- Montée en puissance des budgets RH dédiés au bien-être et à la résilience\n\n## Notre segment\nNous ciblons le segment premium B2B (entreprises de 50+ collaborateurs) et les professionnels indépendants souhaitant se reconvertir ou se certifier.",
+  SECTION_OFFRE:       "Notre offre s'articule autour de trois piliers :\n\n## 1. Formations certifiantes ICF/NLPU\nProgrammes intensifs de 8 à 14 jours débouchant sur une certification reconnue internationalement. Tarif moyen : CHF 3 800 par participant.\n\n## 2. Coaching exécutif B2B\nAccompagnement sur mesure pour les dirigeants et cadres supérieurs. Forfaits entreprises à partir de CHF 5 000.\n\n## 3. Plateforme e-learning\n**Lancement prévu T3 2026** — modules asynchrones accessibles par abonnement mensuel (CHF 49/mois).",
+  SECTION_CLIENTS:     "- **Entreprises romandes (50–500 collaborateurs)** — RH et managers souhaitant développer les compétences internes\n- **Professionnels en transition** — coaches, thérapeutes, consultants souhaitant se certifier\n- **Particuliers** — personnes cherchant un accompagnement personnel ou une reconversion",
+  SECTION_CANAUX:      "## Canaux actuels\n- Site web organique (SEO) — 45 % des leads\n- Bouche-à-oreille et alumni — 30 % des leads\n- LinkedIn B2B — 15 % des leads\n- Partenaires prescripteurs (cabinets RH) — 10 %\n\n## Développements prévus\n- Lancement d'une newsletter mensuelle (objectif : 2 000 abonnés fin 2026)\n- Partenariats avec 5 nouvelles ESN/cabinets RH romands\n- Programme ambassadeurs alumni",
+  SECTION_FINANCES:    "## Chiffre d'affaires prévisionnel\n\n| Exercice | CA (CHF) | Croissance |\n|---|---|---|\n| 2024 (réalisé) | 380 000 | — |\n| 2025 (réalisé) | 445 000 | +17 % |\n| 2026 (objectif) | 560 000 | +26 % |\n| 2027 (objectif) | 720 000 | +29 % |\n| 2028 (objectif) | 900 000 | +25 % |\n\n## Structure des coûts\n- Masse salariale (3 ETP) : CHF 210 000\n- Loyers et locaux : CHF 48 000\n- Marketing & acquisition : CHF 35 000\n- Autres charges : CHF 22 000",
+  SECTION_CONCURRENCE: "## Concurrents directs\n- **Académie du coaching (Genève)** — positionnement similaire, forte notoriété, tarifs plus élevés\n- **Swiss Coaching Institute** — axé leadership corporatif, peu présent sur le marché romand\n\n## Avantages compétitifs\n- Double certification ICF + NLPU unique en Suisse romande\n- Réseau d'alumni de plus de 800 certifiés actifs\n- Équipe pédagogique francophone de haut niveau",
+  SECTION_RISQUES:     "| Risque | Probabilité | Impact | Mitigation |\n|---|---|---|---|\n| Ralentissement économique | Moyen | Élevé | Diversification B2C / e-learning |\n| Départ formateur clé | Faible | Élevé | Contrats long terme, documentation pédagogique |\n| Concurrence prix | Élevé | Moyen | Positionnement premium, preuve de valeur (ROI coaching) |\n| Dépendance SEO | Moyen | Moyen | Diversification canaux acquisition |",
+  SECTION_PLAN_ACTION: "## T3 2026\n- Lancement plateforme e-learning beta (100 utilisateurs cibles)\n- Ouverture bureau Genève (espace de coworking)\n- Recrutement d'un commercial B2B junior\n\n## T4 2026\n- Première promotion Genève (20 participants cibles)\n- Signature de 3 contrats entreprises annuels\n- Lancement newsletter (objectif 500 abonnés)\n\n## 2027\n- Lancement certification « Coach Agile » (nouveau produit)\n- Atteindre 150 abonnés e-learning payants\n- CA objectif : CHF 720 000"
+};
+</script>
+
+<!-- ═══════════════════════════════════════════
+     DONNÉES SERVEUR — placeholders bruts
+     ═══════════════════════════════════════════ -->
+<script>
+var D = Object.assign({
+  LOGO_URL:              '{{LOGO_URL}}',
+  ACCENT_COLOR:          '{{ACCENT_COLOR}}',
+  BRAND_NAME:            '{{BRAND_NAME}}',
+  NAME:                  '{{NAME}}',
+  DOMAINE:               '{{DOMAINE}}',
+  VILLE:                 '{{VILLE}}',
+  EMAIL:                 '{{EMAIL}}',
+  DATE:                  '{{DATE}}',
+  SECTION_RESUME:        '{{SECTION_RESUME}}',
+  SECTION_MARCHE:        '{{SECTION_MARCHE}}',
+  SECTION_OFFRE:         '{{SECTION_OFFRE}}',
+  SECTION_CLIENTS:       '{{SECTION_CLIENTS}}',
+  SECTION_CANAUX:        '{{SECTION_CANAUX}}',
+  SECTION_FINANCES:      '{{SECTION_FINANCES}}',
+  SECTION_CONCURRENCE:   '{{SECTION_CONCURRENCE}}',
+  SECTION_RISQUES:       '{{SECTION_RISQUES}}',
+  SECTION_PLAN_ACTION:   '{{SECTION_PLAN_ACTION}}'
+}, window.__PREVIEW || {});
+
+/* Liste ordonnée des sections */
+var SECTIONS = [
+  { key: 'SECTION_RESUME',      label: 'Résumé exécutif' },
+  { key: 'SECTION_MARCHE',      label: 'Analyse de marché' },
+  { key: 'SECTION_OFFRE',       label: 'Offre et positionnement' },
+  { key: 'SECTION_CLIENTS',     label: 'Clients cibles' },
+  { key: 'SECTION_CANAUX',      label: 'Canaux et distribution' },
+  { key: 'SECTION_FINANCES',    label: 'Projections financières' },
+  { key: 'SECTION_CONCURRENCE', label: 'Analyse concurrentielle' },
+  { key: 'SECTION_RISQUES',     label: 'Risques et mitigation' },
+  { key: 'SECTION_PLAN_ACTION', label: "Plan d'action" }
+];
+</script>
+
+<!-- ═══════════════════════════════════════════
+     DOCUMENT
+     ═══════════════════════════════════════════ -->
+<div class="pages-wrap">
+
+  <!-- ── PAGE DE GARDE ── -->
+  <div class="page-shell">
+    <div class="cover" id="cover-page">
+
+      <div class="cover-inner">
+        <div class="cover-logo-zone" id="cover-logo-zone"></div>
+        <div class="cover-doc-type">Business Plan</div>
+        <h1 class="cover-title" id="cover-title"></h1>
+        <div class="cover-domaine" id="cover-domaine"></div>
+        <div class="cover-rule"></div>
+        <div class="cover-meta" id="cover-meta"></div>
+      </div>
+
+      <div class="cover-footer">
+        <div class="cover-footer-left" id="cover-footer-left"></div>
+        <div class="cover-footer-right" id="cover-footer-right"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SOMMAIRE + CONTENU (doc-frame) ── -->
+  <div class="page-shell">
+
+    <!-- Header écran uniquement -->
+    <div class="doc-screen-header" id="doc-screen-header">
+      <div class="dsh-left">
+        <div class="dsh-logo" id="dsh-logo"></div>
+        <div class="dsh-brand" id="dsh-brand"></div>
+        <div class="dsh-sep"></div>
+        <div class="dsh-doc">Business Plan</div>
+      </div>
+    </div>
+
+    <table class="doc-frame" role="presentation">
+      <thead>
+        <tr>
+          <td class="pad-top">
+            <div class="running-header">
+              <div class="rh-left">
+                <div class="rh-logo" id="rh-logo"></div>
+                <div class="rh-sep"></div>
+                <span class="rh-brand" id="rh-brand"></span>
+              </div>
+              <span class="rh-doc">Business Plan</span>
+            </div>
+          </td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+
+            <!-- Sommaire -->
+            <div class="toc-section" id="toc-section">
+              <div class="toc-heading">Sommaire</div>
+              <div class="toc-list" id="toc-list"></div>
+            </div>
+
+            <!-- Sections de contenu -->
+            <div id="sections-container"></div>
+
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="pad-bottom">
+            <div class="running-footer">
+              <span class="rf-brand" id="rf-brand"></span>
+              <span class="rf-date" id="rf-date"></span>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+  </div>
+
+</div>
+
+<!-- Bouton impression -->
+<button class="print-btn screen-only" onclick="window.print()">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+    <rect x="6" y="14" width="12" height="8"></rect>
+  </svg>
+  Exporter PDF
+</button>
+
+<!-- ═══════════════════════════════════════════
+     LOGIQUE
+     ═══════════════════════════════════════════ -->
+<script>
+(function () {
+
+  /* ── Utilitaires ── */
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function isPlaceholder(v) {
+    return !v || (typeof v === 'string' && (v.indexOf('{{') !== -1 || v.trim() === ''));
+  }
+
+  function val(key) {
+    var v = D[key];
+    return isPlaceholder(v) ? '' : v;
+  }
+
+  /* ── Inline styling ── */
+  function inline(s) {
+    return String(s)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/_(.+?)_/g, '<em>$1</em>');
+  }
+
+  /* ── Logo ── */
+  function renderLogo(el, maxH, textPx) {
+    if (!el) return;
+    var url = val('LOGO_URL');
+    if (url && url.trim()) {
+      el.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(val('BRAND_NAME')) + '" style="max-height:' + maxH + 'px;max-width:160px;object-fit:contain;">';
+    } else {
+      el.innerHTML = '<span class="cover-brand-fallback" style="font-size:' + textPx + 'px;">' + esc(val('BRAND_NAME')) + '</span>';
+    }
+  }
+
+  /* ── Parser Markdown-like avec support tableau ── */
+  function parseSection(raw) {
+    if (!raw) return '';
+    var lines = raw.split('\n');
+    var html = '';
+    var paraLines = [];
+    var inList = false;
+    var inTable = false;
+    var tableRows = [];
+
+    function flushPara() {
+      if (paraLines.length) {
+        html += '<p>' + paraLines.map(inline).join('<br>') + '</p>';
+        paraLines = [];
+      }
+    }
+    function flushList() {
+      if (inList) { html += '</ul>'; inList = false; }
+    }
+    function flushTable() {
+      if (!inTable) return;
+      inTable = false;
+      if (!tableRows.length) return;
+      var out = '<table>';
+      tableRows.forEach(function (row, i) {
+        /* Ignorer les lignes séparatrices (--- | --- | ---) */
+        if (/^[\s|:-]+$/.test(row)) return;
+        var cells = row.split('|').filter(function (c, idx, arr) {
+          /* enlever les cellules vides aux extrémités */
+          return !(idx === 0 && c.trim() === '') && !(idx === arr.length - 1 && c.trim() === '');
+        });
+        var tag = (i === 0) ? 'th' : 'td';
+        out += '<tr>' + cells.map(function (c) {
+          return '<' + tag + '>' + inline(esc(c.trim())) + '</' + tag + '>';
+        }).join('') + '</tr>';
+      });
+      out += '</table>';
+      html += out;
+      tableRows = [];
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].replace(/\r$/, '').trimEnd();
+
+      /* Tableau markdown : ligne contenant des | */
+      if (line.indexOf('|') !== -1 && /^\|/.test(line.trim()) || (line.indexOf('|') !== -1 && line.trim().startsWith('|'))) {
+        flushPara(); flushList();
+        inTable = true;
+        tableRows.push(line);
+        continue;
+      } else if (inTable && line.trim() === '') {
+        flushTable();
+        continue;
+      } else if (inTable) {
+        /* Ligne non-tableau après une table sans ligne vide */
+        flushTable();
+      }
+
+      if (line.startsWith('### ')) {
+        flushPara(); flushList();
+        html += '<h3>' + inline(esc(line.slice(4))) + '</h3>';
+      } else if (line.startsWith('## ')) {
+        flushPara(); flushList();
+        html += '<h2>' + inline(esc(line.slice(3))) + '</h2>';
+      } else if (line.startsWith('> ')) {
+        flushPara(); flushList();
+        html += '<blockquote>' + inline(esc(line.slice(2))) + '</blockquote>';
+      } else if (line.startsWith('---')) {
+        flushPara(); flushList();
+        html += '<hr>';
+      } else if (/^[-*•] /.test(line)) {
+        flushPara();
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inline(esc(line.slice(2))) + '</li>';
+      } else if (/^\d+\. /.test(line)) {
+        flushPara();
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inline(esc(line.replace(/^\d+\. /, ''))) + '</li>';
+      } else if (line.trim() === '') {
+        flushPara(); flushList(); flushTable();
+      } else {
+        flushList();
+        paraLines.push(line);
+      }
+    }
+    flushPara(); flushList(); flushTable();
+    return html;
+  }
+
+  /* ── Initialisation ── */
+  function init() {
+    /* Accent */
+    var accent = val('ACCENT_COLOR');
+    if (accent) document.documentElement.style.setProperty('--accent', accent);
+
+    var brandName = val('BRAND_NAME');
+    var dateStr   = val('DATE');
+
+    /* Titre onglet */
+    document.getElementById('doc-title').textContent =
+      brandName ? 'Business Plan — ' + brandName : 'Business Plan';
+
+    /* ── Couverture ── */
+    renderLogo(document.getElementById('cover-logo-zone'), 68, 24);
+
+    var ctitle = document.getElementById('cover-title');
+    if (ctitle) ctitle.textContent = brandName;
+
+    var cdomaine = document.getElementById('cover-domaine');
+    if (cdomaine) cdomaine.textContent = val('DOMAINE');
+
+    var cmeta = document.getElementById('cover-meta');
+    if (cmeta) {
+      var metaLines = [];
+      var n = val('NAME'); if (n) metaLines.push('<strong>Porteur de projet :</strong> ' + esc(n));
+      if (dateStr) metaLines.push('Document établi le ' + esc(dateStr));
+      cmeta.innerHTML = metaLines.join('<br>');
+    }
+
+    var cfl = document.getElementById('cover-footer-left');
+    if (cfl) {
+      var fl = [];
+      var v = val('VILLE'); if (v) fl.push(esc(v));
+      var e = val('EMAIL'); if (e) fl.push('<a href="mailto:' + esc(e) + '" style="color:inherit;">' + esc(e) + '</a>');
+      cfl.innerHTML = fl.join(' · ');
+    }
+
+    var cfr = document.getElementById('cover-footer-right');
+    if (cfr) cfr.textContent = dateStr || '';
+
+    /* ── Headers ── */
+    renderLogo(document.getElementById('dsh-logo'), 20, 12);
+    var dshBrand = document.getElementById('dsh-brand');
+    if (dshBrand) dshBrand.textContent = brandName;
+
+    renderLogo(document.getElementById('rh-logo'), 18, 11);
+    var rhBrand = document.getElementById('rh-brand');
+    if (rhBrand) rhBrand.textContent = brandName;
+
+    var rfBrand = document.getElementById('rf-brand');
+    if (rfBrand) rfBrand.textContent = brandName;
+    var rfDate = document.getElementById('rf-date');
+    if (rfDate) rfDate.textContent = dateStr ? 'Établi le ' + dateStr : '';
+
+    /* ── Filtrer les sections non vides ── */
+    var activeSections = SECTIONS.filter(function (s) {
+      return val(s.key) !== '';
+    });
+
+    /* ── Sommaire ── */
+    var tocList = document.getElementById('toc-list');
+    if (tocList) {
+      tocList.innerHTML = activeSections.map(function (s, i) {
+        return '<div class="toc-entry">' +
+          '<span class="toc-num">' + (i + 1) + '.</span>' +
+          '<span class="toc-title">' + esc(s.label) + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    /* ── Sections de contenu ── */
+    var container = document.getElementById('sections-container');
+    if (container) {
+      container.innerHTML = activeSections.map(function (s, i) {
+        var content = val(s.key);
+        return '<div class="bp-section">' +
+          '<div class="section-header">' +
+            '<span class="section-num">' + (i + 1) + '</span>' +
+            '<h1 class="section-title">' + esc(s.label) + '</h1>' +
+          '</div>' +
+          '<div class="section-content">' + parseSection(content) + '</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+
+</body>
+</html>

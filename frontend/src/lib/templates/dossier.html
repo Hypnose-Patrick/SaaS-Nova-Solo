@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="doc-title">Dossier</title>
+<style>
+
+/* ═══════════════════════════════════════════════════════════
+   DOSSIER COMMERCIAL — Template print-ready
+   Placeholders {{VARIABLE}} remplacés par le serveur
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:         #8b6f47;   /* remplacé en JS via D.ACCENT_COLOR */
+  --accent-light:   color-mix(in srgb, var(--accent) 12%, transparent);
+  --text:           #1a1a2e;
+  --text-muted:     #5c5c7a;
+  --text-subtle:    #8a8aa0;
+  --bg:             #faf7f2;
+  --bg-surface:     #f5f0e8;
+  --border:         rgba(26, 26, 46, 0.11);
+  --font-head:      Georgia, 'Times New Roman', serif;
+  --font-body:      'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --page-w:         210mm;
+  --page-h:         297mm;
+  --margin-side:    18mm;
+  --margin-v:       14mm;
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ───────────────────────────────────────────────
+   PAGE WRAPPER (centering on screen)
+─────────────────────────────────────────────── */
+.pages-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 24px 80px;
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* ───────────────────────────────────────────────
+   PAGE SHELL (A4)
+─────────────────────────────────────────────── */
+.page {
+  width: var(--page-w);
+  min-height: var(--page-h);
+  background: #ffffff;
+  box-shadow: 0 2px 32px rgba(26, 26, 46, 0.10), 0 1px 6px rgba(26, 26, 46, 0.06);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ───────────────────────────────────────────────
+   COVER PAGE
+─────────────────────────────────────────────── */
+.cover {
+  padding: var(--margin-v) var(--margin-side);
+}
+
+.cover-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10mm;
+  border-bottom: 1px solid var(--border);
+}
+
+.cover-logo-zone {
+  display: flex;
+  align-items: center;
+}
+
+.cover-logo-zone img {
+  max-height: 52px;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+.cover-brand-text {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.cover-date-str {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-subtle);
+  letter-spacing: 0.06em;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* Body: grows to fill available space */
+.cover-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16mm 0 10mm;
+}
+
+.cover-eyebrow {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.cover-title {
+  font-family: var(--font-head);
+  font-size: 48px;
+  font-weight: normal;
+  line-height: 1.1;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 10mm;
+  max-width: 400px;
+  text-wrap: balance;
+}
+
+.cover-rule {
+  width: 48px;
+  height: 2px;
+  background: var(--accent);
+  margin-bottom: 10mm;
+}
+
+.cover-attn-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin-bottom: 10px;
+}
+
+.cover-attn-block {
+  border-left: 2px solid var(--accent);
+  padding: 14px 20px;
+  background: var(--bg-surface);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 260px;
+  max-width: 380px;
+}
+
+.cover-attn-name {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.cover-attn-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Cover footer */
+.cover-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 8mm;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.cover-contact {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.9;
+}
+
+.cover-contact a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cover-city {
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-subtle);
+  text-align: right;
+}
+
+/* ───────────────────────────────────────────────
+   INNER PAGES: running header + content
+─────────────────────────────────────────────── */
+.inner-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Screen-visible header (not in print thead) */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8mm var(--margin-side) 5mm;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.ph-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ph-logo img {
+  max-height: 22px;
+  max-width: 80px;
+  object-fit: contain;
+}
+
+.ph-brand-text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ph-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+}
+
+.ph-label {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-subtle);
+}
+
+/* ───────────────────────────────────────────────
+   DOCUMENT FRAME (print repeating header/footer)
+─────────────────────────────────────────────── */
+.doc-frame {
+  width: 100%;
+  border-collapse: collapse;
+  flex: 1;
+}
+
+.doc-frame td { padding: 0; }
+
+.pad-top, .pad-bottom { display: none; }
+
+/* Running header (inside thead — prints on every content page) */
+.running-header {
+  display: none; /* visible only in print */
+}
+
+/* ───────────────────────────────────────────────
+   CONTENT AREA
+─────────────────────────────────────────────── */
+.content-area {
+  padding: 10mm var(--margin-side) var(--margin-v);
+}
+
+/* ── Typography ── */
+.content-area h1 {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: normal;
+  color: var(--text);
+  line-height: 1.2;
+  margin: 0 0 6px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--accent);
+  break-after: avoid;
+  text-wrap: balance;
+}
+
+.content-area h2 {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: normal;
+  color: var(--text);
+  margin: 32px 0 10px;
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  break-after: avoid;
+}
+
+.content-area h2::before {
+  content: '';
+  display: inline-block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 1.5px;
+  background: var(--accent);
+  position: relative;
+  top: 1px;
+}
+
+.content-area h3 {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 24px 0 8px;
+  break-after: avoid;
+}
+
+.content-area p {
+  margin: 0 0 14px;
+  text-wrap: pretty;
+  color: var(--text);
+  line-height: 1.72;
+  font-size: 14.5px;
+}
+
+.content-area ul {
+  margin: 0 0 16px 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.content-area li {
+  padding: 5px 0 5px 22px;
+  position: relative;
+  color: var(--text);
+  text-wrap: pretty;
+  line-height: 1.6;
+  font-size: 14.5px;
+}
+
+.content-area li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.content-area strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.content-area em {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* Callout / blockquote */
+.content-area blockquote {
+  margin: 20px 0;
+  padding: 14px 20px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-surface);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 15.5px;
+  color: var(--text-muted);
+  break-inside: avoid;
+}
+
+/* Section divider */
+.content-area hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+/* ───────────────────────────────────────────────
+   SCREEN-ONLY CHROME
+─────────────────────────────────────────────── */
+.screen-only { display: block; }
+
+.print-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  z-index: 9999;
+  transition: opacity 0.2s;
+}
+.print-btn:hover { opacity: 0.88; }
+
+/* ───────────────────────────────────────────────
+   PRINT
+─────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
+
+@media print {
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+
+  .pages-wrap {
+    display: block;
+    padding: 0;
+    background: #fff;
+    gap: 0;
+  }
+
+  .page {
+    width: 100%;
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+    min-height: 0;
+  }
+
+  /* Last page: no forced break */
+  .page:last-of-type {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .screen-only { display: none !important; }
+
+  /* Cover: no running header */
+  .cover { page-break-after: always; break-after: page; }
+
+  /* Running header in thead */
+  .pad-top { display: table-cell; height: 16mm; }
+  .pad-bottom { display: table-cell; height: 12mm; }
+
+  .running-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 16mm;
+    padding: 0 18mm;
+    border-bottom: 1px solid rgba(26, 26, 46, 0.11);
+  }
+
+  .rh-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rh-brand {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .rh-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(26, 26, 46, 0.15);
+  }
+
+  .rh-label {
+    font-family: var(--font-head);
+    font-size: 10px;
+    font-style: italic;
+    color: var(--text-subtle);
+  }
+
+  .rh-logo img {
+    max-height: 18px;
+    max-width: 70px;
+    object-fit: contain;
+  }
+
+  /* Content area spacing */
+  .page-header { display: none !important; }
+
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, blockquote, ul, tr { break-inside: avoid; }
+  p, li { orphans: 3; widows: 3; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     BLOC PRÉVISUALISATION — supprimer avant déploiement
+     Fournit des données de démonstration pour le rendu dans le navigateur.
+     En production, ces valeurs sont remplacées par celles du serveur.
+     ═══════════════════════════════════════════ -->
+<script id="preview-data">
+window.__PREVIEW = {
+  LOGO_URL:       '',
+  ACCENT_COLOR:   '#7a5f39',
+  BRAND_NAME:     'Laure Meylan Coaching',
+  NAME:           'Laure Meylan',
+  VILLE:          'Lausanne',
+  EMAIL:          'contact@lauremeylan.ch',
+  TEL:            '+41 79 123 45 67',
+  WEBSITE:        'lauremeylan.ch',
+  TEMPLATE_LABEL: 'Dossier client',
+  RECIP_NOM:      'Jean-Pierre Fontaine',
+  RECIP_FONCTION: 'Directeur des Ressources Humaines',
+  RECIP_ORG:      'Nestlé Suisse SA',
+  CONTENT: `# Notre approche du coaching exécutif
+
+Laure Meylan Coaching accompagne les cadres et dirigeants dans leur développement professionnel depuis plus de dix ans. Notre méthode s'appuie sur les neurosciences, la PNL et une écoute rigoureuse des enjeux spécifiques à chaque organisation.
+
+## Une philosophie centrée sur la personne
+
+Nous partons du principe que **chaque individu possède les ressources nécessaires** pour surmonter ses défis. Notre rôle est de créer l'espace propice à cette prise de conscience, et d'accompagner le changement de manière durable.
+
+Notre démarche est entièrement confidentielle, et chaque programme est co-construit avec le bénéficiaire et son organisation.
+
+## Nos programmes phares
+
+### Coaching de leadership
+Destiné aux cadres supérieurs souhaitant renforcer leur impact managérial, améliorer leur communication et développer une vision stratégique claire.
+
+- Séances individuelles bi-hebdomadaires (12 séances sur 6 mois)
+- Entretiens tripartites avec le RH (optionnel)
+- **Bilan 360° en début et fin de parcours**
+
+### Accompagnement de transition
+Pour les dirigeants en prise de poste, en repositionnement ou en préparation d'une mobilité interne ou externe.
+
+- Clarification du projet professionnel
+- Travail sur l'identité et le positionnement
+- Réseau et stratégie de visibilité
+
+### Gestion du stress et de la performance
+Programme court (8 séances) axé sur les outils concrets : régulation émotionnelle, gestion des priorités, communication assertive.
+
+## Modalités et investissement
+
+**Durée :** 6 à 12 mois selon le programme choisi
+**Format :** Présentiel à Lausanne (Avenue de la Gare 12) ou visioconférence sécurisée
+**Langue :** Français ; anglais sur demande
+**Tarif :** Sur devis personnalisé, selon le programme et le nombre de bénéficiaires
+
+> "Le coaching n'est pas un luxe — c'est un levier de transformation durable pour vos équipes dirigeantes."
+
+## Prochaines étapes proposées
+
+- Entretien exploratoire gratuit de 45 minutes
+- Remise d'une proposition d'accompagnement personnalisée sous 5 jours
+- Signature de la convention de confidentialité et démarrage`
+};
+</script>
+
+<!-- ═══════════════════════════════════════════
+     DONNÉES SERVEUR — placeholders {{VARIABLE}} remplacés à la génération
+     ═══════════════════════════════════════════ -->
+<script>
+var D = Object.assign({
+  LOGO_URL:       '{{LOGO_URL}}',
+  ACCENT_COLOR:   '{{ACCENT_COLOR}}',
+  BRAND_NAME:     '{{BRAND_NAME}}',
+  NAME:           '{{NAME}}',
+  VILLE:          '{{VILLE}}',
+  EMAIL:          '{{EMAIL}}',
+  TEL:            '{{TEL}}',
+  WEBSITE:        '{{WEBSITE}}',
+  TEMPLATE_LABEL: '{{TEMPLATE_LABEL}}',
+  RECIP_NOM:      '{{RECIP_NOM}}',
+  RECIP_FONCTION: '{{RECIP_FONCTION}}',
+  RECIP_ORG:      '{{RECIP_ORG}}',
+  CONTENT:        '{{CONTENT}}'
+}, window.__PREVIEW || {});
+</script>
+
+<!-- ═══════════════════════════════════════════
+     DOCUMENT
+     ═══════════════════════════════════════════ -->
+<div class="pages-wrap" id="pages-wrap">
+
+  <!-- ── COUVERTURE ─────────────────────────── -->
+  <div class="page cover" id="page-cover">
+
+    <div class="cover-topbar">
+      <div class="cover-logo-zone" id="cover-logo-zone"></div>
+      <div class="cover-date-str" id="cover-date-str"></div>
+    </div>
+
+    <div class="cover-body">
+      <div class="cover-eyebrow" id="cover-eyebrow"></div>
+      <h1 class="cover-title" id="cover-title"></h1>
+      <div class="cover-rule"></div>
+      <div class="cover-attn-label">À l'attention de</div>
+      <div class="cover-attn-block">
+        <div class="cover-attn-name" id="cover-attn-name"></div>
+        <div class="cover-attn-sub" id="cover-attn-sub"></div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <div class="cover-contact" id="cover-contact"></div>
+      <div class="cover-city" id="cover-city"></div>
+    </div>
+
+  </div><!-- /cover -->
+
+  <!-- ── PAGES DE CONTENU ───────────────────── -->
+  <div class="page inner-page" id="page-content">
+
+    <!-- Header visible à l'écran (masqué en impression) -->
+    <div class="page-header" id="page-header">
+      <div class="ph-left">
+        <div class="ph-logo" id="ph-logo"></div>
+        <div class="ph-brand-text" id="ph-brand"></div>
+        <div class="ph-sep"></div>
+        <div class="ph-label" id="ph-label"></div>
+      </div>
+    </div>
+
+    <!-- Table doc-frame : thead = header récurrent impression -->
+    <table class="doc-frame" role="presentation">
+      <thead>
+        <tr>
+          <td class="pad-top" style="position: relative;">
+            <!-- Header récurrent — s'imprime en haut de chaque page -->
+            <div class="running-header">
+              <div class="rh-left">
+                <div class="rh-logo" id="rh-logo"></div>
+                <span class="rh-sep"></span>
+                <span class="rh-brand" id="rh-brand"></span>
+              </div>
+              <span class="rh-label" id="rh-label"></span>
+            </div>
+          </td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="content-area" id="content-area"></div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr><td class="pad-bottom"></td></tr>
+      </tfoot>
+    </table>
+
+  </div><!-- /inner-page -->
+
+</div><!-- /pages-wrap -->
+
+<!-- Bouton impression (écran uniquement) -->
+<button class="print-btn screen-only" onclick="window.print()" title="Exporter en PDF">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+    <rect x="6" y="14" width="12" height="8"></rect>
+  </svg>
+  Exporter en PDF
+</button>
+
+<!-- ═══════════════════════════════════════════
+     LOGIQUE D'INITIALISATION
+     ═══════════════════════════════════════════ -->
+<script>
+(function() {
+
+  /* ── Utilitaires ── */
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  /* Rend le logo : image si URL fournie, sinon nom de marque stylisé */
+  function renderLogo(el, imgMaxH, textPx) {
+    if (!el) return;
+    var url = D.LOGO_URL;
+    if (url && url.trim() && url !== '{{LOGO_URL}}') {
+      el.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(D.BRAND_NAME) + '" style="max-height:' + imgMaxH + 'px;max-width:180px;object-fit:contain;">';
+    } else {
+      el.innerHTML = '<span class="cover-brand-text" style="font-size:' + textPx + 'px;">' + esc(D.BRAND_NAME) + '</span>';
+    }
+  }
+
+  /* ── Parsing Markdown-like → HTML ── */
+  function parseContent(raw) {
+    function inlineBold(s) {
+      return s
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/_(.+?)_/g, '<em>$1</em>');
+    }
+
+    var lines = raw.split('\n');
+    var html = '';
+    var paraLines = [];
+    var inList = false;
+
+    function flushPara() {
+      if (paraLines.length) {
+        html += '<p>' + paraLines.map(inlineBold).join('<br>') + '</p>';
+        paraLines = [];
+      }
+    }
+    function flushList() {
+      if (inList) { html += '</ul>'; inList = false; }
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].replace(/\r$/, '').trimEnd();
+
+      if (line.startsWith('### ')) {
+        flushPara(); flushList();
+        html += '<h3>' + inlineBold(line.slice(4)) + '</h3>';
+      } else if (line.startsWith('## ')) {
+        flushPara(); flushList();
+        html += '<h2>' + inlineBold(line.slice(3)) + '</h2>';
+      } else if (line.startsWith('# ')) {
+        flushPara(); flushList();
+        html += '<h1>' + inlineBold(line.slice(2)) + '</h1>';
+      } else if (line.startsWith('> ')) {
+        flushPara(); flushList();
+        html += '<blockquote>' + inlineBold(line.slice(2)) + '</blockquote>';
+      } else if (line.startsWith('---') || line.startsWith('***')) {
+        flushPara(); flushList();
+        html += '<hr>';
+      } else if (/^[-*•] /.test(line)) {
+        flushPara();
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inlineBold(line.slice(2)) + '</li>';
+      } else if (/^\d+\. /.test(line)) {
+        /* Listes numérotées → traitées comme puces */
+        flushPara();
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inlineBold(line.replace(/^\d+\. /, '')) + '</li>';
+      } else if (line.trim() === '') {
+        flushPara(); flushList();
+      } else {
+        flushList();
+        paraLines.push(line);
+      }
+    }
+
+    flushPara(); flushList();
+    return html;
+  }
+
+  /* ── Initialisation principale ── */
+  function init() {
+    /* Couleur d'accent */
+    var accent = D.ACCENT_COLOR;
+    if (accent && accent !== '{{ACCENT_COLOR}}') {
+      document.documentElement.style.setProperty('--accent', accent);
+    }
+
+    /* Date lisible */
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('fr-CH', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    /* Titre de l'onglet */
+    var tpl = D.TEMPLATE_LABEL !== '{{TEMPLATE_LABEL}}' ? D.TEMPLATE_LABEL : 'Dossier';
+    var brand = D.BRAND_NAME !== '{{BRAND_NAME}}' ? D.BRAND_NAME : '';
+    document.getElementById('doc-title').textContent = brand ? tpl + ' — ' + brand : tpl;
+
+    /* ── Couverture ── */
+    renderLogo(document.getElementById('cover-logo-zone'), 52, 22);
+
+    var dateEl = document.getElementById('cover-date-str');
+    if (dateEl) dateEl.innerHTML = esc(dateStr);
+
+    var eyebrow = document.getElementById('cover-eyebrow');
+    if (eyebrow) eyebrow.textContent = D.TEMPLATE_LABEL !== '{{TEMPLATE_LABEL}}' ? D.TEMPLATE_LABEL : '';
+
+    var ctitle = document.getElementById('cover-title');
+    if (ctitle) ctitle.textContent = D.BRAND_NAME !== '{{BRAND_NAME}}' ? D.BRAND_NAME : '';
+
+    var attnName = document.getElementById('cover-attn-name');
+    if (attnName) attnName.textContent = D.RECIP_NOM !== '{{RECIP_NOM}}' ? D.RECIP_NOM : '';
+
+    var attnSub = document.getElementById('cover-attn-sub');
+    if (attnSub) {
+      var parts = [D.RECIP_FONCTION, D.RECIP_ORG].filter(function(v) {
+        return v && v.indexOf('{{') === -1;
+      });
+      attnSub.textContent = parts.join(' · ');
+    }
+
+    /* Contact footer */
+    var contactEl = document.getElementById('cover-contact');
+    if (contactEl) {
+      var lines = [];
+      function addLine(v) {
+        if (v && v.indexOf('{{') === -1) lines.push(esc(v));
+      }
+      addLine(D.NAME);
+      var emailVal = D.EMAIL !== '{{EMAIL}}' ? D.EMAIL : '';
+      var telVal   = D.TEL   !== '{{TEL}}'   ? D.TEL   : '';
+      if (emailVal) lines.push('<a href="mailto:' + esc(emailVal) + '">' + esc(emailVal) + '</a>');
+      if (telVal)   lines.push(esc(telVal));
+      var webVal = D.WEBSITE !== '{{WEBSITE}}' ? D.WEBSITE : '';
+      if (webVal) lines.push('<a href="https://' + esc(webVal) + '" target="_blank">' + esc(webVal) + '</a>');
+      contactEl.innerHTML = lines.join('<br>');
+    }
+
+    var cityEl = document.getElementById('cover-city');
+    if (cityEl) cityEl.textContent = D.VILLE !== '{{VILLE}}' ? D.VILLE : '';
+
+    /* ── Header pages intérieures ── */
+    renderLogo(document.getElementById('ph-logo'), 22, 13);
+    var phBrand = document.getElementById('ph-brand');
+    if (phBrand) phBrand.textContent = D.BRAND_NAME !== '{{BRAND_NAME}}' ? D.BRAND_NAME : '';
+    var phLabel = document.getElementById('ph-label');
+    if (phLabel) phLabel.textContent = D.TEMPLATE_LABEL !== '{{TEMPLATE_LABEL}}' ? D.TEMPLATE_LABEL : '';
+
+    /* ── Header récurrent (print) ── */
+    renderLogo(document.getElementById('rh-logo'), 18, 11);
+    var rhBrand = document.getElementById('rh-brand');
+    if (rhBrand) rhBrand.textContent = D.BRAND_NAME !== '{{BRAND_NAME}}' ? D.BRAND_NAME : '';
+    var rhLabel = document.getElementById('rh-label');
+    if (rhLabel) rhLabel.textContent = D.TEMPLATE_LABEL !== '{{TEMPLATE_LABEL}}' ? D.TEMPLATE_LABEL : '';
+
+    /* ── Contenu ── */
+    var contentEl = document.getElementById('content-area');
+    if (contentEl) {
+      var raw = D.CONTENT;
+      if (!raw || raw === '{{CONTENT}}') {
+        contentEl.innerHTML = '<p style="color:#8a8aa0;font-style:italic;">Le contenu du dossier sera inséré ici.</p>';
+      } else {
+        contentEl.innerHTML = parseContent(raw);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+
+</body>
+</html>
