@@ -49,22 +49,21 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      # Source unique de vérité : la landing canonique vit dans frontend/public/landing.html
-      # (servie aussi par Vercel à /landing.html). On régénère l'index.html déployé chez
-      # Hostinger à partir d'elle pour qu'il soit TOUJOURS à jour — pas de doublon à maintenir.
-      - name: Stage canonical landing page for Hostinger
-        run: |
-          rm -rf landing
-          mkdir -p landing
-          cp frontend/public/landing.html landing/index.html
+      # Hostinger héberge TOUT le site : la landing (servie à la racine via .htaccess)
+      # ET l'app React (SPA — routes /login, /subscribe…). `npm run build` (Vite) produit
+      # frontend/dist/ = index.html (SPA) + landing.html + .htaccess + assets. Les variables
+      # VITE_* (dont VITE_APP_URL=https://start-mybusiness.com) viennent de frontend/.env.production.
+      - name: Build app + landing for Hostinger
+        working-directory: ./frontend
+        run: npm run build
 
-      - name: Deploy landing page to Hostinger (FTP)
+      - name: Deploy full site to Hostinger (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 72.60.93.168
           username: u202854150.start-mybusiness.com
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./landing/
+          local-dir: ./frontend/dist/
           server-dir: /public_html/
           # Hostinger ferme parfois le socket de contrôle → timeout transitoire.
           # 60s (au lieu de 30s par défaut) réduit ces échecs aléatoires.
