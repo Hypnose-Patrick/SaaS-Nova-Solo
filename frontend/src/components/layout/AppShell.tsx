@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { ChatOverlay } from "@/pages/ChatOverlay";
@@ -44,6 +44,12 @@ export function AppShell() {
         >
           <Outlet />
         </main>
+        <footer style={{ padding: "var(--space-3) var(--space-8)", borderTop: "1px solid var(--color-border)", display: "flex", gap: "var(--space-4)", alignItems: "center" }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)" }}>© 2026 Patrick Beiner</span>
+          <Link to="/legal" style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", textDecoration: "none", opacity: 0.7 }} onMouseEnter={e => (e.currentTarget.style.opacity = "1")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.7")}>Mentions légales / Impressum / Note legali</Link>
+          <Link to="/legal?tab=cgu" style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", textDecoration: "none", opacity: 0.7 }} onMouseEnter={e => (e.currentTarget.style.opacity = "1")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.7")}>CGU</Link>
+          <Link to="/legal?tab=privacy" style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", textDecoration: "none", opacity: 0.7 }} onMouseEnter={e => (e.currentTarget.style.opacity = "1")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.7")}>Confidentialité</Link>
+        </footer>
       </div>
       <ChatOverlay />
     </div>

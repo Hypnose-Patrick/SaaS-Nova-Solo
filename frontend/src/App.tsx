@@ -26,6 +26,7 @@ import { Marketing } from "@/pages/Marketing";
 import { Hermes } from "@/pages/Hermes";
 import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
+import { Legal } from "@/pages/Legal";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -79,7 +80,7 @@ export default function App() {
     });
 
     return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile, reset]);
 
   if (session === "loading") {
     return (
@@ -109,6 +110,7 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
+        <Route path="/legal" element={<Legal />} />
         <Route
           path="/login"
           element={session ? <Navigate to="/" replace /> : <Login />}
