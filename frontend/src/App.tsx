@@ -27,6 +27,7 @@ import { Hermes } from "@/pages/Hermes";
 import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
 import { Legal } from "@/pages/Legal";
+import { Subscribe } from "@/pages/Subscribe";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -62,7 +63,7 @@ function ProtectedRoutes() {
 
 export default function App() {
   const [session, setSession] = useState<Session | null | "loading">("loading");
-  const { fetchProfile, reset } = useUserStore();
+  const { fetchProfile, reset, profile } = useUserStore();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -116,8 +117,24 @@ export default function App() {
           element={session ? <Navigate to="/" replace /> : <Login />}
         />
         <Route
+          path="/subscribe"
+          element={
+            !session
+              ? <Navigate to="/login" replace />
+              : (profile?.subscription_status === "active" || profile?.subscription_status === "trialing")
+                ? <Navigate to="/" replace />
+                : <Subscribe />
+          }
+        />
+        <Route
           path="/*"
-          element={session ? <ProtectedRoutes /> : <Navigate to="/login" replace />}
+          element={
+            !session
+              ? <Navigate to="/login" replace />
+              : (profile && profile.subscription_status !== "active" && profile.subscription_status !== "trialing")
+                ? <Navigate to="/subscribe" replace />
+                : <ProtectedRoutes />
+          }
         />
       </Routes>
     </BrowserRouter>
