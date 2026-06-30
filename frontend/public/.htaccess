@@ -1,5 +1,10 @@
 Options -MultiViews
 RewriteEngine On
+
+# Landing page at root
+RewriteRule ^$ /landing.html [L]
+
+# SPA routing: all other non-file, non-dir requests → React app
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ /index.html [QSA,L]
