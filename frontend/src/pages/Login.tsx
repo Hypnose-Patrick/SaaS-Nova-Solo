@@ -10,14 +10,16 @@ const authClient = supabase as unknown as SupabaseClient;
 
 const APP_URL =
   import.meta.env.VITE_APP_URL ??
-  (window.location.hostname === "localhost"
-    ? "http://localhost:5174"
-    : "https://nova-solo.vercel.app");
+  (window.location.hostname === "localhost" ? "http://localhost:5174" : "");
+
+if (!import.meta.env.VITE_APP_URL && window.location.hostname !== "localhost") {
+  console.error("[Nova] VITE_APP_URL est obligatoire en production — OAuth redirect manquant");
+}
 
 async function signInWithGoogle() {
   await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: APP_URL },
+    options: { redirectTo: window.location.origin },
   });
 }
 
@@ -183,6 +185,24 @@ export function Login() {
         >
           Vos données restent privées — stockage Suisse, conforme nLPD.
         </p>
+
+        <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
+          {[
+            { label: "Mentions légales", hash: "" },
+            { label: "CGU", hash: "?tab=cgu" },
+            { label: "Confidentialité", hash: "?tab=privacy" },
+          ].map(({ label, hash }) => (
+            <a
+              key={label}
+              href={`/legal${hash}`}
+              style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", textDecoration: "none", opacity: 0.6 }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
+            >
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );
