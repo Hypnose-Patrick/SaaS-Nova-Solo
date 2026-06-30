@@ -80,8 +80,30 @@ export function Cv() {
   }
 
   const fullName = profile?.name?.trim() || "Votre nom";
-  const subtitle = [profile?.situation, profile?.domaine].filter(Boolean).join(" · ");
+  // SUBTITLE = domaine uniquement (situation peut contenir le texte long du Diagnostic)
+  const subtitle = profile?.domaine?.trim() || "";
   const contactLine = [profile?.contact_email || profile?.email, profile?.contact_tel, profile?.ville].filter(Boolean).join("  ·  ");
+
+  // Convertit le format "YYYY : Titre, Société — desc / YYYY : ..." en ## Titre | Société | Date
+  function normalizeExp(raw: string): string {
+    if (!raw.trim() || /^##\s/m.test(raw)) return raw;
+    const entries = raw.split(/ \/ /);
+    if (entries.length <= 1) return raw;
+    return entries.map((entry) => {
+      entry = entry.trim();
+      const dateMatch = entry.match(/^(\d{4}(?:[–-](?:\d{4}|présent))?)\s*:\s*/);
+      if (!dateMatch) return entry;
+      const date = dateMatch[1];
+      const rest = entry.slice(dateMatch[0].length);
+      const dashIdx = rest.indexOf(" — ");
+      const titlePart = dashIdx >= 0 ? rest.slice(0, dashIdx) : rest;
+      const description = dashIdx >= 0 ? rest.slice(dashIdx + 3) : "";
+      const commaIdx = titlePart.indexOf(", ");
+      const title = commaIdx >= 0 ? titlePart.slice(0, commaIdx) : titlePart;
+      const company = commaIdx >= 0 ? titlePart.slice(commaIdx + 2) : "";
+      return `## ${title} | ${company} | ${date}\n${description}`;
+    }).join("\n\n");
+  }
 
   function buildDocHtml(): string {
     return fillTemplate(cvTemplateHtml, {
@@ -95,7 +117,7 @@ export function Cv() {
       WEBSITE:      profile?.website       ?? "",
       PROFIL:       f.profil,
       SKILLS:       f.skills,
-      EXP:          f.exp,
+      EXP:          normalizeExp(f.exp),
       FORMATION:    f.formation,
       LANGUES:      f.langues,
     });
