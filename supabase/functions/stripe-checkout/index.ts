@@ -62,10 +62,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
-      line_items: [{
-        price: Deno.env.get("STRIPE_PRICE_ID")!,
-        quantity: 1,
-      }],
+      line_items: [{ price: Deno.env.get("STRIPE_PRICE_ID")!, quantity: 1 }],
       mode: "subscription",
       success_url: `${appUrl}/?subscription=success`,
       cancel_url: `${appUrl}/subscribe?subscription=cancelled`,

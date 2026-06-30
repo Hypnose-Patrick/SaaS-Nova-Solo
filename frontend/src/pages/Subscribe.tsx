@@ -156,7 +156,6 @@ export function Subscribe() {
               textTransform: "uppercase",
               boxSizing: "border-box",
               marginBottom: "var(--space-4)",
-              width: "100%",
             } as React.CSSProperties}
           >
             {loading ? "Redirection…" : "S'abonner — CHF 29 / mois"}

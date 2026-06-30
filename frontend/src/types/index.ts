@@ -30,6 +30,7 @@ export interface Profile {
   subscription_status: "active" | "trialing" | "inactive" | "canceled" | null;
   subscription_id: string | null;
   subscription_end: string | null;
+  plan: "solo" | "pro" | null;
   created_at: string;
   updated_at: string;
 }

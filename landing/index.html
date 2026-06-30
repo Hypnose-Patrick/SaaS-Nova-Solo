@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="fr-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Nova Solo — Le copilote IA de l'indépendant | Suisse romande</title>
+<meta name="description" content="De l'idée à l'activité rentable : Nova Solo cadre ton projet, écrit ton business plan, pilote ton budget en CHF et t'aide à trouver tes premiers clients. L'IA fait le gros du travail ; toi, tu décides. Tes données restent chez toi.">
+<meta name="author" content="SeedJobs Sàrl — Patrick Beiner">
+<meta name="theme-color" content="#4A8B24">
+
+<!-- Open Graph / réseaux sociaux -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_CH">
+<meta property="og:site_name" content="Nova Solo">
+<meta property="og:title" content="Nova Solo — Le copilote IA de l'indépendant">
+<meta property="og:description" content="De l'idée à tes premiers clients, un copilote qui ne te lâche pas. Cadre ton projet, écris ton business plan, pilote ton budget en CHF — en un seul outil, pensé pour la Suisse romande.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nova Solo — Le copilote IA de l'indépendant">
+<meta name="twitter:description" content="De l'idée à l'activité rentable, en CHF, avec tes données chez toi. « Symbiose, pas substitution. »">
+
+<!-- Favicon : la graine officielle SeedJobs (vert) -->
+<link rel="icon" type="image/svg+xml" href="seedjobs-seed.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:#f3f7ef;}
+  a{text-decoration:none;color:inherit;}
+  section[id]{scroll-margin-top:92px;}
+
+  /* ---- animations ambiantes ---- */
+  @keyframes nsPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.82);}}
+  @keyframes nsFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+  @keyframes nsDrift{0%{transform:translate(0,0);}50%{transform:translate(2%,3%);}100%{transform:translate(0,0);}}
+
+  /* ---- révélation au scroll ---- */
+  .ns-reveal{transition:opacity .8s cubic-bezier(0.16,1,0.3,1),transform .8s cubic-bezier(0.16,1,0.3,1);}
+  .ns-reveal.ns-armed{opacity:0;transform:translateY(26px);}
+  .ns-reveal.ns-in{opacity:1;transform:none;}
+
+  /* ---- états hover (équivalents des style-hover du prototype) ---- */
+  .ns-navlink{transition:color .2s;}
+  .ns-navlink:hover{color:#15231a;}
+  .ns-btn-primary{transition:background .2s,box-shadow .2s,transform .2s;}
+  .ns-btn-primary:hover{background:#3A6B1D;box-shadow:0 8px 28px rgba(74,139,36,0.32);transform:translateY(-2px);}
+  .ns-btn-primary-sm{transition:background .2s,box-shadow .2s,transform .2s;}
+  .ns-btn-primary-sm:hover{background:#3A6B1D;box-shadow:0 6px 22px rgba(74,139,36,0.35);transform:translateY(-1px);}
+  .ns-btn-ghost{transition:background .2s,border-color .2s;}
+  .ns-btn-ghost:hover{background:#f1f6ec;border-color:#4A8B24;}
+  .ns-card-problem{transition:border-color .25s,transform .25s,box-shadow .25s;}
+  .ns-card-problem:hover{border-color:rgba(192,57,43,0.4);transform:translateY(-4px);box-shadow:0 12px 30px rgba(30,50,25,0.08);}
+  .ns-card-benefit{transition:border-color .25s,box-shadow .25s,transform .25s;}
+  .ns-card-benefit:hover{border-color:rgba(74,139,36,0.5);box-shadow:0 12px 30px rgba(30,50,25,0.08);transform:translateY(-3px);}
+  .ns-card-module{transition:border-color .25s,transform .25s,box-shadow .25s;}
+  .ns-card-module:hover{border-color:rgba(74,139,36,0.45);transform:translateY(-4px);box-shadow:0 12px 30px rgba(30,50,25,0.08);}
+  .ns-card-expert{transition:transform .25s,box-shadow .25s;}
+  .ns-card-expert:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(30,50,25,0.08);}
+  .ns-pricing-cta{transition:transform .2s,box-shadow .2s,background .2s;}
+  .ns-pricing-cta:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(74,139,36,0.28);}
+  .ns-btn-gold{transition:transform .2s,box-shadow .2s,background .2s;}
+  .ns-btn-gold:hover{background:#c79617;transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.25);}
+  .ns-btn-ghost-final{transition:background .2s;}
+  .ns-btn-ghost-final:hover{background:rgba(255,255,255,0.24);}
+
+  /* ---- FAQ ---- */
+  details summary::-webkit-details-marker{display:none;}
+  details summary svg{transition:transform .25s;}
+  details[open] summary svg{transform:rotate(45deg);}
+
+  /* ---- responsive (le prototype était desktop-only @1280px) ---- */
+  @media(max-width:920px){
+    .ns-hero-grid{grid-template-columns:1fr !important;gap:48px !important;}
+  }
+  @media(max-width:860px){
+    .ns-grid-3{grid-template-columns:repeat(2,1fr) !important;}
+    .ns-pricing-grid{grid-template-columns:1fr !important;max-width:440px;margin-left:auto;margin-right:auto;}
+    .ns-plan-featured{margin-top:18px !important;}
+  }
+  @media(max-width:760px){
+    .ns-grid-2{grid-template-columns:1fr !important;}
+    .ns-nav-links{display:none !important;}
+    .ns-section{padding-top:72px !important;padding-bottom:72px !important;}
+    .ns-final-cta{padding:48px 26px !important;}
+  }
+  @media(max-width:560px){
+    .ns-grid-3{grid-template-columns:1fr !important;}
+    .ns-pad-x{padding-left:20px !important;padding-right:20px !important;}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    .ns-reveal,.ns-reveal.ns-armed{opacity:1 !important;transform:none !important;transition:none !important;}
+    *{animation:none !important;}
+  }
+</style>
+</head>
+
+<body>
+<!-- Logo officiel SeedJobs (la graine) — symbole réutilisable, recoloré via currentColor -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false"><defs><symbol id="sj-seed" viewBox="83.64 -0.60 30.87 30.87" fill="currentColor" fill-rule="nonzero"><g transform="matrix(0.13333333,0,0,-0.13333333,0,87.84)"><path d="M 854.273,658.785 V 535.371 c 0,-45.629 -31.039,-84.137 -73.089,-95.59 30.496,18.969 47.437,51.121 47.437,95.59 v 97.762 h -97.762 c -44.48,0 -76.636,-16.957 -95.601,-47.485 11.437,42.086 49.957,73.137 95.601,73.137 h 123.414"/><path d="m 802.43,606.941 v -94.277 c 0,-36.715 -26.032,-67.449 -60.614,-74.738 23.118,17.91 34.961,35.715 34.961,74.738 v 68.625 h -68.625 c -39.019,0 -56.828,-11.848 -74.738,-34.961 7.289,34.582 38.027,60.613 74.738,60.613 h 94.278"/><path d="m 685.426,555.109 c -29.574,0 -53.641,-24.066 -53.641,-53.656 v -43.668 l 25.653,26.028 v 17.64 c 0,15.434 12.554,28.004 27.988,28.004 h 39.519 v -39.519 c 0,-15.434 -12.554,-27.989 -28.004,-27.989 h -39.503 v 0.364 l -25.653,-26.016 h 65.156 c 29.59,0 53.657,24.066 53.657,53.641 v 65.171 h -65.172"/><path d="m 699.52,504.984 -21.231,-43.035 -12.644,-25.652 h -33.86 l 25.653,26.016 42.082,42.671"/></g></symbol></defs></svg>
+
+<div style="background:#f3f7ef;color:#15231a;font-family:'Inter',-apple-system,sans-serif;line-height:1.5;overflow-x:hidden;position:relative;">
+
+  <!-- halos ambiants -->
+  <div style="position:absolute;top:-220px;left:50%;transform:translateX(-50%);width:1100px;height:680px;max-width:100%;background:radial-gradient(ellipse at center,rgba(74,139,36,0.14),transparent 64%);pointer-events:none;z-index:0;animation:nsDrift 18s ease-in-out infinite;"></div>
+  <div style="position:absolute;top:1180px;right:-220px;width:680px;height:680px;background:radial-gradient(circle,rgba(218,165,32,0.10),transparent 64%);pointer-events:none;z-index:0;"></div>
+
+  <!-- ============ NAV ============ -->
+  <header style="position:sticky;top:0;z-index:200;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(243,247,239,0.8);border-bottom:1px solid #dde7d4;">
+    <div class="ns-pad-x" style="max-width:1200px;margin:0 auto;padding:0 32px;height:74px;display:flex;align-items:center;justify-content:space-between;">
+      <a href="#top" style="display:flex;align-items:center;gap:11px;">
+        <svg width="31" height="31" style="color:#4A8B24;flex-shrink:0;display:block;" aria-hidden="true"><use href="#sj-seed"/></svg>
+        <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;letter-spacing:-0.02em;color:#15231a;">Nova Solo</span>
+        <span style="font-family:'Fira Code',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#9a7517;border:1px solid rgba(218,165,32,0.45);background:rgba(218,165,32,0.12);padding:3px 8px;border-radius:999px;">Suisse romande</span>
+      </a>
+      <nav class="ns-nav-links" style="display:flex;align-items:center;gap:32px;">
+        <a class="ns-navlink" href="#probleme" style="font-size:14px;font-weight:500;color:#51624f;">Le constat</a>
+        <a class="ns-navlink" href="#solution" style="font-size:14px;font-weight:500;color:#51624f;">Ce que ça fait</a>
+        <a class="ns-navlink" href="#cabinet" style="font-size:14px;font-weight:500;color:#51624f;">Cabinet IA</a>
+        <a class="ns-navlink" href="#tarifs" style="font-size:14px;font-weight:500;color:#51624f;">Tarifs</a>
+      </nav>
+      <a class="ns-btn-primary-sm" href="https://start-mybusiness.ch/login" style="display:inline-flex;align-items:center;gap:8px;background:#4A8B24;color:#F0F4EF;font-weight:600;font-size:14px;padding:10px 18px;border-radius:10px;box-shadow:0 2px 10px rgba(74,139,36,0.2);">
+        Commencer
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="top" class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:84px 32px 96px;">
+    <div class="ns-hero-grid" style="display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px;align-items:center;">
+      <div>
+        <div class="ns-reveal" style="display:inline-flex;align-items:center;gap:9px;border:1px solid #d3e0c9;background:#ffffff;padding:7px 14px;border-radius:999px;margin-bottom:28px;box-shadow:0 1px 3px rgba(30,50,25,0.05);">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4A8B24;box-shadow:0 0 9px rgba(74,139,36,0.7);animation:nsPulse 2s ease-in-out infinite;"></span>
+          <span style="font-size:12.5px;font-weight:500;color:#51624f;">Le copilote IA de l'indépendant</span>
+        </div>
+        <h1 class="ns-reveal" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(2.6rem,4.4vw+1rem,4.1rem);line-height:1.04;letter-spacing:-0.035em;margin:0 0 24px;text-wrap:balance;color:#15231a;">
+          De l'idée à tes premiers clients,<br><span style="background:linear-gradient(120deg,#4A8B24,#B8891A);-webkit-background-clip:text;background-clip:text;color:transparent;">un copilote qui ne te lâche pas.</span>
+        </h1>
+        <p class="ns-reveal" style="font-size:18.5px;line-height:1.62;color:#51624f;max-width:540px;margin:0 0 14px;">
+          Tu te lances comme indépendant en Suisse romande&nbsp;? Nova Solo cadre ton projet, écrit ton business plan, pilote ton budget en CHF et t'aide à trouver tes premiers clients. <strong style="color:#15231a;font-weight:600;">L'IA fait le gros du travail&nbsp;; toi, tu décides.</strong>
+        </p>
+        <p class="ns-reveal" style="font-family:'Instrument Serif',serif;font-style:italic;font-size:21px;color:#9a7517;margin:0 0 32px;">« Symbiose, pas substitution. »</p>
+
+        <div class="ns-reveal" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <a class="ns-btn-primary" href="https://start-mybusiness.ch/login" style="display:inline-flex;align-items:center;gap:9px;background:#4A8B24;color:#F0F4EF;font-weight:700;font-size:16px;padding:15px 26px;border-radius:12px;box-shadow:0 4px 16px rgba(74,139,36,0.22);">
+            Commencer — dès CHF 9/mois
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a class="ns-btn-ghost" href="#solution" style="display:inline-flex;align-items:center;gap:9px;background:#ffffff;color:#15231a;font-weight:600;font-size:16px;padding:15px 24px;border-radius:12px;border:1px solid #cdddc2;box-shadow:0 1px 3px rgba(30,50,25,0.05);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7e8f7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0Z"/><circle cx="12" cy="12" r="3"/></svg>
+            Voir ce que ça fait
+          </a>
+        </div>
+        <p class="ns-reveal" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#7e8f7c;margin:0 0 30px;max-width:540px;line-height:1.5;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Phase de lancement — les accès s'ouvrent au compte-gouttes, pour accompagner chacun correctement.
+        </p>
+
+        <div class="ns-reveal" style="display:flex;gap:22px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#51624f;font-weight:500;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Pensé en CHF, TVA 8.1% &amp; AVS
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#51624f;font-weight:500;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Tes données restent chez toi
+          </div>
+        </div>
+      </div>
+
+      <!-- panneau produit -->
+      <div class="ns-reveal" style="position:relative;">
+        <div style="position:absolute;inset:-40px;background:radial-gradient(circle at 60% 30%,rgba(74,139,36,0.16),transparent 60%);filter:blur(20px);pointer-events:none;"></div>
+        <div style="position:relative;background:#ffffff;border:1px solid #dde7d4;border-radius:22px;box-shadow:0 24px 60px rgba(30,50,25,0.12);overflow:hidden;animation:nsFloat 7s ease-in-out infinite;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #eaf0e4;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#cfdcc4;"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:#cfdcc4;"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:#cfdcc4;"></span>
+              <span style="font-size:12px;color:#7e8f7c;font-weight:500;margin-left:6px;">Ton espace Nova Solo</span>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'Fira Code',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#3a7a2f;background:#e7f4e1;padding:4px 9px;border-radius:999px;"><span style="width:6px;height:6px;border-radius:50%;background:#4A8B24;animation:nsPulse 2s ease-in-out infinite;"></span>En direct</span>
+          </div>
+          <div style="padding:18px;display:flex;flex-direction:column;gap:14px;">
+            <div style="background:#f5f9f1;border:1px solid #e4ecdc;border-radius:14px;padding:16px;">
+              <p style="font-family:'Fira Code',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#7e8f7c;margin:0 0 6px;">Seuil de rentabilité</p>
+              <p style="font-size:15px;font-weight:600;color:#15231a;margin:0 0 8px;">Calculé sur ton budget réel</p>
+              <div style="display:flex;align-items:baseline;gap:8px;">
+                <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:26px;color:#9a7517;">CHF 4'200.00</span>
+                <span style="font-size:12px;color:#7e8f7c;">/ mois</span>
+              </div>
+              <div style="margin-top:12px;height:7px;border-radius:999px;background:#e4ecdc;overflow:hidden;"><div style="height:100%;width:68%;border-radius:999px;background:linear-gradient(90deg,#4A8B24,#5FA832);"></div></div>
+            </div>
+            <div style="background:#edf7fb;border:1px solid rgba(8,145,178,0.22);border-radius:14px;padding:15px;">
+              <p style="display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#0891B2;margin:0 0 7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+                CFO virtuel — véto cash
+              </p>
+              <p style="font-size:12.5px;line-height:1.55;color:#51624f;margin:0;">« Ton prix horaire couvre bien tes charges AVS. Trésorerie&nbsp;: 7 mois d'autonomie. Ton prévisionnel est prêt pour l'ORP ou ta banque. »</p>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+              <div style="background:#f5f9f1;border:1px solid #e4ecdc;border-radius:12px;padding:12px;text-align:center;">
+                <p style="font-size:12.5px;font-weight:600;color:#15231a;margin:0 0 3px;">Business Plan</p>
+                <span style="font-size:11px;color:#3a7a2f;">Prêt à exporter (PDF)</span>
+              </div>
+              <div style="background:#f5f9f1;border:1px solid #e4ecdc;border-radius:12px;padding:12px;text-align:center;">
+                <p style="font-size:12.5px;font-weight:600;color:#15231a;margin:0 0 3px;">Prospection</p>
+                <span style="font-size:11px;color:#3a7a2f;">3 approches prêtes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BANDEAU STAT SUISSE ============ -->
+  <section style="position:relative;z-index:1;border-top:1px solid #dde7d4;border-bottom:1px solid #dde7d4;background:#ffffff;">
+    <div class="ns-pad-x" style="max-width:1200px;margin:0 auto;padding:26px 32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;">
+      <span style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7e8f7c;">Calibré pour la réalité suisse</span>
+      <div style="display:flex;flex-wrap:wrap;gap:30px;align-items:center;">
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">CHF 1'500.00</span>
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">TVA 8.1%</span>
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">AVS / LPP</span>
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">LACI · ORP</span>
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">Sàrl (CO 772)</span>
+        <span style="font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3c4d3a;">nLPD</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROBLÈME ============ -->
+  <section id="probleme" class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:108px 32px;">
+    <div class="ns-reveal" style="text-align:center;max-width:680px;margin:0 auto 56px;">
+      <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">Le constat</p>
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.9rem,2.5vw+1rem,2.7rem);line-height:1.12;letter-spacing:-0.02em;margin:0 0 16px;color:#15231a;">Se lancer seul, c'est dix décisions par jour<br>et personne pour les prendre avec toi.</h2>
+      <p style="font-size:16.5px;color:#677864;line-height:1.6;margin:0;">Les outils existants sont soit génériques, soit éclatés en cinq abonnements, soit déshumanisés. Voilà ce que ça donne au quotidien.</p>
+    </div>
+    <div class="ns-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;">
+
+      <div class="ns-reveal ns-card-problem" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:28px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <div style="width:40px;height:40px;border-radius:11px;background:#fdeaea;border:1px solid #f3cccc;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </div>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 9px;color:#15231a;">Trop d'outils payants</h3>
+        <p style="font-size:14px;color:#677864;line-height:1.6;margin:0;">Un abonnement pour tes textes, un pour ton budget, un autre pour la prospection… cinq applications à coordonner, et la note qui grimpe.</p>
+      </div>
+
+      <div class="ns-reveal ns-card-problem" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:28px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <div style="width:40px;height:40px;border-radius:11px;background:#fdeaea;border:1px solid #f3cccc;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </div>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 9px;color:#15231a;">Pas pensé pour la Suisse</h3>
+        <p style="font-size:14px;color:#677864;line-height:1.6;margin:0;">La plupart des logiciels ignorent ta réalité : formats CHF, TVA 8.1%, charges AVS, exigences de l'ORP. Une adaptation approximative, pas une conception.</p>
+      </div>
+
+      <div class="ns-reveal ns-card-problem" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:28px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <div style="width:40px;height:40px;border-radius:11px;background:#fdeaea;border:1px solid #f3cccc;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </div>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 9px;color:#15231a;">Seul face aux choix</h3>
+        <p style="font-size:14px;color:#677864;line-height:1.6;margin:0;">Personne pour te dire si tes prix tiennent, si ton projet est viable, ou comment aborder tes premiers prospects.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SOLUTION / BÉNÉFICES ============ -->
+  <section id="solution" style="position:relative;z-index:1;background:#ebf2e5;border-top:1px solid #dde7d4;border-bottom:1px solid #dde7d4;">
+    <div class="ns-section ns-pad-x" style="max-width:1140px;margin:0 auto;padding:108px 32px;">
+      <div class="ns-reveal" style="text-align:center;max-width:720px;margin:0 auto 60px;">
+        <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">La réponse</p>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.9rem,2.5vw+1rem,2.7rem);line-height:1.12;letter-spacing:-0.02em;margin:0 0 16px;color:#15231a;">Un seul outil pour construire, lancer<br>et faire vivre ton activité.</h2>
+        <p style="font-size:16.5px;color:#677864;line-height:1.6;margin:0;">Nova Solo réunit tout, en suisse, et garde l'humain au centre. Rien à installer&nbsp;: un fichier, un navigateur.</p>
+      </div>
+      <div class="ns-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+        <div class="ns-reveal ns-card-benefit" style="display:flex;gap:18px;background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <div style="flex-shrink:0;width:46px;height:46px;border-radius:13px;background:#e7f2df;border:1px solid #cdddc2;display:flex;align-items:center;justify-content:center;color:#4A8B24;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <div>
+            <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18.5px;margin:0 0 7px;color:#15231a;">Valider ton idée et la cadrer</h3>
+            <p style="font-size:14.5px;color:#677864;line-height:1.6;margin:0;">Quelques questions → ton profil entrepreneurial, puis un pré-remplissage automatique du Business Model Canvas, du pricing et du CV.</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-benefit" style="display:flex;gap:18px;background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <div style="flex-shrink:0;width:46px;height:46px;border-radius:13px;background:#e7f2df;border:1px solid #cdddc2;display:flex;align-items:center;justify-content:center;color:#4A8B24;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+          <div>
+            <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18.5px;margin:0 0 7px;color:#15231a;">Piloter tes finances pour de vrai</h3>
+            <p style="font-size:14.5px;color:#677864;line-height:1.6;margin:0;">Budget prévisionnel et trésorerie sur 12 mois, deux scénarios, seuil de rentabilité et autonomie de trésorerie recalculés en direct. Sans être comptable.</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-benefit" style="display:flex;gap:18px;background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <div style="flex-shrink:0;width:46px;height:46px;border-radius:13px;background:#e7f2df;border:1px solid #cdddc2;display:flex;align-items:center;justify-content:center;color:#4A8B24;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="m9 15 2 2 4-4"/></svg></div>
+          <div>
+            <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18.5px;margin:0 0 7px;color:#15231a;">Des livrables pros en un clic</h3>
+            <p style="font-size:14.5px;color:#677864;line-height:1.6;margin:0;">Business plan, dossier de présentation (structure 4MAT), CV : générés et assistés par l'IA à partir de tes vraies données, prêts à envoyer.</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-benefit" style="display:flex;gap:18px;background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <div style="flex-shrink:0;width:46px;height:46px;border-radius:13px;background:#e7f2df;border:1px solid #cdddc2;display:flex;align-items:center;justify-content:center;color:#4A8B24;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div>
+            <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18.5px;margin:0 0 7px;color:#15231a;">Trouver et relancer tes clients</h3>
+            <p style="font-size:14.5px;color:#677864;line-height:1.6;margin:0;">Un pipeline visuel guide la prospection : recherche d'entreprise par IA, mail d'approche sur-mesure, suivi, et envoi du dossier adapté.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MODULES ============ -->
+  <section class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:108px 32px;">
+    <div class="ns-reveal" style="max-width:680px;margin:0 0 56px;">
+      <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">Sous le capot</p>
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.9rem,2.5vw+1rem,2.7rem);line-height:1.12;letter-spacing:-0.02em;margin:0;color:#15231a;">Du diagnostic à la prospection,<br>chaque étape a son module.</h2>
+    </div>
+    <div class="ns-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Cadrage &amp; stratégie</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Poser des bases solides</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Diagnostic IA</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Vision symbolique (coaching systémique)</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Business Model Canvas guidé</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Business plan en 5 sections</span></li>
+        </ul>
+      </div>
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Finances</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Des chiffres qui tiennent</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Prévisionnel &amp; trésorerie 12 mois</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Budget d'exploitation détaillé</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Plan de financement + véto CFO</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Pont Excel / Google Sheets (CSV)</span></li>
+        </ul>
+      </div>
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Offre &amp; documents</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Soigner ton image</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Offre &amp; calculateur de pricing</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>CV personnalisé par IA</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Dossier 4MAT (AIDA · Cialdini · SONCAS)</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Export PDF prêt à envoyer</span></li>
+        </ul>
+      </div>
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Acquisition</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Décrocher tes clients</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Pipeline de prospection (kanban)</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Mail d'approche VOUS-MOI-NOUS</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Envoi automatique du dossier</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Marketing &amp; visibilité</span></li>
+        </ul>
+      </div>
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Pilotage</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Garder le cap</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Tableau de bord d'ensemble</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Agenda &amp; priorités (Google Calendar)</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Comptabilité : import relevés bancaires</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Assistant Nova, conscient du contexte</span></li>
+        </ul>
+      </div>
+
+      <div class="ns-reveal ns-card-module" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9a7517;margin:0 0 14px;">Conseil</p>
+        <h3 style="font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;margin:0 0 14px;color:#15231a;">Ne jamais rester bloqué</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;">
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Cabinet Hermès : 6 experts IA</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Simulation Swarm (consensus + frictions)</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Analyse CFO par IA</span></li>
+          <li style="display:flex;gap:9px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M20 6 9 17l-5-5"/></svg><span>Challenge &amp; enrichissement de chaque bloc</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ CABINET HERMÈS ============ -->
+  <section id="cabinet" style="position:relative;z-index:1;background:linear-gradient(180deg,#ebf2e5 0%,#f3f7ef 70%);border-top:1px solid #dde7d4;">
+    <div class="ns-section ns-pad-x" style="max-width:1140px;margin:0 auto;padding:108px 32px;">
+      <div class="ns-reveal" style="text-align:center;max-width:720px;margin:0 auto 56px;">
+        <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">Cabinet Hermès</p>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.9rem,2.5vw+1rem,2.7rem);line-height:1.12;letter-spacing:-0.02em;margin:0 0 16px;color:#15231a;">Un cabinet de conseil, ouvert 24/7.</h2>
+        <p style="font-size:16.5px;color:#677864;line-height:1.6;margin:0;">Six conseillers IA spécialisés à consulter dès qu'une décision te bloque. Plus une simulation « Swarm » qui confronte ta question à plusieurs avis pour faire émerger consensus et frictions.</p>
+      </div>
+      <div class="ns-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#9333EA;box-shadow:0 0 0 5px rgba(147,51,234,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="m5 7-2 6a3 3 0 0 0 6 0Z"/><path d="m19 7-2 6a3 3 0 0 0 6 0Z"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Juriste</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Cadre légal &amp; statuts</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#10B981;box-shadow:0 0 0 5px rgba(16,185,129,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Stratège</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Vision &amp; positionnement</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#0891B2;box-shadow:0 0 0 5px rgba(8,145,178,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Financier</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Budget, cash &amp; rentabilité</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#DC2626;box-shadow:0 0 0 5px rgba(220,38,38,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Communicant</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Image &amp; contenus</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#F59E0B;box-shadow:0 0 0 5px rgba(245,158,11,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Commercial</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Prospection &amp; vente</p>
+          </div>
+        </div>
+
+        <div class="ns-reveal ns-card-expert" style="display:flex;align-items:center;gap:16px;background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+          <span style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:#8B5CF6;box-shadow:0 0 0 5px rgba(139,92,246,0.18);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg></span>
+          <div>
+            <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;margin:0 0 2px;color:#15231a;">Le Technicien</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:0;">Outils &amp; intégrations</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DONNÉES / SYMBIOSE ============ -->
+  <section id="donnees" class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:108px 32px;">
+    <div class="ns-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="ns-reveal" style="background:linear-gradient(150deg,#ffffff,#eef5e8);border:1px solid #cdddc2;border-radius:22px;padding:40px;box-shadow:0 8px 30px rgba(30,50,25,0.06);">
+        <div style="width:48px;height:48px;border-radius:13px;background:linear-gradient(135deg,#2D5016,#4A8B24);display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 6px 18px rgba(74,139,36,0.3);">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#F0F4EF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:26px;line-height:1.2;letter-spacing:-0.02em;margin:0 0 14px;color:#15231a;">Tes données restent chez toi.</h2>
+        <p style="font-size:15px;color:#51624f;line-height:1.65;margin:0 0 18px;">Tout est enregistré <strong style="color:#15231a;">dans ton navigateur</strong> (<em>local-first</em>), jamais sur un serveur de l'éditeur. Conforme nLPD par conception. Tu exportes (CSV, PDF) et réinitialises quand tu veux.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <span style="font-family:'Fira Code',monospace;font-size:11px;color:#3a7a2f;border:1px solid #c5dbb8;background:#eaf4e3;padding:5px 11px;border-radius:999px;">local-first</span>
+          <span style="font-family:'Fira Code',monospace;font-size:11px;color:#3a7a2f;border:1px solid #c5dbb8;background:#eaf4e3;padding:5px 11px;border-radius:999px;">conforme nLPD</span>
+          <span style="font-family:'Fira Code',monospace;font-size:11px;color:#3a7a2f;border:1px solid #c5dbb8;background:#eaf4e3;padding:5px 11px;border-radius:999px;">export CSV / PDF</span>
+          <span style="font-family:'Fira Code',monospace;font-size:11px;color:#3a7a2f;border:1px solid #c5dbb8;background:#eaf4e3;padding:5px 11px;border-radius:999px;">sans compte</span>
+        </div>
+      </div>
+      <div class="ns-reveal" style="background:linear-gradient(150deg,#fdf6e6,#fbf2e0);border:1px solid #ecd9ad;border-radius:22px;padding:40px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 30px rgba(30,50,25,0.06);">
+        <p style="font-family:'Fira Code',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#9a7517;margin:0 0 18px;">Le principe</p>
+        <p style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(1.7rem,2.4vw+1rem,2.4rem);line-height:1.25;color:#15231a;margin:0 0 18px;">« Symbiose, pas substitution. »</p>
+        <p style="font-size:15px;color:#51624f;line-height:1.65;margin:0;">L'IA accélère et fiabilise&nbsp;; la décision et la relation restent à l'humain. Les chiffres financiers sont <strong style="color:#15231a;">les tiens</strong> — l'IA commente, elle n'invente pas. Le générateur de dossiers signale même les promesses à vérifier.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NOTE DU FONDATEUR ============ -->
+  <section class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:880px;margin:0 auto;padding:30px 32px 90px;">
+    <div class="ns-reveal" style="position:relative;overflow:hidden;background:linear-gradient(150deg,#ffffff,#eef5e8);border:1px solid #cdddc2;border-radius:24px;padding:46px 44px;box-shadow:0 10px 34px rgba(30,50,25,0.07);">
+      <div style="position:absolute;top:-40px;right:-30px;width:240px;height:240px;background:radial-gradient(circle,rgba(74,139,36,0.12),transparent 65%);pointer-events:none;"></div>
+      <div style="position:relative;">
+        <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 20px;">Le mot du fondateur</p>
+        <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:clamp(1.35rem,1.4vw+1rem,1.7rem);line-height:1.32;letter-spacing:-0.01em;color:#15231a;margin:0 0 22px;text-wrap:balance;">Quinze ans à accompagner des gens qui se lancent, et toujours le même mur&nbsp;: l'envie est là, le métier aussi — mais personne pour cadrer le projet, poser les chiffres, structurer l'offre.</p>
+        <p style="font-size:15.5px;color:#51624f;line-height:1.7;margin:0 0 16px;">Alors j'ai mis ce que je sais dans un outil. L'IA fait le gros œuvre&nbsp;: les calculs, les brouillons, la trame. Toi, tu gardes la main sur ce qui compte vraiment — tes décisions, ta relation client, ta signature.</p>
+        <p style="font-size:15.5px;color:#51624f;line-height:1.7;margin:0 0 30px;">Pas une machine qui décide à ta place. Un copilote qui reste à côté de toi.</p>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#2D5016,#4A8B24);box-shadow:0 6px 16px rgba(74,139,36,0.3);flex-shrink:0;">
+            <svg width="25" height="25" style="color:#F0F4EF;display:block;" aria-hidden="true"><use href="#sj-seed"/></svg>
+          </span>
+          <div>
+            <p style="font-family:'Instrument Serif',serif;font-style:italic;font-size:20px;color:#15231a;margin:0;line-height:1.2;">Patrick Beiner</p>
+            <p style="font-size:12.5px;color:#7e8f7c;margin:2px 0 0;">Fondateur · SeedJobs Sàrl — Monthey (CH)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TARIFS ============ -->
+  <section id="tarifs" style="position:relative;z-index:1;background:#ebf2e5;border-top:1px solid #dde7d4;border-bottom:1px solid #dde7d4;">
+    <div class="ns-section ns-pad-x" style="max-width:1080px;margin:0 auto;padding:108px 32px;">
+      <div class="ns-reveal" style="text-align:center;max-width:640px;margin:0 auto 56px;">
+        <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">Tarifs</p>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.9rem,2.5vw+1rem,2.7rem);line-height:1.12;letter-spacing:-0.02em;margin:0 0 16px;color:#15231a;">Le prix de ta tranquillité d'esprit.</h2>
+        <p style="font-size:16.5px;color:#677864;line-height:1.6;margin:0;">Un seul outil qui remplace ton tableur, ton traitement de texte et tes outils d'écriture en ligne. Abonnement mensuel, résiliable.</p>
+      </div>
+      <div class="ns-pricing-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:24px;align-items:stretch;max-width:760px;margin:0 auto;">
+
+        <!-- Solo -->
+        <div class="ns-reveal" style="position:relative;display:flex;flex-direction:column;background:#f8f9f7;border:1px solid #e4ecdc;border-radius:20px;padding:32px;box-shadow:0 1px 3px rgba(30,50,25,0.04);opacity:0.72;">
+          <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-family:'Fira Code',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#51624f;background:#e4ecdc;padding:5px 14px;border-radius:999px;font-weight:600;white-space:nowrap;">Bientôt disponible</span>
+          <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:19px;margin:0 0 4px;color:#15231a;">Solo</p>
+          <p style="font-size:13px;color:#7e8f7c;margin:0 0 18px;min-height:34px;">Tu apportes tes propres clés API</p>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-bottom:6px;">
+            <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:38px;color:#15231a;">CHF 9</span>
+            <span style="font-size:13px;color:#7e8f7c;">/ mois</span>
+          </div>
+          <p style="font-size:11.5px;color:#7e8f7c;margin:0 0 22px;font-style:italic;">Disponible prochainement</p>
+          <div style="height:1px;background:#e4ecdc;margin:0 0 20px;"></div>
+          <ul style="list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:11px;flex:1;">
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Tous les modules Nova Solo</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Finances &amp; business plan</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Export CSV / PDF</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>IA via tes propres clés (Anthropic / OpenRouter)</span></li>
+          </ul>
+          <div style="display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;background:#f0f4ef;color:#7e8f7c;border:1px solid #e4ecdc;cursor:not-allowed;">Bientôt disponible</div>
+        </div>
+
+        <!-- Pro (featured) -->
+        <div class="ns-reveal ns-plan-featured" style="position:relative;display:flex;flex-direction:column;background:#eef6e7;border:2px solid #4A8B24;border-radius:20px;padding:32px;box-shadow:0 14px 36px rgba(74,139,36,0.18);">
+          <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-family:'Fira Code',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#ffffff;background:#4A8B24;padding:5px 14px;border-radius:999px;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px rgba(74,139,36,0.3);">Tout inclus · prêt à l'emploi</span>
+          <p style="font-family:'Outfit',sans-serif;font-weight:600;font-size:19px;margin:0 0 4px;color:#3a6b1d;">Pro</p>
+          <p style="font-size:13px;color:#7e8f7c;margin:0 0 18px;min-height:34px;">Clés API incluses, rien à configurer</p>
+          <div style="display:flex;align-items:baseline;gap:7px;margin-bottom:6px;">
+            <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:38px;color:#15231a;">CHF 29</span>
+            <span style="font-size:13px;color:#7e8f7c;">/ mois</span>
+          </div>
+          <p style="font-size:11.5px;color:#7e8f7c;margin:0 0 22px;font-style:italic;">Résiliable à tout moment</p>
+          <div style="height:1px;background:#e4ecdc;margin:0 0 20px;"></div>
+          <ul style="list-style:none;margin:0 0 26px;padding:0;display:flex;flex-direction:column;gap:11px;flex:1;">
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Tout inclus, rien à configurer</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Clés API IA déjà configurées</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Cabinet Hermès (6 experts IA)</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Prospection clients &amp; simulation Swarm</span></li>
+            <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.45;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Support prioritaire</span></li>
+          </ul>
+          <a class="ns-pricing-cta" href="https://start-mybusiness.ch/login" style="display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;padding:14px;border-radius:12px;background:#4A8B24;color:#F0F4EF;border:1px solid transparent;">Commencer maintenant</a>
+        </div>
+
+      </div>
+      <p style="text-align:center;font-size:12px;color:#7e8f7c;margin:30px auto 0;max-width:520px;line-height:1.6;">Paiement sécurisé Stripe · Résiliable à tout moment · Accès immédiat après paiement.<br>Rien à installer&nbsp;: l'outil s'ouvre dans ton navigateur.</p>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:760px;margin:0 auto;padding:108px 32px;">
+    <h2 class="ns-reveal" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.7rem,2vw+1rem,2.3rem);line-height:1.15;letter-spacing:-0.02em;text-align:center;margin:0 0 44px;color:#15231a;">Des questions ? Réponses honnêtes.</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <details class="ns-reveal" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:14px;padding:4px 22px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <summary style="cursor:pointer;list-style:none;padding:18px 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;color:#15231a;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          Dois-je installer un logiciel ?
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p style="font-size:14.5px;color:#677864;line-height:1.65;margin:0 0 18px;">Non, rien du tout. Nova Solo est une application mono-fichier : tu l'ouvres dans ton navigateur (Chrome, Safari…) et tu travailles directement. Rien à installer, rien à maintenir.</p>
+      </details>
+
+      <details class="ns-reveal" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:14px;padding:4px 22px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <summary style="cursor:pointer;list-style:none;padding:18px 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;color:#15231a;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          L'IA peut-elle se tromper dans mes chiffres ?
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p style="font-size:14.5px;color:#677864;line-height:1.65;margin:0 0 18px;">Les chiffres financiers sont les tiens — saisis ou importés depuis ton relevé bancaire. L'IA commente et analyse, elle n'invente pas. Le générateur de dossiers signale même les promesses à vérifier.</p>
+      </details>
+
+      <details class="ns-reveal" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:14px;padding:4px 22px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <summary style="cursor:pointer;list-style:none;padding:18px 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;color:#15231a;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          Où partent mes données ?
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p style="font-size:14.5px;color:#677864;line-height:1.65;margin:0 0 18px;">Nulle part. Tout reste dans ton navigateur (local-first), conforme nLPD. Aucune donnée utilisateur n'est stockée côté serveur, et aucune clé secrète n'est exposée au navigateur. Tu exportes et réinitialises quand tu veux.</p>
+      </details>
+
+      <details class="ns-reveal" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:14px;padding:4px 22px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <summary style="cursor:pointer;list-style:none;padding:18px 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;color:#15231a;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          C'est vraiment adapté à la Suisse ?
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p style="font-size:14.5px;color:#677864;line-height:1.65;margin:0 0 18px;">C'est conçu pour la Suisse romande : CHF, TVA 8.1%, AVS/LPP, LACI/ORP (art. 71a), passage Raison Individuelle → Sàrl, nLPD. Pas une adaptation, une conception.</p>
+      </details>
+
+      <details class="ns-reveal" style="background:#ffffff;border:1px solid #e4ecdc;border-radius:14px;padding:4px 22px;box-shadow:0 1px 3px rgba(30,50,25,0.04);">
+        <summary style="cursor:pointer;list-style:none;padding:18px 0;font-family:'Outfit',sans-serif;font-weight:600;font-size:16px;color:#15231a;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+          Je ne suis pas du tout technique.
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p style="font-size:14.5px;color:#677864;line-height:1.65;margin:0 0 18px;">Un fichier, un navigateur, et tu suis les étapes : Profil → Diagnostic → Canvas → Finances → Business plan → Prospection. Le parcours est guidé du début à la fin.</p>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- ============ APPEL À TESTEURS ============ -->
+  <!-- Emplacement des futurs témoignages : remplacer/compléter ce panneau par de VRAIS
+       témoignages quand les testeurs en auront fourni (cf. README). -->
+  <section class="ns-section ns-pad-x" style="position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:24px 32px 48px;">
+    <div class="ns-reveal" style="position:relative;overflow:hidden;background:linear-gradient(150deg,#fdf6e6,#fbf2e0);border:1px solid #ecd9ad;border-radius:24px;padding:48px 44px;box-shadow:0 10px 34px rgba(30,50,25,0.07);">
+      <div style="position:absolute;bottom:-60px;left:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(218,165,32,0.13),transparent 65%);pointer-events:none;"></div>
+      <div style="position:relative;">
+        <p style="font-family:'Fira Code',monospace;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#9a7517;margin:0 0 16px;">Appel à testeurs · phase de lancement</p>
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(1.7rem,2.2vw+1rem,2.4rem);line-height:1.14;letter-spacing:-0.02em;margin:0 0 16px;color:#15231a;text-wrap:balance;">Pas encore de témoignages. Et je ne vais pas en inventer.</h2>
+        <p style="font-size:16px;color:#51624f;line-height:1.65;margin:0 0 32px;max-width:680px;">Nova Solo sort tout juste. Plutôt que de te coller de faux avis cinq étoiles, je t'ouvre la porte&nbsp;: teste l'outil pour de vrai, dis-moi ce qui marche et ce qui coince. Si ça t'aide, tu me laisses quelques mots à partager. C'est tout.</p>
+
+        <div class="ns-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:34px;">
+          <div style="background:#ffffff;border:1px solid #e4ecdc;border-radius:16px;padding:24px;">
+            <p style="display:flex;align-items:center;gap:9px;font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#3a6b1d;margin:0 0 16px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+              Ce que tu reçois
+            </p>
+            <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px;">
+              <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Accès complet, offert pendant le test</span></li>
+              <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Mon retour direct sur ton projet</span></li>
+              <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A8B24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Ton avis qui oriente la suite du produit</span></li>
+            </ul>
+          </div>
+          <div style="background:#ffffff;border:1px solid #ecd9ad;border-radius:16px;padding:24px;">
+            <p style="display:flex;align-items:center;gap:9px;font-family:'Outfit',sans-serif;font-weight:600;font-size:15px;color:#9a7517;margin:0 0 16px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Ce que tu donnes
+            </p>
+            <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px;">
+              <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Ton retour honnête, sans filtre</span></li>
+              <li style="display:flex;gap:10px;font-size:13.5px;color:#3c4d3a;line-height:1.5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a7517" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M20 6 9 17l-5-5"/></svg><span>Si l'outil t'a servi, quelques mots à partager</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+          <a class="ns-btn-primary" href="https://start-mybusiness.ch/login" style="display:inline-flex;align-items:center;gap:9px;background:#4A8B24;color:#F0F4EF;font-weight:700;font-size:16px;padding:15px 26px;border-radius:12px;box-shadow:0 4px 16px rgba(74,139,36,0.22);">
+            Commencer maintenant
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <span style="font-size:13px;color:#7e8f7c;">Accès immédiat · Résiliable à tout moment.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA FINAL ============ -->
+  <section class="ns-pad-x" style="position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:40px 32px 108px;">
+    <div class="ns-reveal ns-final-cta" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#4A8B24,#2D5016);border-radius:28px;padding:64px 48px;text-align:center;box-shadow:0 20px 50px rgba(45,80,22,0.28);">
+      <div style="position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:400px;max-width:100%;background:radial-gradient(ellipse,rgba(255,255,255,0.18),transparent 65%);pointer-events:none;"></div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(2rem,3vw+1rem,3rem);line-height:1.08;letter-spacing:-0.03em;margin:0 0 18px;text-wrap:balance;color:#ffffff;">De l'idée à l'activité rentable.<br>Ton copilote t'attend.</h2>
+        <p style="font-size:17px;color:#e4efdc;line-height:1.6;max-width:520px;margin:0 auto 32px;">Cadre ton projet, écris ton business plan, pilote ton budget en CHF et trouve tes premiers clients — dans un seul outil.</p>
+        <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+          <a class="ns-btn-gold" href="https://start-mybusiness.ch/login" style="display:inline-flex;align-items:center;gap:9px;background:#DAA520;color:#1A2817;font-weight:700;font-size:16px;padding:16px 30px;border-radius:13px;">
+            Commencer maintenant
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a class="ns-btn-ghost-final" href="#tarifs" style="display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,0.14);color:#ffffff;font-weight:600;font-size:16px;padding:16px 26px;border-radius:13px;border:1px solid rgba(255,255,255,0.4);">Voir les offres</a>
+        </div>
+        <p style="font-size:13px;color:#d3e6c6;margin:22px 0 0;">Paiement sécurisé Stripe · Accès immédiat · Résiliable à tout moment.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="position:relative;z-index:1;border-top:1px solid #dde7d4;background:#e8efe2;">
+    <div class="ns-pad-x" style="max-width:1200px;margin:0 auto;padding:40px 32px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:24px;">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <svg width="26" height="26" style="color:#4A8B24;flex-shrink:0;display:block;" aria-hidden="true"><use href="#sj-seed"/></svg>
+        <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;color:#15231a;">Nova Solo</span>
+        <span style="font-family:'Fira Code',monospace;font-size:11px;color:#7e8f7c;">Fiche 1.0</span>
+      </div>
+      <div style="text-align:right;">
+        <p style="font-size:12.5px;color:#51624f;margin:0 0 4px;">Éditeur : <span style="color:#15231a;">Patrick Beiner</span> — Monthey, Valais (CH)</p>
+        <p style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:#7e8f7c;margin:0 0 8px;">« L'expertise humaine augmentée par l'IA, jamais remplacée. »</p>
+        <div style="display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;">
+          <a href="https://start-mybusiness.ch/legal" style="font-size:11.5px;color:#51624f;text-decoration:none;border-bottom:1px solid #b5c9ae;">Mentions légales</a>
+          <a href="https://start-mybusiness.ch/legal?tab=cgu" style="font-size:11.5px;color:#51624f;text-decoration:none;border-bottom:1px solid #b5c9ae;">CGU</a>
+          <a href="https://start-mybusiness.ch/legal?tab=privacy" style="font-size:11.5px;color:#51624f;text-decoration:none;border-bottom:1px solid #b5c9ae;">Confidentialité</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  /* Révélation au scroll — réécriture vanilla du composant DCLogic du prototype. */
+  (function () {
+    function arm() {
+      var els = document.querySelectorAll('.ns-reveal');
+      if (!els.length) { setTimeout(arm, 60); return; }
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('ns-in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('ns-in'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+      els.forEach(function (el, i) {
+        el.style.transitionDelay = Math.min(i % 4, 3) * 70 + 'ms';
+        el.classList.add('ns-armed');
+        io.observe(el);
+      });
+      // Filet de sécurité : tout révéler après 1.6 s même si l'observer ne se déclenche pas.
+      setTimeout(function () {
+        document.querySelectorAll('.ns-reveal').forEach(function (el) { el.classList.add('ns-in'); });
+      }, 1600);
+    }
+    if (document.readyState !== 'loading') { requestAnimationFrame(arm); }
+    else { document.addEventListener('DOMContentLoaded', function () { requestAnimationFrame(arm); }); }
+  })();
+</script>
+</body>
+</html>

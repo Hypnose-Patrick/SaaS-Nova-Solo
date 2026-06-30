@@ -48,3 +48,15 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy landing page to Hostinger (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 72.60.93.168
+          username: u202854150.start-mybusiness.com
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./landing/
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
