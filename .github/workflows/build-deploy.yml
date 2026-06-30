@@ -49,6 +49,15 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # Source unique de vérité : la landing canonique vit dans frontend/public/landing.html
+      # (servie aussi par Vercel à /landing.html). On régénère l'index.html déployé chez
+      # Hostinger à partir d'elle pour qu'il soit TOUJOURS à jour — pas de doublon à maintenir.
+      - name: Stage canonical landing page for Hostinger
+        run: |
+          rm -rf landing
+          mkdir -p landing
+          cp frontend/public/landing.html landing/index.html
+
       - name: Deploy landing page to Hostinger (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:

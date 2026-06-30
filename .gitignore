@@ -59,3 +59,7 @@ logs/
 # Temporary files
 *.tmp
 .cache/
+
+# Landing déployée chez Hostinger : générée au build depuis frontend/public/landing.html
+# (cf. .github/workflows/build-deploy.yml) — ne pas committer de doublon.
+/landing/
