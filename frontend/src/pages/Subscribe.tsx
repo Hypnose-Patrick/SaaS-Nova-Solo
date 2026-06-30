@@ -1,10 +1,37 @@
+import { useState } from "react";
 import { useUserStore } from "@/stores/useUserStore";
 import { supabase } from "@/lib/supabase";
 
-const STRIPE_LINK = import.meta.env.VITE_STRIPE_PAYMENT_LINK ?? "#";
-
 export function Subscribe() {
   const profile = useUserStore((s) => s.profile);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expirée — reconnectez-vous.");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur serveur");
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inattendue");
+      setLoading(false);
+    }
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -97,27 +124,43 @@ export function Subscribe() {
             Accès immédiat après paiement.
           </p>
 
-          <a
-            href={STRIPE_LINK}
+          {error && (
+            <p style={{
+              fontSize: "var(--text-xs)",
+              color: "#e57373",
+              marginBottom: "var(--space-4)",
+              padding: "var(--space-3)",
+              background: "rgba(229,115,115,0.08)",
+              borderRadius: "var(--radius-sm)",
+            }}>
+              {error}
+            </p>
+          )}
+
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
             style={{
               display: "block",
               width: "100%",
               padding: "12px var(--space-4)",
-              background: "var(--color-gold)",
+              background: loading ? "rgba(197,165,114,0.5)" : "var(--color-gold)",
               color: "#1a1a17",
               borderRadius: "var(--radius-sm)",
               fontSize: "var(--text-sm)",
               fontWeight: 600,
               letterSpacing: "0.08em",
-              textDecoration: "none",
+              border: "none",
+              cursor: loading ? "not-allowed" : "pointer",
               textAlign: "center",
               textTransform: "uppercase",
               boxSizing: "border-box",
               marginBottom: "var(--space-4)",
-            }}
+              width: "100%",
+            } as React.CSSProperties}
           >
-            S'abonner — CHF 29 / mois
-          </a>
+            {loading ? "Redirection…" : "S'abonner — CHF 29 / mois"}
+          </button>
 
           <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-6)" }}>
             Résiliable à tout moment · Paiement sécurisé Stripe · TVA CH incluse

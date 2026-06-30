@@ -21,8 +21,13 @@ serve(async (req) => {
       { db: { schema: "nova" } }
     );
 
-    // Récupère l'utilisateur depuis le JWT
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const { data: { user }, error: authErr } = await supabase.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
@@ -32,16 +37,14 @@ serve(async (req) => {
       });
     }
 
-    // Récupère le profil (stripe_customer_id éventuel)
     const { data: profile } = await supabase
       .from("profiles")
       .select("stripe_customer_id, email, name")
       .eq("user_id", user.id)
       .single();
 
-    const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.com";
+    const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.ch";
 
-    // Crée ou réutilise le customer Stripe
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -56,7 +59,6 @@ serve(async (req) => {
         .eq("user_id", user.id);
     }
 
-    // Crée la Checkout Session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
@@ -65,8 +67,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: "subscription",
-      success_url: `${appUrl}/settings?subscription=success`,
-      cancel_url: `${appUrl}/settings?subscription=cancelled`,
+      success_url: `${appUrl}/?subscription=success`,
+      cancel_url: `${appUrl}/subscribe?subscription=cancelled`,
       locale: "fr",
     });
 

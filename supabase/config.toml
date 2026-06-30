@@ -19,7 +19,7 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173", "https://app.nova-solo.ch"]
+additional_redirect_urls = ["http://localhost:5173", "https://app.nova-solo.ch", "https://start-mybusiness.ch"]
 jwt_expiry = 3600
 enable_signup = true
 
@@ -41,3 +41,9 @@ verify_jwt = true
 
 [functions.ocr-receipt]
 verify_jwt = true
+
+[functions.stripe-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false

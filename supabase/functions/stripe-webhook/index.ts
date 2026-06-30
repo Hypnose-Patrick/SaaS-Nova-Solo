@@ -53,7 +53,9 @@ serve(async (req) => {
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
       await updateByCustomer(String(sub.customer), {
-        subscription_status: sub.status === "active" ? "active" : "inactive",
+        subscription_status: sub.status === "active" || sub.status === "trialing"
+          ? sub.status
+          : "inactive",
         subscription_id: sub.id,
         subscription_end: sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
@@ -65,7 +67,7 @@ serve(async (req) => {
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
       await updateByCustomer(String(sub.customer), {
-        subscription_status: "inactive",
+        subscription_status: "canceled",
         subscription_id: null,
         subscription_end: null,
       });
