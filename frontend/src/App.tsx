@@ -28,6 +28,7 @@ import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
 import { Legal } from "@/pages/Legal";
 import { Subscribe } from "@/pages/Subscribe";
+import { hasAccess } from "@/lib/useSubscription";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -121,7 +122,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : (profile?.subscription_status === "active" || profile?.subscription_status === "trialing" || profile?.is_admin)
+              : hasAccess(profile)
                 ? <Navigate to="/" replace />
                 : <Subscribe />
           }
@@ -131,7 +132,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : (profile && profile.subscription_status !== "active" && profile.subscription_status !== "trialing" && !profile.is_admin)
+              : (profile && !hasAccess(profile))
                 ? <Navigate to="/subscribe" replace />
                 : <ProtectedRoutes />
           }

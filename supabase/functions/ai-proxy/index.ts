@@ -17,6 +17,7 @@ import { requireUser } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/admin.ts";
 import { decryptSecret } from "../_shared/crypto.ts";
 import { sanitize, sanitizeText } from "../_shared/sanitize.ts";
+import { assertActiveEntitlement, EntitlementError } from "../_shared/entitlement.ts";
 import { systemFor } from "./agents.ts";
 
 interface ChatMessage {
@@ -229,6 +230,9 @@ Deno.serve(async (req: Request) => {
   try {
     const user = await requireUser(req); // 401 si non authentifié
 
+    // Licence : refuse si abonnement inactif ou expiré (402).
+    await assertActiveEntitlement(user.id);
+
     const body = (await req.json()) as AiRequest;
     const provider = body.provider ??
       (Deno.env.get("AI_DEFAULT_PROVIDER") as "openrouter" | "anthropic") ??
@@ -269,6 +273,22 @@ Deno.serve(async (req: Request) => {
       .eq("user_id", user.id)
       .maybeSingle();
     const config = cfg as AiConfigRow | null;
+
+    // Édition Solo (CHF 9/mois) = BYOK obligatoire : l'abonné paie son propre
+    // fournisseur IA, pas de bascule silencieuse sur l'IA managée plateforme.
+    const { data: profileRow } = await adminClient()
+      .from("profiles")
+      .select("plan")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const hasByokConfig = config?.mode === "byok_remote" &&
+      !!config.key_ciphertext && !!config.key_iv;
+    if (profileRow?.plan === "solo" && !hasByokConfig && config?.mode !== "byok_local") {
+      return json({
+        error: "Configurez votre clé IA dans Réglages pour utiliser l'IA — offre Solo (BYOK).",
+        code: "byok_required",
+      }, 402);
+    }
 
     if (config?.mode === "byok_remote" && config.key_ciphertext && config.key_iv) {
       const userKey = await decryptSecret({
@@ -311,6 +331,9 @@ Deno.serve(async (req: Request) => {
 
     return json({ content, provider, model, agent: body.agent ?? "nova" });
   } catch (err) {
+    if (err instanceof EntitlementError) {
+      return json({ error: "Licence inactive ou expirée", code: err.reason }, 402);
+    }
     const msg = err instanceof Error ? err.message : String(err);
     const status = msg.startsWith("UNAUTHENTICATED") ? 401 : 500;
     // On ne renvoie jamais la stack ni les valeurs de secrets.

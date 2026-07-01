@@ -17,6 +17,7 @@ import { handleOptions, json } from "../_shared/cors.ts";
 import { requireUser } from "../_shared/auth.ts";
 import { adminClient } from "../_shared/admin.ts";
 import { encryptSecret } from "../_shared/crypto.ts";
+import { assertActiveEntitlement, EntitlementError } from "../_shared/entitlement.ts";
 
 interface SafeConfig {
   mode: string;
@@ -43,6 +44,8 @@ Deno.serve(async (req: Request) => {
 
   try {
     const user = await requireUser(req);
+    // Licence : refuse si abonnement inactif ou expiré (402).
+    await assertActiveEntitlement(user.id);
     const db = adminClient();
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const action = String(body.action ?? "get");
@@ -143,6 +146,9 @@ Deno.serve(async (req: Request) => {
 
     return json({ error: "Action inconnue" }, 400);
   } catch (err) {
+    if (err instanceof EntitlementError) {
+      return json({ error: "Licence inactive ou expirée", code: err.reason }, 402);
+    }
     const msg = err instanceof Error ? err.message : String(err);
     const status = msg.startsWith("UNAUTHENTICATED") ? 401 : 500;
     return json({ error: msg.split(":")[0], detail: msg }, status);

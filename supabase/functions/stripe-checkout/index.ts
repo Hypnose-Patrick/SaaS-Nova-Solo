@@ -45,6 +45,17 @@ serve(async (req) => {
 
     const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.com";
 
+    // Palier choisi (Solo = CHF 9/mois BYOK par défaut ; Pro à ajouter plus tard).
+    const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const plan = body?.plan === "pro" ? "pro" : "solo";
+    const priceEnvVar = plan === "pro" ? "STRIPE_PRICE_ID_PRO" : "STRIPE_PRICE_ID_SOLO";
+    const priceId = Deno.env.get(priceEnvVar);
+    if (!priceId) {
+      return new Response(JSON.stringify({ error: `Configuration manquante : ${priceEnvVar}` }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -62,8 +73,10 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
-      line_items: [{ price: Deno.env.get("STRIPE_PRICE_ID")!, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      metadata: { plan },
+      subscription_data: { metadata: { plan } },
       // `/` est servi par Hostinger comme la landing (via .htaccess) — il faut une
       // route SPA, sinon l'utilisateur retombe sur la landing après paiement.
       // /login (connecté) passe le gate → dashboard une fois l'abonnement actif.

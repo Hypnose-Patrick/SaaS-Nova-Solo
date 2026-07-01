@@ -116,12 +116,31 @@ export function Subscribe() {
               fontSize: "var(--text-sm)",
               color: "var(--color-text-secondary)",
               lineHeight: "var(--leading-relaxed)",
-              margin: "0 0 var(--space-8)",
+              margin: "0 0 var(--space-6)",
             }}
           >
             Bienvenue{profile?.name ? `, ${profile.name}` : ""}.
             Pour accéder à Nova Solo, activez votre abonnement.
             Accès immédiat après paiement.
+          </p>
+
+          <p
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "var(--color-text-muted)",
+              lineHeight: "var(--leading-relaxed)",
+              margin: "0 0 var(--space-8)",
+              padding: "var(--space-3)",
+              background: "rgba(197,165,114,0.08)",
+              borderRadius: "var(--radius-sm)",
+              textAlign: "left",
+            }}
+          >
+            <strong style={{ color: "var(--color-text-secondary)" }}>Édition Solo — BYOK.</strong>{" "}
+            Tous les modules inclus. Vous apportez votre propre clé IA
+            (OpenAI, OpenRouter, Anthropic…) : vous payez directement votre fournisseur,
+            en plus de l'abonnement. Configuration dans Réglages → Moteur IA après l'abonnement.
+            Facturation <strong>annuelle</strong> (CHF 108/an), affichée en équivalent mensuel ci-dessous.
           </p>
 
           {error && (
@@ -158,11 +177,11 @@ export function Subscribe() {
               marginBottom: "var(--space-4)",
             } as React.CSSProperties}
           >
-            {loading ? "Redirection…" : "S'abonner — CHF 29 / mois"}
+            {loading ? "Redirection…" : "S'abonner — CHF 9 / mois (facturé CHF 108 / an)"}
           </button>
 
           <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-6)" }}>
-            Résiliable à tout moment · Paiement sécurisé Stripe · TVA CH incluse
+            Facturation annuelle · non renouvelé au terme si résilié avant l'échéance · Paiement sécurisé Stripe · TVA CH incluse
           </p>
 
           <button

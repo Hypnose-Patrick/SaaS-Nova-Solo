@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { getAiConfig, saveAiConfig, type AiConfig, type AiMode } from "@/lib/aiConfig";
+import { useUserStore } from "@/stores/useUserStore";
 
 const SECTION_TITLE: React.CSSProperties = {
   fontFamily: "var(--font-display)",
@@ -35,6 +36,9 @@ const SELECT_STYLE: React.CSSProperties = {
 type Provider = "openai" | "anthropic";
 
 export function AiEngineCard() {
+  const profile = useUserStore((s) => s.profile);
+  const isSolo = profile?.plan === "solo";
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -48,7 +52,9 @@ export function AiEngineCard() {
   const [savedLast4, setSavedLast4] = useState<string | null>(null);
 
   function hydrate(c: AiConfig) {
-    setMode(c.mode);
+    // L'édition Solo n'inclut pas l'IA managée : pas de choix "Tout-compris"
+    // possible, on force l'affichage sur la config BYOK dès l'ouverture.
+    setMode(isSolo && c.mode === "managed" ? "byok_remote" : c.mode);
     setProvider((c.provider as Provider) ?? "openai");
     setBaseUrl(c.base_url ?? "");
     setModel(c.model ?? "");
@@ -61,6 +67,7 @@ export function AiEngineCard() {
       .then(hydrate)
       .catch(() => setError("Impossible de charger la configuration du moteur IA."))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function save() {
@@ -92,12 +99,21 @@ export function AiEngineCard() {
   return (
     <Card glass>
       <p style={SECTION_TITLE}>Moteur IA — votre édition</p>
-      <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0", lineHeight: "var(--leading-normal)" }}>
-        Deux moteurs, deux éditions. En <strong>Tout-compris (Pro)</strong>, l'IA est incluse —
-        rien à configurer, vous n'y pensez plus. En <strong>Autonome (Solo)</strong>, vous branchez
-        votre propre fournisseur : c'est vous qui le réglez directement (en plus de l'abonnement),
-        et votre clé est chiffrée côté serveur, jamais réaffichée.
-      </p>
+      {isSolo ? (
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-gold-muted)", margin: "0 0 var(--space-4) 0", lineHeight: "var(--leading-normal)" }}>
+          <strong>Édition Solo (CHF 9/mois) — BYOK obligatoire.</strong> L'IA managée n'est pas
+          incluse dans ce palier : configurez votre propre clé (OpenAI, OpenRouter, Anthropic…)
+          ci-dessous pour utiliser les agents IA. Votre clé est chiffrée côté serveur, jamais
+          réaffichée ; sa consommation est facturée directement par votre fournisseur.
+        </p>
+      ) : (
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0", lineHeight: "var(--leading-normal)" }}>
+          Deux moteurs, deux éditions. En <strong>Tout-compris (Pro)</strong>, l'IA est incluse —
+          rien à configurer, vous n'y pensez plus. En <strong>Autonome (Solo)</strong>, vous branchez
+          votre propre fournisseur : c'est vous qui le réglez directement (en plus de l'abonnement),
+          et votre clé est chiffrée côté serveur, jamais réaffichée.
+        </p>
+      )}
 
       {loading ? (
         <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)" }}>Chargement…</p>
@@ -105,8 +121,13 @@ export function AiEngineCard() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             <label style={LABEL_STYLE}>Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value as AiMode)} style={SELECT_STYLE}>
-              <option value="managed">Tout-compris (Pro) — IA incluse</option>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as AiMode)}
+              style={SELECT_STYLE}
+              disabled={isSolo}
+            >
+              {!isSolo && <option value="managed">Tout-compris (Pro) — IA incluse</option>}
               <option value="byok_remote">Autonome (Solo) — votre clé, votre fournisseur</option>
             </select>
           </div>

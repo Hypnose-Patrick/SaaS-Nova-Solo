@@ -42,17 +42,20 @@ serve(async (req) => {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode === "subscription" && session.customer) {
-        await updateByCustomer(String(session.customer), {
+        const patch: Record<string, unknown> = {
           subscription_status: "active",
           subscription_id: String(session.subscription),
-        });
+        };
+        const plan = session.metadata?.plan;
+        if (plan === "solo" || plan === "pro") patch.plan = plan;
+        await updateByCustomer(String(session.customer), patch);
       }
       break;
     }
 
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
-      await updateByCustomer(String(sub.customer), {
+      const patch: Record<string, unknown> = {
         subscription_status: sub.status === "active" || sub.status === "trialing"
           ? sub.status
           : "inactive",
@@ -60,7 +63,12 @@ serve(async (req) => {
         subscription_end: sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null,
-      });
+      };
+      // Le plan ne change pas tant qu'il n'y a qu'un tarif ; on le rafraîchit
+      // seulement s'il est présent dans les metadata (posé au checkout).
+      const plan = sub.metadata?.plan;
+      if (plan === "solo" || plan === "pro") patch.plan = plan;
+      await updateByCustomer(String(sub.customer), patch);
       break;
     }
 
