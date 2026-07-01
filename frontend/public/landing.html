@@ -42,6 +42,8 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
   .ns-tli{min-width:640px}
   .ns-navl{display:none!important}
   .ns-heroctas{flex-direction:column!important;align-items:flex-start!important}
+  .ns-featfull{flex-direction:column!important;align-items:flex-start!important;gap:16px!important;padding:24px 20px!important}
+  .ns-featbadge{display:none!important}
 }
 </style>
 </helmet>
@@ -307,7 +309,7 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
       </div>
 
       <!-- Card 7: Site vitrine généré par l'IA — full width -->
-      <div data-animate="" data-delay="80" data-hover-card="" style="background:linear-gradient(135deg,rgba(201,169,82,0.08) 0%,rgba(201,169,82,0.03) 100%);border:1px solid rgba(201,169,82,0.3);border-radius:14px;padding:32px 36px;grid-column:1/-1;display:flex;align-items:center;gap:48px;">
+      <div data-animate="" data-delay="80" data-hover-card="" class="ns-featfull" style="background:linear-gradient(135deg,rgba(201,169,82,0.08) 0%,rgba(201,169,82,0.03) 100%);border:1px solid rgba(201,169,82,0.3);border-radius:14px;padding:32px 36px;grid-column:1/-1;display:flex;align-items:center;gap:48px;">
         <div style="width:56px;height:56px;border-radius:14px;background:rgba(201,169,82,0.12);border:1px solid rgba(201,169,82,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
             <rect x="2" y="5" width="22" height="16" rx="2.5" stroke="#C9A952" stroke-width="1.5"></rect>
@@ -326,7 +328,7 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
           <p style="font-size:0.9375rem;color:#c8b99a;line-height:1.7;margin:0;" data-i18n="feat7p">Depuis le module Marketing, générez un site HTML one-page prêt à publier — contenu rédigé par l'IA à partir de votre profil, preview instantané, téléchargement en un clic.</p>
         </div>
         <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;">
-          <div style="text-align:right;">
+          <div class="ns-featbadge" style="text-align:right;">
             <div style="font-size:11px;color:#8a7355;margin-bottom:4px;" data-i18n="feat7s1">Inclus dans tous les plans</div>
             <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
               <div style="width:8px;height:8px;border-radius:50%;background:#C9A952;"></div>
@@ -339,7 +341,7 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
 
 
       <!-- Card 8: Interface trilingue FR / DE / IT -->
-      <div data-animate="" data-delay="160" data-hover-card="" style="background:linear-gradient(135deg,rgba(201,169,82,0.08) 0%,rgba(201,169,82,0.03) 100%);border:1px solid rgba(201,169,82,0.3);border-radius:14px;padding:32px 36px;display:flex;align-items:center;gap:32px;grid-column:1 / -1;">
+      <div data-animate="" data-delay="160" data-hover-card="" class="ns-featfull" style="background:linear-gradient(135deg,rgba(201,169,82,0.08) 0%,rgba(201,169,82,0.03) 100%);border:1px solid rgba(201,169,82,0.3);border-radius:14px;padding:32px 36px;display:flex;align-items:center;gap:32px;grid-column:1 / -1;">
         <div style="width:56px;height:56px;border-radius:14px;background:rgba(201,169,82,0.12);border:1px solid rgba(201,169,82,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
             <circle cx="13" cy="13" r="10" stroke="#C9A952" stroke-width="1.5"></circle>
@@ -354,7 +356,7 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
           <p style="font-size:0.9375rem;color:#c8b99a;line-height:1.7;margin:0;" data-i18n="feat8p">Nova Solo parle la langue de l'indépendant suisse — romand, alémanique ou tessinois. Détection automatique de la langue du navigateur, changeable en un clic. Données hébergées dans l'Union européenne (Supabase, Francfort), conformes à la nLPD et au RGPD.</p>
         </div>
         <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;">
-          <div style="text-align:right;">
+          <div class="ns-featbadge" style="text-align:right;">
             <div style="font-size:11px;color:#8a7355;margin-bottom:4px;" data-i18n="feat8s">Disponible maintenant</div>
             <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
               <span style="font-size:0.8rem;font-weight:600;padding:3px 10px;border-radius:100px;background:rgba(201,169,82,0.12);border:1px solid rgba(201,169,82,0.25);color:#C9A952;">FR</span>
