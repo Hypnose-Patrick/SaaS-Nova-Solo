@@ -510,7 +510,6 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
 
       <!-- Pro -->
       <div data-animate="" data-delay="120" class="ns-pcard" data-hover-card="" style="flex:1;background:rgba(201,169,82,0.07);border:1.5px solid rgba(201,169,82,0.45);border-radius:16px;padding:40px 36px;position:relative;box-shadow:0 0 48px rgba(201,169,82,0.07);">
-        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#3a2e1a;border:1px solid rgba(201,169,82,0.35);color:#C9A952;padding:4px 18px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;" data-i18n="probadge">Disponible en 2027</div>
         <div style="margin-bottom:28px;">
           <div style="font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#C9A952;margin-bottom:12px;" data-i18n="prolabel">BYOK — Licence</div>
           <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
@@ -526,7 +525,7 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
           <div style="display:flex;align-items:center;gap:10px;"><div style="width:16px;height:16px;border-radius:50%;background:rgba(201,169,82,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#C9A952" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span style="font-size:0.875rem;color:#c8b99a;" data-i18n="prof3">Synchronisation Supabase &amp; Google Drive</span></div>
           <div style="display:flex;align-items:center;gap:10px;"><div style="width:16px;height:16px;border-radius:50%;background:rgba(201,169,82,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#C9A952" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span style="font-size:0.875rem;color:#c8b99a;" data-i18n="prof4">Export complet du dossier</span></div>
         </div>
-        <span style="display:block;text-align:center;padding:13px 20px;border-radius:8px;background:rgba(201,169,82,0.12);color:rgba(201,169,82,0.45);font-weight:700;font-size:0.9375rem;cursor:default;border:1px solid rgba(201,169,82,0.2);" data-i18n="procta">Bientôt disponible</span>
+        <a href="https://start-mybusiness.com/login" style="display:block;text-align:center;padding:13px 20px;border-radius:8px;border:1px solid rgba(201,169,82,0.6);background:rgba(201,169,82,0.12);color:#C9A952;text-decoration:none;font-weight:700;font-size:0.9375rem;transition:all 0.2s;" style-hover="background:rgba(201,169,82,0.2);border-color:rgba(201,169,82,0.8)" id="ns-byok-cta" class="ns-app-link" data-i18n="procta">Commencer — BYOK</a>
       </div>
 
     </div>
@@ -725,7 +724,7 @@ class Component extends DCLogic {
       step1:'Profil',step1s:'Votre situation',step2:'Diagnostic',step2s:'Analyse &amp; gaps',step3:'BMC',step3s:'Modèle business',step4:'Pricing',step4s:'Votre valeur',step5:'Prospection',step5s:'Premiers clients',step6:'Finances',step6s:'Budgets &amp; flux',step7:'Dossier',step7s:'Prêt à lancer',
       solodesc:'Accès complet à tous les modules. Mode managé — l\'IA gère la clé API.',permois:'/mois',
       probadge:'Disponible en 2027',prolabel:'BYOK — Licence',proannual:'Licence annuelle — CHF 108 payable en 1×',prodesc:'Licence pour connecter vos propres clés API et bases de données. Contrôle total, données chez vous.',
-      prof1:'Tout le plan Solo inclus',prof2:'BYOK — clé API personnelle',prof3:'Synchronisation Supabase &amp; Google Drive',prof4:'Export complet du dossier',procta:'Bientôt disponible'
+      prof1:'Tout le plan Solo inclus',prof2:'BYOK — clé API personnelle',prof3:'Synchronisation Supabase &amp; Google Drive',prof4:'Export complet du dossier',procta:'Commencer — BYOK'
     },
     de:{
       feat:'Funktionen',who:'Für wen',pricing:'Preise',login:'Anmelden',start:'Starten',
@@ -771,7 +770,7 @@ class Component extends DCLogic {
       step1:'Profil',step1s:'Ihre Situation',step2:'Diagnose',step2s:'Analyse &amp; Lücken',step3:'BMC',step3s:'Geschäftsmodell',step4:'Pricing',step4s:'Ihr Wert',step5:'Akquise',step5s:'Erste Kunden',step6:'Finanzen',step6s:'Budgets &amp; Flüsse',step7:'Dossier',step7s:'Startklar',
       solodesc:'Voller Zugang zu allen Modulen. Managed-Modus — die KI verwaltet den API-Schlüssel.',permois:'/Monat',
       probadge:'Verfügbar 2027',prolabel:'BYOK — Lizenz',proannual:'Jahreslizenz — CHF 108, einmalig zahlbar',prodesc:'Lizenz, um eigene API-Schlüssel und Datenbanken anzubinden. Volle Kontrolle, Daten bei Ihnen.',
-      prof1:'Gesamter Solo-Plan inklusive',prof2:'BYOK — persönlicher API-Schlüssel',prof3:'Synchronisation Supabase &amp; Google Drive',prof4:'Vollständiger Dossier-Export',procta:'Bald verfügbar'
+      prof1:'Gesamter Solo-Plan inklusive',prof2:'BYOK — persönlicher API-Schlüssel',prof3:'Synchronisation Supabase &amp; Google Drive',prof4:'Vollständiger Dossier-Export',procta:'Jetzt starten — BYOK'
     },
     it:{
       feat:'Funzioni',who:'Per chi',pricing:'Prezzi',login:'Accedi',start:'Inizia',
@@ -817,7 +816,7 @@ class Component extends DCLogic {
       step1:'Profilo',step1s:'La tua situazione',step2:'Diagnosi',step2s:'Analisi &amp; lacune',step3:'BMC',step3s:'Modello di business',step4:'Pricing',step4s:'Il tuo valore',step5:'Prospezione',step5s:'Primi clienti',step6:'Finanze',step6s:'Budget &amp; flussi',step7:'Dossier',step7s:'Pronto al lancio',
       solodesc:'Accesso completo a tutti i moduli. Modalità gestita — l\'IA gestisce la chiave API.',permois:'/mese',
       probadge:'Disponibile nel 2027',prolabel:'BYOK — Licenza',proannual:'Licenza annuale — CHF 108 in un\'unica soluzione',prodesc:'Licenza per collegare le tue chiavi API e i tuoi database. Controllo totale, dati a casa tua.',
-      prof1:'Tutto il piano Solo incluso',prof2:'BYOK — chiave API personale',prof3:'Sincronizzazione Supabase &amp; Google Drive',prof4:'Esportazione completa del dossier',procta:'Presto disponibile'
+      prof1:'Tutto il piano Solo incluso',prof2:'BYOK — chiave API personale',prof3:'Sincronizzazione Supabase &amp; Google Drive',prof4:'Esportazione completa del dossier',procta:'Inizia — BYOK'
     }
   };
   function detectLang(){

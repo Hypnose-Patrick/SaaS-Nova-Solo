@@ -45,13 +45,19 @@ serve(async (req) => {
 
     const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.com";
 
-    // Palier choisi (Solo = CHF 9/mois BYOK par défaut ; Pro à ajouter plus tard).
+    // Palier choisi : Solo = CHF 9/mois (BYOK) ; Pro = CHF 29/mois (IA managée,
+    // c'est l'offre historique déjà vendue sur la landing avant l'ajout de Solo).
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const plan = body?.plan === "pro" ? "pro" : "solo";
-    const priceEnvVar = plan === "pro" ? "STRIPE_PRICE_ID_PRO" : "STRIPE_PRICE_ID_SOLO";
-    const priceId = Deno.env.get(priceEnvVar);
+    // STRIPE_PRICE_ID = ancien secret mono-tarif (CHF 29/mois, déjà en place) —
+    // conservé en repli pour Pro tant que STRIPE_PRICE_ID_PRO n'est pas posé,
+    // afin de ne pas casser le bouton "Commencer — Solo" déjà public sur la landing.
+    const priceId = plan === "pro"
+      ? (Deno.env.get("STRIPE_PRICE_ID_PRO") ?? Deno.env.get("STRIPE_PRICE_ID"))
+      : Deno.env.get("STRIPE_PRICE_ID_SOLO");
     if (!priceId) {
-      return new Response(JSON.stringify({ error: `Configuration manquante : ${priceEnvVar}` }), {
+      const missing = plan === "pro" ? "STRIPE_PRICE_ID_PRO / STRIPE_PRICE_ID" : "STRIPE_PRICE_ID_SOLO";
+      return new Response(JSON.stringify({ error: `Configuration manquante : ${missing}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
