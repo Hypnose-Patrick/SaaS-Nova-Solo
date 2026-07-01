@@ -44,6 +44,14 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
   .ns-heroctas{flex-direction:column!important;align-items:flex-start!important}
   .ns-featfull{flex-direction:column!important;align-items:flex-start!important;gap:16px!important;padding:24px 20px!important}
   .ns-featbadge{display:none!important}
+  .ns-tlo{overflow-x:visible!important}
+  .ns-tli{min-width:0!important}
+  .ns-trow{flex-direction:column!important;gap:0!important}
+  .ns-trow > div{flex-direction:row!important;align-items:center!important;flex:unset!important;gap:16px!important;padding:12px 0!important;border-bottom:1px solid rgba(201,169,82,0.08)!important}
+  .ns-trow > div:last-child{border-bottom:none!important}
+  .ns-trow > div > div:first-child{margin-bottom:0!important;width:44px!important;height:44px!important;flex-shrink:0!important}
+  .ns-trow > div > div:last-child{text-align:left!important;padding:0!important}
+  .ns-timeline-hline{display:none!important}
 }
 </style>
 </helmet>
@@ -425,8 +433,8 @@ body{margin:0;background:#1a1008;color:#f5f0e8;font-family:'Inter',sans-serif;-w
     <h2 data-animate="" data-delay="80" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,3.5vw,3rem);font-weight:700;line-height:1.15;letter-spacing:-0.025em;color:#f5f0e8;margin:0 0 56px;">Votre chemin, <em style="color:#C9A952;font-style:italic;">en 7 étapes.</em></h2>
     <div class="ns-tlo">
       <div class="ns-tli" style="position:relative;">
-        <div style="position:absolute;top:27px;left:28px;right:28px;height:1px;background:linear-gradient(90deg,rgba(201,169,82,0.5) 0%,rgba(201,169,82,0.12) 100%);z-index:0;"></div>
-        <div data-animate="" style="display:flex;justify-content:space-between;position:relative;z-index:1;">
+        <div class="ns-timeline-hline" style="position:absolute;top:27px;left:28px;right:28px;height:1px;background:linear-gradient(90deg,rgba(201,169,82,0.5) 0%,rgba(201,169,82,0.12) 100%);z-index:0;"></div>
+        <div data-animate="" class="ns-trow" style="display:flex;justify-content:space-between;position:relative;z-index:1;">
 
           <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
             <div style="width:56px;height:56px;border-radius:50%;background:#0d0a05;border:1px solid rgba(201,169,82,0.32);display:flex;align-items:center;justify-content:center;margin-bottom:16px;"><span style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:#C9A952;">1</span></div>
