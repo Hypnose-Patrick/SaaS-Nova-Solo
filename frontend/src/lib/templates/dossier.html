@@ -869,13 +869,11 @@ var D = Object.assign({
 
     /* ── Contenu ── */
     var contentEl = document.getElementById('content-area');
-    if (contentEl) {
+    if (contentEl && !contentEl.innerHTML.trim()) {
       var raw = D.CONTENT;
-      if (!raw || raw === '{{CONTENT}}') {
-        contentEl.innerHTML = '<p style="color:#8a8aa0;font-style:italic;">Le contenu du dossier sera inséré ici.</p>';
-      } else {
-        contentEl.innerHTML = parseContent(raw);
-      }
+      contentEl.innerHTML = (raw && raw !== '{{CONTENT}}')
+        ? parseContent(raw)
+        : '<p style="color:#8a8aa0;font-style:italic;">Le contenu du dossier sera inséré ici.</p>';
     }
   }
 

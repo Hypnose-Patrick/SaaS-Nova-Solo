@@ -19,8 +19,27 @@ const LBL: React.CSSProperties = {
   textTransform: "uppercase", color: "var(--color-text-muted)",
 };
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function mdToHtml(raw: string): string {
+  const bold = (s: string) =>
+    s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/_(.+?)_/g, "<em>$1</em>");
+  const lines = raw.split("\n");
+  let html = "", para: string[] = [], inList = false;
+  const flushPara = () => { if (para.length) { html += "<p>" + para.map(bold).join("<br>") + "</p>"; para = []; } };
+  const flushList = () => { if (inList) { html += "</ul>"; inList = false; } };
+  for (const raw_line of lines) {
+    const l = raw_line.replace(/\r$/, "").trimEnd();
+    if      (l.startsWith("### ")) { flushPara(); flushList(); html += "<h3>" + bold(l.slice(4)) + "</h3>"; }
+    else if (l.startsWith("## "))  { flushPara(); flushList(); html += "<h2>" + bold(l.slice(3)) + "</h2>"; }
+    else if (l.startsWith("# "))   { flushPara(); flushList(); html += "<h1>" + bold(l.slice(2)) + "</h1>"; }
+    else if (l.startsWith("> "))   { flushPara(); flushList(); html += "<blockquote>" + bold(l.slice(2)) + "</blockquote>"; }
+    else if (l.startsWith("---") || l.startsWith("***")) { flushPara(); flushList(); html += "<hr>"; }
+    else if (/^[-*•] /.test(l))    { flushPara(); if (!inList) { html += "<ul>"; inList = true; } html += "<li>" + bold(l.slice(2)) + "</li>"; }
+    else if (/^\d+\. /.test(l))    { flushPara(); if (!inList) { html += "<ul>"; inList = true; } html += "<li>" + bold(l.replace(/^\d+\. /, "")) + "</li>"; }
+    else if (l.trim() === "")      { flushPara(); flushList(); }
+    else                           { flushList(); para.push(l); }
+  }
+  flushPara(); flushList();
+  return html;
 }
 
 export function Dossier() {
@@ -55,7 +74,8 @@ export function Dossier() {
   }
 
   function buildDocHtml(): string {
-    return fillTemplate(dossierTemplateHtml, {
+    const contentHtml = dossier ? mdToHtml(dossier) : "";
+    let html = fillTemplate(dossierTemplateHtml, {
       LOGO_URL:        profile?.logo_url      ?? "",
       ACCENT_COLOR:    profile?.accent_color  ?? "#8b6f47",
       BRAND_NAME:      profile?.brand_name    ?? profile?.name ?? "",
@@ -68,8 +88,15 @@ export function Dossier() {
       RECIP_NOM:       recip.nom,
       RECIP_FONCTION:  recip.fonction,
       RECIP_ORG:       recip.org,
-      CONTENT:         dossier ?? "",
+      CONTENT:         "",
     });
+    if (contentHtml) {
+      html = html.replace(
+        '<div class="content-area" id="content-area"></div>',
+        `<div class="content-area" id="content-area">${contentHtml}</div>`,
+      );
+    }
+    return html;
   }
 
   function exportPdf() { if (dossier) printHtml(buildDocHtml()); }
