@@ -7,6 +7,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
 import { researchProspect, prospectEmail, prospectObjections, prospectDossier, PROSPECT_EMAIL_TEMPLATES, type ProspectEmailTemplate } from "@/lib/ai";
+import { callN8n } from "@/lib/n8n";
 import type { Prospect, ProspectColumn, SonCas } from "@/types";
 
 const COLUMNS: { key: ProspectColumn; label: string }[] = [
@@ -152,10 +153,37 @@ export function Pipeline() {
   async function research(prospect: Prospect) {
     setResearching(prospect.id);
     try {
-      const result = await researchProspect(prospect.name, prospect.company, { profile });
+      // Si l'abonné a branché son propre webhook n8n de recherche, on l'utilise
+      // en priorité (données réelles) ; sinon repli sur l'IA classique.
+      const n8nData = await callN8n("research", { entreprise: prospect.company, website: null });
+      const result = n8nData != null
+        ? (typeof n8nData === "string" ? n8nData : JSON.stringify(n8nData, null, 2))
+        : await researchProspect(prospect.name, prospect.company, { profile });
       setResearchResult((r) => ({ ...r, [prospect.id]: result }));
     } finally {
       setResearching(null);
+    }
+  }
+
+  // Envoi du dossier : webhook n8n de l'abonné en priorité, sinon brouillon mailto.
+  async function sendDossier(prospect: Prospect, content: string) {
+    setGenBusy(`${prospect.id}:send`);
+    try {
+      const sent = await callN8n("send", {
+        destinataire: prospect.email,
+        nom: prospect.name,
+        entreprise: prospect.company,
+        contenu: content,
+      });
+      if (sent != null) {
+        setDossierResult((m) => ({ ...m, [prospect.id]: `${content}\n\n— Envoyé via votre webhook n8n ✓` }));
+      } else {
+        const subject = encodeURIComponent(`Proposition — ${prospect.company || prospect.name}`);
+        const body = encodeURIComponent(content);
+        window.open(`mailto:${prospect.email ?? ""}?subject=${subject}&body=${body}`, "_blank");
+      }
+    } finally {
+      setGenBusy(null);
     }
   }
 
@@ -395,6 +423,17 @@ export function Pipeline() {
                             {dossierResult[p.id] && (
                               <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(dossierResult[p.id])} style={{ fontSize: 10, padding: "2px 6px" }}>
                                 Copier
+                              </Button>
+                            )}
+                            {dossierResult[p.id] && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                loading={genBusy === `${p.id}:send`}
+                                onClick={() => sendDossier(p, dossierResult[p.id])}
+                                style={{ fontSize: 10, padding: "2px 6px" }}
+                              >
+                                ✉ Envoyer
                               </Button>
                             )}
                           </div>

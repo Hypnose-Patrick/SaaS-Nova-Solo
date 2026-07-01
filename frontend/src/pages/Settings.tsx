@@ -9,6 +9,8 @@ import { promptBio } from "@/lib/lancementPrompts";
 import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
 import { AiEngineCard } from "@/components/settings/AiEngineCard";
 import { TelegramCard } from "@/components/settings/TelegramCard";
+import { N8nCard } from "@/components/settings/N8nCard";
+import { GoogleDriveCard } from "@/components/settings/GoogleDriveCard";
 import { SubscribeButton } from "@/components/SubscribeButton";
 import { useSearchParams } from "react-router-dom";
 
@@ -488,6 +490,17 @@ export function Settings() {
 
       {/* Section : Notifications Telegram (bot personnel de l'abonné) */}
       <TelegramCard />
+
+      {/* Section : Webhooks n8n (prospection, workflows personnels de l'abonné) */}
+      <N8nCard />
+
+      {/* Section : Sauvegarde Google Drive personnelle (client-side, optionnelle) */}
+      <GoogleDriveCard />
+
+      {/* Note stockage local */}
+      <div style={{ padding: "var(--space-3) var(--space-4)", background: "rgba(255,255,255,0.03)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+        <strong style={{ color: "var(--color-text-secondary)" }}>Stockage des données Lancement</strong> — les résultats générés par les modules Lancement (CV, dossier, BMC…) sont conservés dans le stockage local de votre navigateur, sur cet appareil uniquement. Ils ne sont pas synchronisés entre vos appareils et disparaissent si vous effacez les données du navigateur. Pour un accès multi-appareils, exportez vos documents.
+      </div>
 
       {/* Bouton global */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
