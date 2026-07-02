@@ -214,9 +214,14 @@ EXIGENCES TECHNIQUES :
 IMPORTANT : Réponds UNIQUEMENT avec le code HTML complet, sans texte autour, sans bloc de code markdown.`;
 }
 
-// ── Contrat de prestation (Juriste) ──
+// ── Contrat (Juriste) — mandat/prestation (art. 394 CO) OU contrat d'entreprise
+// (art. 363 ss CO) pour l'artisanat/chantier, détecté d'après le type choisi. ──
 export function promptContrat(p: Profile | null, type: string, duree: string): string {
-  return `${profileContext(p)}\n\nTu es un juriste spécialisé droit suisse des obligations (CO). Rédige un contrat type de prestation de services pour un indépendant en Suisse romande. Type : ${type}. Durée : ${duree}. Contenu obligatoire : identité des parties, description de la prestation, tarifs et modalités de paiement, conditions de résiliation (30 jours), clause de confidentialité, propriété intellectuelle, limitation de responsabilité, mention nLPD, for juridique du canton, droit suisse applicable. Format : texte structuré avec articles numérotés. Ajoute un disclaimer : ce document est un modèle indicatif à faire valider par un avocat.`;
+  const isEntreprise = /entreprise|chantier|ouvrage|363/i.test(type);
+  if (isEntreprise) {
+    return `${profileContext(p)}\n\nTu es un juriste spécialisé en droit suisse des obligations (CO). Rédige un CONTRAT D'ENTREPRISE (art. 363 ss CO) pour un artisan / entrepreneur indépendant en Suisse romande. Type : ${type}. Délai d'exécution : ${duree}. Contenu obligatoire : identité des parties (maître de l'ouvrage / entrepreneur) ; description précise de l'ouvrage et descriptif des travaux ; prix (forfait ou métré/régie) et modalités de paiement (acomptes, retenue de garantie) ; délai d'exécution et pénalités de retard ; FOURNITURE ET PROPRIÉTÉ DES MATÉRIAUX ; obligations du maître de l'ouvrage (accès au chantier, autorisations) ; RÉCEPTION DE L'OUVRAGE et vérification (art. 367 CO) ; GARANTIE DES DÉFAUTS — avis des défauts et délais de prescription (art. 367 à 371 CO) ; assurance RC et limitation de responsabilité ; mention nLPD ; for juridique du canton ; droit suisse applicable. Format : texte structuré avec articles numérotés. Ajoute un disclaimer : ce document est un modèle indicatif à faire valider par un juriste ou un avocat.`;
+  }
+  return `${profileContext(p)}\n\nTu es un juriste spécialisé droit suisse des obligations (CO). Rédige un contrat type de prestation de services (mandat, art. 394 CO) pour un indépendant en Suisse romande. Type : ${type}. Durée : ${duree}. Contenu obligatoire : identité des parties, description de la prestation, tarifs et modalités de paiement, conditions de résiliation (30 jours), clause de confidentialité, propriété intellectuelle, limitation de responsabilité, mention nLPD, for juridique du canton, droit suisse applicable. Format : texte structuré avec articles numérotés. Ajoute un disclaimer : ce document est un modèle indicatif à faire valider par un avocat.`;
 }
 
 // ── Vision symbolique (coach systémique) ──

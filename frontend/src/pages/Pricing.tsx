@@ -6,6 +6,7 @@ import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptPricing } from "@/lib/lancementPrompts";
+import { activitePreset } from "@/lib/activite";
 import { loadLocal, saveLocal } from "@/lib/local";
 
 const TEXTAREA: React.CSSProperties = {
@@ -35,7 +36,7 @@ function chf(n: number): string {
 }
 
 // Calculateur de rentabilité — saisie persistée par abonné (jamais de chiffres en dur).
-interface CalcState { tarif: string; clients: string; charges: string }
+interface CalcState { tarif: string; clients: string; charges: string; materiel: string }
 const MVP_STEPS = [
   "Définir UNE offre simple et concrète (ex. « séance découverte »)",
   "Identifier 2–3 clients pilotes dans votre réseau",
@@ -46,6 +47,7 @@ const MVP_STEPS = [
 
 export function Pricing() {
   const profile = useUserStore((s) => s.profile);
+  const preset = activitePreset(profile);
   const { loading, error, gen } = useAiGen();
   const [offre, setOffre] = useState(() => loadLocal("ns_pricing_offre", profile?.domaine ?? ""));
   const [result, setResult] = useState<string | null>(() => loadLocal<string | null>("ns_pricing_result", null));
@@ -54,6 +56,7 @@ export function Pricing() {
     tarif: profile?.pricing_tarif ? String(profile.pricing_tarif) : "",
     clients: profile?.pricing_clients ? String(profile.pricing_clients) : "",
     charges: profile?.charges_fixes ? String(profile.charges_fixes) : "",
+    materiel: "",
   }));
   const [mvp, setMvp] = useState<boolean[]>(() => loadLocal<boolean[]>("ns_pricing_mvp", MVP_STEPS.map(() => false)));
 
@@ -71,9 +74,10 @@ export function Pricing() {
   const tarif = Number(calc.tarif) || 0;
   const clients = Number(calc.clients) || 0;
   const charges = Number(calc.charges) || 0;
+  const materiel = preset.hasMateriel ? Number(calc.materiel) || 0 : 0;
   const ca = tarif * clients;
   const avs = ca * 0.1; // AVS/AI/APG ~10% pour indépendant
-  const net = ca - charges - avs;
+  const net = ca - materiel - charges - avs;
   const breakeven = tarif > 0 ? Math.ceil(charges / tarif) : 0;
   const hasCalc = tarif > 0 && clients > 0;
 
@@ -96,10 +100,14 @@ export function Pricing() {
       <Card glass title="Calculateur de rentabilité">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <div><label style={LBL}>Tarif moyen par client (CHF)</label>
+            <div><label style={LBL}>Tarif moyen par {preset.unite} (CHF)</label>
               <input type="number" inputMode="numeric" value={calc.tarif} onChange={(e) => patchCalc({ tarif: e.target.value })} placeholder="0" style={NUM} /></div>
-            <div><label style={LBL}>Clients visés par mois</label>
+            <div><label style={LBL}>{preset.volumeLabel}</label>
               <input type="number" inputMode="numeric" value={calc.clients} onChange={(e) => patchCalc({ clients: e.target.value })} placeholder="0" style={NUM} /></div>
+            {preset.hasMateriel && (
+              <div><label style={LBL}>Coût matériel / marchandises (CHF)</label>
+                <input type="number" inputMode="numeric" value={calc.materiel} onChange={(e) => patchCalc({ materiel: e.target.value })} placeholder="0" style={NUM} /></div>
+            )}
             <div><label style={LBL}>Charges fixes mensuelles (CHF)</label>
               <input type="number" inputMode="numeric" value={calc.charges} onChange={(e) => patchCalc({ charges: e.target.value })} placeholder="0" style={NUM} /></div>
           </div>
@@ -112,15 +120,17 @@ export function Pricing() {
               <>
                 <div style={{ fontWeight: 600, fontSize: "var(--text-sm)", color: "var(--color-text-primary)", marginBottom: "var(--space-2)" }}>Résultat mensuel estimé</div>
                 <Line label="CA brut" value={chf(ca)} />
+                {preset.hasMateriel && <Line label="Matériel / marchandises" value={`−${chf(materiel).replace("−", "")}`} color="var(--color-danger)" />}
+                {preset.hasMateriel && <Line label="Marge brute" value={chf(ca - materiel)} />}
                 <Line label="Charges fixes" value={`−${chf(charges).replace("−", "")}`} color="var(--color-danger)" />
                 <Line label="AVS/AI/APG (~10 %)" value={`−${chf(avs).replace("−", "")}`} color="var(--color-warning)" />
                 <div style={{ height: 1, background: "var(--border-subtle)", margin: "var(--space-2) 0" }} />
                 <Line label="Revenu net estimé" value={chf(net)} color={net > 0 ? "var(--color-success)" : "var(--color-danger)"} bold />
                 <p style={{ fontSize: "var(--text-xs)", color: net > 0 ? "var(--color-success)" : "var(--color-warning)", margin: "var(--space-2) 0 0 0", lineHeight: "var(--leading-normal)" }}>
                   {net > 0
-                    ? `Rentable avec ${clients} client(s)/mois.`
+                    ? `Rentable avec ${clients} ${preset.unite}(s)/mois.`
                     : "Déficitaire — augmentez le tarif ou réduisez les charges."}
-                  {charges > 0 && tarif > 0 && ` Seuil d'équilibre : ${breakeven} client(s)/mois.`}
+                  {charges > 0 && tarif > 0 && ` Seuil d'équilibre : ${breakeven} ${preset.unite}(s)/mois.`}
                 </p>
               </>
             )}

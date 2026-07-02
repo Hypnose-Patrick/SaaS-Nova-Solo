@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import type { Profile } from "@/types";
+import { ACTIVITE_PRESETS, DEFAULT_ACTIVITE } from "@/lib/activite";
 import { useAiGen } from "@/lib/useAiGen";
 import { promptBio } from "@/lib/lancementPrompts";
 import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
@@ -56,6 +57,7 @@ const SELECT_STYLE: React.CSSProperties = {
 interface FormState {
   name: string;
   statut: Statut;
+  activite_type: Profile["activite_type"];
   domaine: string;
   situation: string;
   ville: string;
@@ -80,6 +82,7 @@ function profileToForm(p: Profile): FormState {
   return {
     name:            p.name ?? "",
     statut:          p.statut ?? null,
+    activite_type:   p.activite_type ?? null,
     domaine:         p.domaine ?? "",
     situation:       p.situation ?? "",
     ville:           p.ville ?? "",
@@ -156,6 +159,7 @@ export function Settings() {
     await updateProfile({
       name:            form.name || null,
       statut:          form.statut ?? null,
+      activite_type:   form.activite_type ?? null,
       domaine:         form.domaine || null,
       situation:       form.situation || null,
       ville:           form.ville || null,
@@ -195,6 +199,8 @@ export function Settings() {
     return <p style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-body)" }}>Chargement…</p>;
   }
 
+  const actPreset = ACTIVITE_PRESETS[form.activite_type ?? DEFAULT_ACTIVITE];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 860 }}>
       {/* Header */}
@@ -230,11 +236,24 @@ export function Settings() {
               ))}
             </select>
           </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <label style={LABEL_STYLE}>Type d'activité</label>
+            <select
+              value={form.activite_type ?? ""}
+              onChange={(e) => setF({ activite_type: (e.target.value || null) as Profile["activite_type"] })}
+              style={SELECT_STYLE}
+            >
+              <option value="">— Sélectionner —</option>
+              {Object.entries(ACTIVITE_PRESETS).map(([key, preset]) => (
+                <option key={key} value={key}>{preset.label}</option>
+              ))}
+            </select>
+          </div>
           <Input
             label="Domaine d'activité"
             value={form.domaine}
             onChange={(e) => setF({ domaine: e.target.value })}
-            placeholder="Coaching professionnel, hypnose…"
+            placeholder="Plomberie, coaching, design, mécanique…"
           />
           <Input
             label="Situation actuelle"
@@ -346,7 +365,7 @@ export function Settings() {
           <textarea
             value={form.bio}
             onChange={(e) => setF({ bio: e.target.value })}
-            placeholder="Coach certifié PNL et hypnothérapeute, j'accompagne les indépendants à développer leur activité avec sérénité…"
+            placeholder="Présente ton métier, ta spécialité et ce qui te distingue — en une ou deux phrases, à la première personne…"
             style={{
               width: "100%",
               marginTop: "var(--space-2)",
@@ -427,7 +446,7 @@ export function Settings() {
             placeholder="2500"
           />
           <Input
-            label="Tarif journalier / séance (CHF)"
+            label={actPreset.tarifLabel}
             type="number"
             min="0"
             step="10"
@@ -436,7 +455,7 @@ export function Settings() {
             placeholder="180"
           />
           <Input
-            label="Nombre clients cibles / mois"
+            label={actPreset.volumeLabel}
             type="number"
             min="0"
             step="1"

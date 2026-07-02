@@ -158,7 +158,7 @@ export function Factures() {
                 <input
                   value={line.description}
                   onChange={(e) => updateLine(i, "description", e.target.value)}
-                  placeholder="Prestation de coaching"
+                  placeholder="Ex : main-d'œuvre, matériel, prestation…"
                   style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", padding: "var(--space-2) var(--space-3)", outline: "none" }}
                 />
                 <input

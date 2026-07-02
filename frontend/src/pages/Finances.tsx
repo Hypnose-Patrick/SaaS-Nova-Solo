@@ -9,6 +9,7 @@ import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptFinanceAnalyse } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
 import type { Profile } from "@/types";
+import { activitePreset } from "@/lib/activite";
 import {
   FIN_KEY, chf, financeCompute, financeKpis,
   type FinMonth, type OpexLine, type FinModel, type FinRow,
@@ -45,6 +46,9 @@ function buildMonths(charges: number): FinMonth[] {
 // charges fixes) ou de 0, et reste éditable.
 function buildNeutralModel(profile: Profile | null): FinModel {
   const charges = Number(profile?.charges_fixes) || 0;
+  // Postes OPEX enrichis selon le type d'activité (matériel, véhicule, outillage…
+  // pour l'artisanat/commerce). Vide en mode « prestation » → template inchangé.
+  const riPostes = [...OPEX_RI_TEMPLATE, ...activitePreset(profile).opexExtra];
   return {
     scenario: "A",
     startCash: Number(profile?.capital) || 0,
@@ -54,7 +58,7 @@ function buildNeutralModel(profile: Profile | null): FinModel {
       A: { label: "Optimiste", months: buildMonths(charges) },
       B: { label: "Prudent", months: buildMonths(charges) },
     },
-    opexRI: OPEX_RI_TEMPLATE.map((poste) => ({ poste, montant: 0 })),
+    opexRI: riPostes.map((poste) => ({ poste, montant: 0 })),
     opexSarl: OPEX_SARL_TEMPLATE.map((poste) => ({ poste, montant: 0 })),
     financement: [],
   };

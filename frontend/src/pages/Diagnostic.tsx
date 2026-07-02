@@ -183,7 +183,7 @@ export function Diagnostic() {
         agent: "nova",
         messages: [{
           role: "user",
-          content: `Tu es Nova, coach stratège pour indépendants suisse-romands.\n\nSITUATION ACTUELLE : ${q1}\nBLOCAGES IDENTIFIÉS : ${q2}\nVISION 12 MOIS : ${q3}\n\nGénère un diagnostic systémique en JSON strict (aucun texte avant ni après) :\n{"forces":["...","...","..."],"freins":["...","...","..."],"cap":"reformulation inspirante de la vision en 1 phrase percutante","actions":["action concrète cette semaine","action concrète cette semaine","action concrète cette semaine"]}`,
+          content: `Tu es Nova, copilote stratégique pour indépendants suisse-romands (tous métiers : artisanat, services, commerce, conseil).\n\nSITUATION ACTUELLE : ${q1}\nBLOCAGES IDENTIFIÉS : ${q2}\nVISION 12 MOIS : ${q3}\n\nGénère un diagnostic systémique en JSON strict (aucun texte avant ni après) :\n{"forces":["...","...","..."],"freins":["...","...","..."],"cap":"reformulation inspirante de la vision en 1 phrase percutante","actions":["action concrète cette semaine","action concrète cette semaine","action concrète cette semaine"]}`,
         }],
       });
 
@@ -233,7 +233,7 @@ export function Diagnostic() {
             <textarea
               value={q1}
               onChange={(e) => setQ1(e.target.value)}
-              placeholder="Ex : Indépendante depuis 8 mois dans le coaching professionnel. J'ai quelques clients mais les revenus sont irréguliers. J'hésite sur mon positionnement…"
+              placeholder="Ex : installateur sanitaire à mon compte depuis 1 an. J'ai du travail mais des revenus irréguliers et je cours après les devis…"
               style={TEXTAREA}
             />
           </Card>
@@ -250,7 +250,7 @@ export function Diagnostic() {
             <textarea
               value={q2}
               onChange={(e) => setQ2(e.target.value)}
-              placeholder="Ex : Je ne sais pas fixer mes tarifs. J'ai peur du rejet. Je manque de visibilité et je ne sais pas comment prospecter sans me sentir intrusive…"
+              placeholder="Ex : je ne sais pas fixer mes prix. Je manque de visibilité et je passe trop de temps sur l'administratif…"
               style={TEXTAREA}
             />
           </Card>
@@ -267,7 +267,7 @@ export function Diagnostic() {
             <textarea
               value={q3}
               onChange={(e) => setQ3(e.target.value)}
-              placeholder="Ex : Générer CHF 6 000/mois avec 8 clients fidèles, travailler 4 jours/semaine, avoir un positionnement clair et me sentir sereine dans ma démarche commerciale…"
+              placeholder="Ex : CHF 8 000/mois réguliers, un carnet de commandes rempli 2 mois à l'avance, et déléguer la paperasse…"
               style={TEXTAREA}
             />
           </Card>

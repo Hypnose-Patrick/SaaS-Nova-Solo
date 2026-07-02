@@ -6,6 +6,7 @@ export interface Profile {
   name: string | null;
   email: string | null;
   statut: "laci" | "reconversion" | "creation" | "existant" | null;
+  activite_type: "prestation" | "artisanat" | "commerce" | null;
   domaine: string | null;
   situation: string | null;
   ville: string | null;

@@ -10,7 +10,7 @@ import { loadLocal, saveLocal } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
 import { ExportGate } from "@/components/ExportGate";
 
-const TYPES = ["Prestation de coaching", "Mandat de conseil", "Formation / atelier", "Prestation de services récurrente"];
+const TYPES = ["Prestation de services", "Mandat de conseil", "Formation / atelier", "Prestation de services récurrente", "Contrat d'entreprise / chantier (art. 363 CO)"];
 const DUREES = ["Ponctuel (one-shot)", "3 mois", "6 mois", "12 mois reconductible"];
 
 const SEL: React.CSSProperties = {
