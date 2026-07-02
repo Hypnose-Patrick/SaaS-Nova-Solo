@@ -17,6 +17,7 @@ import { Documents } from "@/pages/Documents";
 import { Diagnostic } from "@/pages/Diagnostic";
 import { BusinessPlan } from "@/pages/BusinessPlan";
 import { Symbolique } from "@/pages/Symbolique";
+import { Oracle } from "@/pages/Oracle";
 import { Pricing } from "@/pages/Pricing";
 import { Cv } from "@/pages/Cv";
 import { Dossier } from "@/pages/Dossier";
@@ -40,6 +41,7 @@ function ProtectedRoutes() {
         <Route path="bmc" element={<Bmc />} />
         <Route path="business-plan" element={<BusinessPlan />} />
         <Route path="symbolique" element={<Symbolique />} />
+        <Route path="oracle" element={<Oracle />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="cv" element={<Cv />} />
         <Route path="dossier" element={<Dossier />} />
