@@ -45,7 +45,11 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      # 1re tentative — non bloquante : si l'upload FTP flanche (Hostinger ferme
+      # parfois le socket), le job ne meurt pas ici, le retry ci-dessous prend le relais.
       - name: Deploy full site to Hostinger (FTP)
+        id: deploy
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 72.60.93.168
@@ -53,8 +57,24 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./frontend/dist/
           server-dir: /public_html/
-          # Hostinger ferme parfois le socket de contrôle → timeout transitoire.
-          # 60s (au lieu de 30s par défaut) réduit ces échecs aléatoires.
+          # 60s (au lieu de 30s par défaut) réduit les échecs aléatoires.
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+
+      # Retry auto UNIQUEMENT si le 1er upload a réellement tourné puis échoué
+      # (si le gate/build a planté, `deploy` est "skipped" → pas de retry).
+      # Ce step est bloquant : s'il échoue aussi, le déploiement est en échec.
+      - name: Deploy retry (Hostinger FTP flaky)
+        if: steps.deploy.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 72.60.93.168
+          username: u202854150.start-mybusiness.com
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./frontend/dist/
+          server-dir: /public_html/
           timeout: 60000
           exclude: |
             **/.git*
