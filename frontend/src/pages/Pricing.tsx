@@ -31,7 +31,7 @@ const NUM: React.CSSProperties = {
 
 function chf(n: number): string {
   const r = Math.round(n);
-  const s = Math.abs(r).toLocaleString("fr-CH").replace(/ /g, "’");
+  const s = Math.abs(r).toLocaleString("fr-CH").replace(/[\u00A0\u202F]/g, "’");
   return `${r < 0 ? "−" : ""}${s} CHF`;
 }
 

@@ -101,7 +101,7 @@ function csvSplit(line: string, sep: string): string[] {
 }
 function csvNum(s: string | undefined): number | null {
   if (s == null) return null;
-  const t = String(s).replace(/['\s ]/g, "").replace("−", "-").replace(",", ".");
+  const t = String(s).replace(/['\s]/g, "").replace("−", "-").replace(",", ".");
   if (t === "" || t === "-") return null;
   const n = Number(t); return isNaN(n) ? null : Math.round(n);
 }
@@ -256,7 +256,7 @@ export function Finances() {
 
   // Format « app » (CSV exporté par Nova : sections + M1..M12 + postes OPEX).
   function parseBudgetCsv(text: string): { next: FinModel; applied: string[] } {
-    const lines = text.replace(/^﻿/, "").split(/\r?\n/);
+    const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
     const hdr = lines.find((l) => /(^|;|,)\s*Mois\b/i.test(l) || /Poste\s*[;,]\s*Montant/i.test(l)) || lines[0] || "";
     const sep = hdr.split(";").length >= hdr.split(",").length ? ";" : ",";
     let section = "", nPrev = 0; const riNew: OpexLine[] = [], sarlNew: OpexLine[] = [];

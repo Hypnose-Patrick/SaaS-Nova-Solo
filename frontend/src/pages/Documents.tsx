@@ -107,7 +107,7 @@ export function Documents() {
     try {
       const { data, error: dErr } = await supabase.storage.from(BUCKET).download(`${folder}/${name}`);
       if (dErr || !data) throw new Error(dErr?.message ?? "Téléchargement impossible");
-      let text = (await data.text()).slice(0, MAX_ANALYZE_CHARS);
+      const text = (await data.text()).slice(0, MAX_ANALYZE_CHARS);
       if (!text.trim()) throw new Error("Document vide");
       const reply = await askAgent(
         "nova",
