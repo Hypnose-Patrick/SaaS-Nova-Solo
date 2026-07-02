@@ -23,6 +23,21 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      # Gate qualité AVANT le déploiement : `npm run build` = `vite build` seul
+      # (esbuild ignore les types), donc sans ce garde-fou une erreur de type
+      # partirait en prod. Le type-check est bloquant ; si tsc échoue, l'étape
+      # de déploiement FTP ci-dessous ne s'exécute pas.
+      - name: Type check (bloquant)
+        working-directory: ./frontend
+        run: npm run type-check
+
+      # Lint non bloquant pour l'instant (5 erreurs préexistantes à corriger).
+      # Une fois nettoyé, retirer `continue-on-error` pour en faire un vrai gate.
+      - name: Lint (non bloquant)
+        working-directory: ./frontend
+        run: npm run lint
+        continue-on-error: true
+
       # Hostinger héberge TOUT le site : la landing (servie à la racine via .htaccess)
       # ET l'app React (SPA — routes /login, /subscribe…). `npm run build` (Vite) produit
       # frontend/dist/ = index.html (SPA) + landing.html + .htaccess + assets. Les variables
