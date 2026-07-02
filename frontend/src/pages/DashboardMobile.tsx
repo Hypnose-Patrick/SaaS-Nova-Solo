@@ -5,6 +5,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { loadLocal, saveLocal } from "@/lib/local";
 import { DevisExpress } from "@/components/dashboard/DevisExpress";
+import { OracleCard } from "@/components/dashboard/OracleCard";
 
 /**
  * DashboardMobile — version mobile du tableau de bord (design Claude Design,
@@ -254,6 +255,9 @@ export function DashboardMobile() {
 
       {/* 7. Devis express — outil terrain (chiffrer + copier/envoyer) */}
       <DevisExpress />
+
+      {/* 7b. Oracle du jour — mini-jeu de pause */}
+      <OracleCard />
 
       {/* 8. Numéros d'urgence & soutien */}
       <div>
