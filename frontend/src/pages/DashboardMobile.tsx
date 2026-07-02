@@ -145,7 +145,7 @@ export function DashboardMobile() {
   const depenses = compta.filter((e) => e.type === "depense").reduce((s, e) => s + e.amount, 0);
   const treso = revenus - depenses;
   const runwayMonths = profile?.runway_months ?? null;
-  const fmt = (n: number) => n.toLocaleString("fr-CH", { maximumFractionDigits: 0 }).replace(/ /g, "’");
+  const fmt = (n: number) => n.toLocaleString("fr-CH", { maximumFractionDigits: 0 }).replace(/[\u00A0\u202F]/g, "’");
 
   // — Prochains rendez-vous —
   const today = new Date().toISOString().slice(0, 10);
