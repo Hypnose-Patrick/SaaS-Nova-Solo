@@ -2,8 +2,11 @@ import { useEffect } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { MobileHeader } from "./MobileHeader";
+import { MobileTabBar } from "./MobileTabBar";
 import { ChatOverlay } from "@/pages/ChatOverlay";
 import { useUserStore } from "@/stores/useUserStore";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { applyAccent } from "@/lib/theme";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -24,11 +27,26 @@ export function AppShell() {
   const { pathname } = useLocation();
   const title = PAGE_TITLES[pathname] ?? "Nova Solo";
   const accent = useUserStore((s) => s.profile?.accent_color);
+  const isMobile = useIsMobile();
 
   // Recolore l'interface dès que la couleur d'accent du profil change.
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
+
+  // Shell mobile : pas de sidebar, en-tête compact + barre d'onglets basse.
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--color-bg-primary)" }}>
+        <MobileHeader />
+        <main style={{ flex: 1, overflowY: "auto", padding: "var(--space-4)", minHeight: 0 }}>
+          <Outlet />
+        </main>
+        <MobileTabBar />
+        <ChatOverlay />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--color-bg-primary)" }}>

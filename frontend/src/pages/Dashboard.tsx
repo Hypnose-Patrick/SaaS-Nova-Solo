@@ -8,6 +8,8 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { loadLocal, saveLocal } from "@/lib/local";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { DashboardMobile } from "@/pages/DashboardMobile";
 
 // Rituels génériques de momentum — mêmes pour tous, état coché remis à zéro chaque jour.
 const RITUELS = [
@@ -46,7 +48,15 @@ const BIENETRE_RESSOURCES: { nom: string; desc: string }[] = [
   { nom: "Coworking", desc: "Un bureau partagé pour briser l'isolement." },
 ];
 
+// Aiguillage responsive : sous 768px on rend la version mobile dédiée, sinon le
+// tableau de bord desktop historique (inchangé). Un seul hook ici → pas de
+// violation des règles des hooks lors du basculement de breakpoint.
 export function Dashboard() {
+  const isMobile = useIsMobile();
+  return isMobile ? <DashboardMobile /> : <DashboardDesktop />;
+}
+
+function DashboardDesktop() {
   const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
   const { compta, fetchCompta, events, fetchEvents } = useAppStore();

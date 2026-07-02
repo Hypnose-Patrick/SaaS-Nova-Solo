@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useChatStore } from "@/stores/useChatStore";
 import { useUserStore } from "@/stores/useUserStore";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { helpForPath } from "@/lib/pageHelp";
 import { Button } from "@/components/ui/Button";
 import type { AgentKey } from "@/types";
@@ -52,6 +53,10 @@ export function ChatOverlay() {
   const profile = useUserStore((s) => s.profile);
   const { pathname } = useLocation();
   const pageHelp = helpForPath(pathname);
+  const isMobile = useIsMobile();
+  // En mobile, la barre d'onglets basse occupe le bas de l'écran : on remonte
+  // la bulle d'aide et le panneau de chat au-dessus d'elle.
+  const bottomOffset = isMobile ? "calc(64px + var(--space-3))" : "var(--space-6)";
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -102,7 +107,7 @@ export function ChatOverlay() {
         title={`Besoin d'aide ? — ${pageHelp.title}`}
         style={{
           position: "fixed",
-          bottom: "var(--space-6)",
+          bottom: bottomOffset,
           right: "var(--space-6)",
           display: "flex",
           alignItems: "center",
@@ -184,10 +189,10 @@ export function ChatOverlay() {
     <div
       style={{
         position: "fixed",
-        bottom: "var(--space-6)",
-        right: "var(--space-6)",
-        width: 420,
-        maxHeight: "80vh",
+        bottom: bottomOffset,
+        right: isMobile ? "var(--space-4)" : "var(--space-6)",
+        width: isMobile ? "calc(100vw - 2 * var(--space-4))" : 420,
+        maxHeight: isMobile ? "70vh" : "80vh",
         background: "var(--color-bg-elevated)",
         border: "var(--border-gold)",
         borderRadius: "var(--radius-md)",

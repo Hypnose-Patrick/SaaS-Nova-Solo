@@ -9,6 +9,8 @@ import { supabase } from "@/lib/supabase";
 import { researchProspect, prospectEmail, prospectObjections, prospectDossier, PROSPECT_EMAIL_TEMPLATES, type ProspectEmailTemplate } from "@/lib/ai";
 import { callN8n } from "@/lib/n8n";
 import type { Prospect, ProspectColumn, SonCas } from "@/types";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { PipelineMobile } from "@/pages/PipelineMobile";
 
 const COLUMNS: { key: ProspectColumn; label: string }[] = [
   { key: "nouveau",     label: "Nouveau" },
@@ -41,7 +43,13 @@ interface NewProspectForm {
   est_value: string;
 }
 
+// Aiguillage responsive : version mobile dédiée sous 768px, kanban desktop au-dessus.
 export function Pipeline() {
+  const isMobile = useIsMobile();
+  return isMobile ? <PipelineMobile /> : <PipelineDesktop />;
+}
+
+function PipelineDesktop() {
   const profile = useUserStore((s) => s.profile);
   const { prospects, fetchProspects, loadingProspects, moveProspect } = useAppStore();
   const [showForm, setShowForm] = useState(false);
