@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { escapeHtml } from "@/lib/exportDoc";
 
 type Lang = "fr" | "de" | "it";
 
@@ -276,7 +277,10 @@ function renderMarkdown(text: string) {
     }
     if (line.startsWith("**") && line.endsWith("**")) return <p key={i} style={{ fontWeight: 600, color: "var(--color-text-primary)", margin: "var(--space-2) 0 0 0", fontSize: "var(--text-sm)" }}>{line.slice(2, -2)}</p>;
     if (line.trim() === "") return <div key={i} style={{ height: "var(--space-2)" }} />;
-    return <p key={i} style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>") }} />;
+    // Échapper avant d'appliquer le markdown gras/italique — protège même si CONTENT
+    // devient un jour dynamique (ex. texte légal généré/édité) plutôt que codé en dur.
+    const escaped = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>");
+    return <p key={i} style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: escaped }} />;
   });
 }
 

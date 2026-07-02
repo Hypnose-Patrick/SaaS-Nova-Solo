@@ -336,7 +336,9 @@ Deno.serve(async (req: Request) => {
     }
     const msg = err instanceof Error ? err.message : String(err);
     const status = msg.startsWith("UNAUTHENTICATED") ? 401 : 500;
-    // On ne renvoie jamais la stack ni les valeurs de secrets.
-    return json({ error: msg.split(":")[0], detail: msg }, status);
+    // Le détail complet (peut inclure jusqu'à 300 car. de la réponse brute du
+    // fournisseur IA) reste dans les logs serveur uniquement — jamais renvoyé au client.
+    console.error("[ai-proxy]", msg);
+    return json({ error: msg.split(":")[0] }, status);
   }
 });

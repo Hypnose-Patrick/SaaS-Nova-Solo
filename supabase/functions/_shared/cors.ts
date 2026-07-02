@@ -1,6 +1,7 @@
 // En-têtes CORS communs à toutes les Edge Functions.
 // On restreint l'origine via la variable d'env ALLOWED_ORIGIN (défaut: *).
-// En production, définir ALLOWED_ORIGIN = https://app.nova-solo.ch
+// En production, définir ALLOWED_ORIGIN = https://start-mybusiness.com
+// (secret Supabase actuellement absent — CORS reste ouvert à * tant qu'il n'est pas posé)
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
 

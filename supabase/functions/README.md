@@ -27,8 +27,8 @@ supabase secrets set AI_DEFAULT_PROVIDER=openrouter
 # Telegram (bot de plateforme @NovaSoloBot)
 supabase secrets set TELEGRAM_BOT_TOKEN=123456:ABC...
 
-# CORS production (optionnel, défaut *)
-supabase secrets set ALLOWED_ORIGIN=https://app.nova-solo.ch
+# CORS production (obligatoire — sans ce secret, ALLOWED_ORIGIN retombe sur "*")
+supabase secrets set ALLOWED_ORIGIN=https://start-mybusiness.com
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont injectés
