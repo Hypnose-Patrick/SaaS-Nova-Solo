@@ -36,8 +36,8 @@ const SELECT_STYLE: React.CSSProperties = {
 type Provider = "openai" | "anthropic";
 
 export function AiEngineCard() {
-  const profile = useUserStore((s) => s.profile);
-  const isSolo = profile?.plan === "solo";
+  const account = useUserStore((s) => s.account);
+  const isSolo = account?.plan === "solo";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

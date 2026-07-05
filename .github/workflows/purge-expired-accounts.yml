@@ -1,0 +1,20 @@
+name: Purge Expired Accounts
+
+# Purge quotidienne des comptes dont le délai de grâce de 30 jours (résiliation
+# ou auto-suppression, cf. brief nova-solo-multi-projets) est dépassé.
+# Suppression DÉFINITIVE — cf. supabase/functions/purge-expired-accounts.
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC chaque jour
+  workflow_dispatch:
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call purge-expired-accounts Edge Function
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/purge-expired-accounts" \
+            -H "x-purge-secret: ${{ secrets.PURGE_CRON_SECRET }}" \
+            -H "Content-Type: application/json"

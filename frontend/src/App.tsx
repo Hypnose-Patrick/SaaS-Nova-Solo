@@ -27,6 +27,7 @@ import { Marketing } from "@/pages/Marketing";
 import { Hermes } from "@/pages/Hermes";
 import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
+import { MobileChrono } from "@/pages/MobileChrono";
 import { Legal } from "@/pages/Legal";
 import { Subscribe } from "@/pages/Subscribe";
 import { hasAccess } from "@/lib/useSubscription";
@@ -52,6 +53,8 @@ function ProtectedRoutes() {
         <Route path="hermes" element={<Hermes />} />
         <Route path="simulation" element={<Simulation />} />
         <Route path="goban-coach" element={<GobanCoach />} />
+        {/* Maquette companion mobile (prototype de test, sans persistance) — protégée */}
+        <Route path="mobile-chrono" element={<MobileChrono />} />
         <Route path="finances" element={<Finances />} />
         <Route path="compta" element={<Compta />} />
         <Route path="facture" element={<Factures />} />
@@ -66,7 +69,7 @@ function ProtectedRoutes() {
 
 export default function App() {
   const [session, setSession] = useState<Session | null | "loading">("loading");
-  const { fetchProfile, reset, profile } = useUserStore();
+  const { fetchProfile, reset, account } = useUserStore();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -124,7 +127,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : hasAccess(profile)
+              : hasAccess(account)
                 ? <Navigate to="/" replace />
                 : <Subscribe />
           }
@@ -134,7 +137,7 @@ export default function App() {
           element={
             !session
               ? <Navigate to="/login" replace />
-              : (profile && !hasAccess(profile))
+              : (account && !hasAccess(account))
                 ? <Navigate to="/subscribe" replace />
                 : <ProtectedRoutes />
           }

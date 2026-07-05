@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
+import { ProjectSwitcher } from "@/components/layout/ProjectSwitcher";
 import type { Profile } from "@/types";
 
 // Navigation regroupée par thématique de parcours (pilotage → stratégie →
@@ -131,6 +132,9 @@ export function Sidebar() {
           </div>
         )}
       </div>
+
+      {/* Sélecteur de projet — le composant se masque lui-même s'il n'y a qu'1 projet */}
+      <ProjectSwitcher />
 
       {/* Carte profil + plan de route */}
       <NavLink

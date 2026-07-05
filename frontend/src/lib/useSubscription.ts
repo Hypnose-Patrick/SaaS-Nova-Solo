@@ -1,19 +1,20 @@
 import { useUserStore } from "@/stores/useUserStore";
-import type { Profile } from "@/types";
+import type { Account } from "@/types";
 
 // Source unique de vérité côté frontend pour le paywall visuel. Ce n'est QUE
 // du confort d'affichage : la vraie barrière est le garde-fou serveur
 // (assertActiveEntitlement dans supabase/functions/_shared/entitlement.ts).
-export function hasAccess(profile: Pick<Profile, "subscription_status" | "subscription_end" | "is_admin"> | null | undefined): boolean {
-  if (!profile) return false;
-  if (profile.is_admin) return true;
-  const statusOk = profile.subscription_status === "active" || profile.subscription_status === "trialing";
-  const end = profile.subscription_end ? new Date(profile.subscription_end).getTime() : 0;
+// Depuis la migration 013, l'abonnement vit sur Account (plus sur Profile/projet).
+export function hasAccess(account: Pick<Account, "subscription_status" | "subscription_end" | "is_admin"> | null | undefined): boolean {
+  if (!account) return false;
+  if (account.is_admin) return true;
+  const statusOk = account.subscription_status === "active" || account.subscription_status === "trialing";
+  const end = account.subscription_end ? new Date(account.subscription_end).getTime() : 0;
   return statusOk && end > Date.now();
 }
 
 export function useSubscription() {
-  const { profile } = useUserStore();
-  const isActive = hasAccess(profile);
+  const { account } = useUserStore();
+  const isActive = hasAccess(account);
   return { isActive };
 }

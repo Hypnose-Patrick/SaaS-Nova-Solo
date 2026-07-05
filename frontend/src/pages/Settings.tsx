@@ -12,6 +12,7 @@ import { AiEngineCard } from "@/components/settings/AiEngineCard";
 import { TelegramCard } from "@/components/settings/TelegramCard";
 import { N8nCard } from "@/components/settings/N8nCard";
 import { GoogleDriveCard } from "@/components/settings/GoogleDriveCard";
+import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { SubscribeButton } from "@/components/SubscribeButton";
 import { useSearchParams } from "react-router-dom";
 
@@ -105,7 +106,7 @@ function profileToForm(p: Profile): FormState {
 }
 
 export function Settings() {
-  const { profile, updateProfile, loading, error } = useUserStore();
+  const { profile, account, updateProfile, loading, error } = useUserStore();
   const [form, setForm] = useState<FormState | null>(null);
   const [searchParams] = useSearchParams();
   const subscriptionFeedback = searchParams.get("subscription");
@@ -501,7 +502,7 @@ export function Settings() {
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0" }}>
           Accès complet à Nova Solo — tous les modules, l'IA illimitée, les exports.
         </p>
-        <SubscribeButton subscriptionStatus={profile?.subscription_status} />
+        <SubscribeButton subscriptionStatus={account?.subscription_status} />
       </Card>
 
       {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
@@ -515,6 +516,9 @@ export function Settings() {
 
       {/* Section : Sauvegarde Google Drive personnelle (client-side, optionnelle) */}
       <GoogleDriveCard />
+
+      {/* Zone de danger : reset projet (Pro/Trio) + suppression compte (délai de grâce 30j) */}
+      <DangerZoneCard />
 
       {/* Note stockage local */}
       <div style={{ padding: "var(--space-3) var(--space-4)", background: "rgba(255,255,255,0.03)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: 1.6 }}>

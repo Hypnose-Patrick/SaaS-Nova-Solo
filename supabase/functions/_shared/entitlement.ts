@@ -9,6 +9,10 @@
 // Pourquoi côté serveur : le frontend est du JavaScript public. Le paywall
 // visuel (redirection vers /subscribe) est du confort, pas une barrière. La
 // vraie barrière est ici, hors de portée du navigateur.
+//
+// Depuis la migration 013 (multi-projets), l'abonnement vit sur nova.accounts
+// (1 par utilisateur), plus sur nova.profiles (qui est désormais "un projet"
+// parmi potentiellement plusieurs pour un même compte).
 
 import { adminClient } from "./admin.ts";
 
@@ -23,7 +27,7 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 /** Lit l'état de licence de l'abonné, sans lever d'erreur. */
 export async function getEntitlement(userId: string): Promise<Entitlement> {
   const { data, error } = await adminClient()
-    .from("profiles")
+    .from("accounts")
     .select("subscription_status, subscription_end, is_admin")
     .eq("user_id", userId)
     .maybeSingle();
@@ -64,6 +68,16 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
   }
 
   return { active: true, reason: "active", subscriptionEnd: data.subscription_end };
+}
+
+/** Nombre de projets autorisés pour ce compte (défaut prudent = 1 si compte introuvable). */
+export async function getProjectLimit(userId: string): Promise<number> {
+  const { data } = await adminClient()
+    .from("accounts")
+    .select("max_projects")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.max_projects ?? 1;
 }
 
 /** Erreur normalisée à mapper en HTTP 402 (Payment Required). */

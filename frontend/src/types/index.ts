@@ -1,7 +1,13 @@
 // Types partagés — miroir des tables Supabase (001_init_schema.sql)
 
+// Depuis la migration 013 (multi-projets) : Profile = UN PROJET (rattaché à un
+// Account). L'abonnement/plan/quota a été déplacé sur Account — ne plus lire
+// subscription_status / stripe_customer_id / plan / is_admin sur un Profile,
+// ces colonnes existent encore en base (transition) mais sont figées/obsolètes.
 export interface Profile {
   id: string;
+  account_id: string;
+  project_name: string;
   user_id: string;
   name: string | null;
   email: string | null;
@@ -27,11 +33,20 @@ export interface Profile {
   profil: string | null;
   pricing_tarif: number | null;
   pricing_clients: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// 1 par utilisateur — porte l'abonnement Stripe et le quota de projets.
+export interface Account {
+  id: string;
+  user_id: string;
+  plan: "solo" | "pro" | "trio" | null;
+  max_projects: number;
   stripe_customer_id: string | null;
   subscription_status: "active" | "trialing" | "inactive" | "canceled" | null;
   subscription_id: string | null;
   subscription_end: string | null;
-  plan: "solo" | "pro" | null;
   is_admin: boolean;
   created_at: string;
   updated_at: string;

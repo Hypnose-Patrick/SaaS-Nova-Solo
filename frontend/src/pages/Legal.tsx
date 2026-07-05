@@ -50,7 +50,7 @@ Nova Solo et tous ses éléments sont la propriété de Patrick Beiner. Les donn
 Service fourni « tel quel ». Les réponses IA sont indicatives et ne remplacent pas un conseil professionnel. Responsabilité limitée au montant payé sur 12 mois.
 
 ## 8. Résiliation
-Suppression du compte à tout moment dans Réglages. L'Éditeur peut résilier avec 30 jours de préavis.
+Suppression du compte à tout moment dans Réglages, ou résiliation de l'abonnement (annulation du paiement récurrent). Dans les deux cas, les données ne sont pas effacées immédiatement : elles sont conservées 30 jours (délai de grâce), durant lesquels l'utilisateur peut se réabonner ou réactiver son compte pour retrouver l'intégralité de son accès et de ses données. Passé ce délai de 30 jours, toutes les données sont effacées définitivement et irréversiblement, sans possibilité de restauration. L'Éditeur peut résilier avec 30 jours de préavis.
 
 ## 9. Modifications
 Modifications notifiées 15 jours à l'avance par email.
@@ -71,12 +71,14 @@ Patrick Beiner · Monthey, Valais, Suisse · info@start-mybusiness.com
 | Conversations IA | Messages agents Nova Solo | Réponses IA | 12 mois |
 | Données techniques | IP, logs | Sécurité | 30 jours |
 | Facturation | Référence transaction | Comptabilité | 10 ans (CO 958f) |
+| Compte supprimé / abonnement résilié | Toutes les données du compte (profil, business, conversations IA) | Permettre la réactivation à la demande de l'utilisateur | 30 jours (délai de grâce), puis effacement définitif |
 
 ## 3. Sous-traitants
 Hostinger (EU) · Supabase EU Frankfurt · Anthropic USA (DPA + CCS) · OpenRouter USA (CCS) · Bunny.net EU (audio, sans données perso)
 
 ## 4. Vos droits (nLPD art. 25–28)
 Accès · Rectification · Effacement (Réglages) · Portabilité (JSON) · Opposition · Réclamation PFPDT (edoeb.admin.ch)
+La suppression du compte (ou la résiliation de l'abonnement) déclenche un délai de grâce de 30 jours durant lequel les données sont conservées et l'accès peut être restauré en se réabonnant ou en réactivant le compte. Passé ce délai, l'effacement est définitif et irréversible : aucune récupération n'est possible au-delà des 30 jours.
 **Contact** : info@start-mybusiness.com — réponse sous 30 jours.
 
 ## 5. Sécurité
@@ -134,7 +136,7 @@ Nova Solo und alle Elemente gehören Patrick Beiner. Benutzerdaten bleiben Eigen
 Dienst «wie besehen». KI-Antworten sind indikativ, kein professioneller Rat. Haftung begrenzt auf gezahlten Betrag der letzten 12 Monate.
 
 ## 8. Kündigung
-Kontolöschung jederzeit in Einstellungen. Herausgeber kann mit 30 Tagen Frist kündigen.
+Kontolöschung jederzeit in Einstellungen, oder Kündigung des Abonnements (Beendigung der wiederkehrenden Zahlung). In beiden Fällen werden die Daten nicht sofort gelöscht: Sie werden 30 Tage lang aufbewahrt (Karenzfrist), innerhalb derer der Benutzer sein Abonnement erneuern oder sein Konto reaktivieren kann, um vollständigen Zugriff auf sein Konto und seine Daten zurückzuerhalten. Nach Ablauf dieser 30-tägigen Frist werden alle Daten endgültig und unwiderruflich gelöscht, ohne Möglichkeit der Wiederherstellung. Der Herausgeber kann mit 30 Tagen Frist kündigen.
 
 ## 9. Änderungen
 Wesentliche Änderungen 15 Tage im Voraus per E-Mail.
@@ -155,12 +157,14 @@ Patrick Beiner · Monthey, Wallis, Schweiz · info@start-mybusiness.com
 | KI-Gespräche | Agentennachrichten | KI-Antworten | 12 Monate |
 | Technische Daten | IP, Logs | Sicherheit | 30 Tage |
 | Rechnungsdaten | Transaktionsreferenz | Buchhaltung | 10 Jahre (OR 958f) |
+| Gelöschtes Konto / gekündigtes Abonnement | Alle Kontodaten (Profil, Business, KI-Gespräche) | Reaktivierung auf Wunsch des Benutzers ermöglichen | 30 Tage (Karenzfrist), danach endgültige Löschung |
 
 ## 3. Unterauftragsverarbeiter
 Hostinger (EU) · Supabase EU Frankfurt · Anthropic USA (AV-Vertrag + SKK) · OpenRouter USA (SKK) · Bunny.net EU (Audio, keine Personendaten)
 
 ## 4. Ihre Rechte (nDSG Art. 25–28)
 Auskunft · Berichtigung · Löschung (Einstellungen) · Datenübertragbarkeit (JSON) · Widerspruch · Beschwerde EDÖB (edoeb.admin.ch)
+Die Löschung des Kontos (oder die Kündigung des Abonnements) löst eine 30-tägige Karenzfrist aus, während der die Daten aufbewahrt werden und der Zugriff durch erneutes Abonnieren oder Reaktivieren des Kontos wiederhergestellt werden kann. Nach Ablauf dieser Frist ist die Löschung endgültig und unwiderruflich: Nach 30 Tagen ist keine Wiederherstellung mehr möglich.
 **Kontakt**: info@start-mybusiness.com — Antwort innerhalb 30 Tagen.
 
 ## 5. Sicherheit
@@ -218,7 +222,7 @@ Nova Solo e tutti i suoi elementi appartengono a Patrick Beiner. I dati inseriti
 Servizio «così com'è». Le risposte IA sono indicative e non sostituiscono consulenza professionale. Responsabilità limitata all'importo pagato negli ultimi 12 mesi.
 
 ## 8. Risoluzione
-Eliminazione account in qualsiasi momento in Impostazioni. L'Editore può risolvere con 30 giorni di preavviso.
+Eliminazione dell'account in qualsiasi momento in Impostazioni, oppure disdetta dell'abbonamento (interruzione del pagamento ricorrente). In entrambi i casi, i dati non vengono cancellati immediatamente: sono conservati per 30 giorni (periodo di grazia), durante i quali l'utente può riabbonarsi o riattivare il proprio account per recuperare l'accesso completo al proprio account e ai propri dati. Trascorso questo termine di 30 giorni, tutti i dati vengono cancellati in modo definitivo e irreversibile, senza possibilità di ripristino. L'Editore può risolvere con un preavviso di 30 giorni.
 
 ## 9. Modifiche
 Modifiche sostanziali notificate 15 giorni prima via email.
@@ -239,12 +243,14 @@ Patrick Beiner · Monthey, Vallese, Svizzera · info@start-mybusiness.com
 | Conversazioni IA | Messaggi agenti Nova Solo | Risposte IA | 12 mesi |
 | Dati tecnici | IP, log | Sicurezza | 30 giorni |
 | Fatturazione | Riferimento transazione | Contabilità | 10 anni (CO 958f) |
+| Account eliminato / abbonamento disdetto | Tutti i dati dell'account (profilo, business, conversazioni IA) | Consentire la riattivazione su richiesta dell'utente | 30 giorni (periodo di grazia), poi cancellazione definitiva |
 
 ## 3. Sub-responsabili
 Hostinger (UE) · Supabase UE Francoforte · Anthropic USA (DPA + CCT) · OpenRouter USA (CCT) · Bunny.net UE (audio, senza dati personali)
 
 ## 4. I vostri diritti (nLPD art. 25–28)
 Accesso · Rettifica · Cancellazione (Impostazioni) · Portabilità (JSON) · Opposizione · Reclamo IFPDT (edoeb.admin.ch)
+L'eliminazione dell'account (o la disdetta dell'abbonamento) attiva un periodo di grazia di 30 giorni durante il quale i dati vengono conservati e l'accesso può essere ripristinato riabbonandosi o riattivando l'account. Trascorso questo termine, la cancellazione è definitiva e irreversibile: non è più possibile alcun recupero oltre i 30 giorni.
 **Contatto**: info@start-mybusiness.com — risposta entro 30 giorni.
 
 ## 5. Sicurezza

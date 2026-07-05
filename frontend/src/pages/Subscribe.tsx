@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUserStore } from "@/stores/useUserStore";
 import { supabase } from "@/lib/supabase";
 
-type Plan = "solo" | "pro";
+type Plan = "solo" | "pro" | "trio";
 
 export function Subscribe() {
   const profile = useUserStore((s) => s.profile);
@@ -157,6 +157,55 @@ export function Subscribe() {
               } as React.CSSProperties}
             >
               {loadingPlan === "pro" ? "Redirection…" : "Commencer — Pro"}
+            </button>
+          </div>
+
+          {/* Trio — IA managée, 3 projets (coach / plusieurs activités) */}
+          <div
+            style={{
+              flex: "1 1 320px",
+              maxWidth: 360,
+              background: "var(--color-bg-surface)",
+              border: "1px solid rgba(197,165,114,0.35)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-8)",
+              boxShadow: "var(--shadow-lg)",
+              textAlign: "left",
+            }}
+          >
+            <p style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-gold)", margin: "0 0 var(--space-2)" }}>
+              Trio
+            </p>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--color-text-primary)", margin: "0 0 var(--space-2)" }}>
+              CHF 39 <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>/ mois</span>
+            </p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+              Jusqu'à <strong style={{ color: "var(--color-text-primary)" }}>3 projets</strong> distincts (plusieurs
+              activités, ou clients pour un coach). Accès complet, tous les modules.{" "}
+              <strong style={{ color: "var(--color-text-primary)" }}>IA incluse</strong> — mode managé.
+            </p>
+            <button
+              onClick={() => handleCheckout("trio")}
+              disabled={loadingPlan !== null}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "12px var(--space-4)",
+                background: loadingPlan === "trio" ? "rgba(197,165,114,0.5)" : "transparent",
+                color: "var(--color-gold)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "var(--text-sm)",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                border: "1px solid rgba(197,165,114,0.6)",
+                cursor: loadingPlan !== null ? "not-allowed" : "pointer",
+                textAlign: "center",
+                textTransform: "uppercase",
+                boxSizing: "border-box",
+                opacity: loadingPlan !== null && loadingPlan !== "trio" ? 0.5 : 1,
+              } as React.CSSProperties}
+            >
+              {loadingPlan === "trio" ? "Redirection…" : "Commencer — Trio"}
             </button>
           </div>
 

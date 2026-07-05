@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { ProjectSwitcher } from "@/components/layout/ProjectSwitcher";
 import type { Profile } from "@/types";
 
 // En-tête mobile compact — marque à gauche, accès Nova + profil à droite.
@@ -40,6 +41,8 @@ export function MobileHeader() {
           </span>
         )}
       </div>
+
+      <ProjectSwitcher compact />
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0 }}>

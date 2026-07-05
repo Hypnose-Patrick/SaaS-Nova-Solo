@@ -276,14 +276,17 @@ Deno.serve(async (req: Request) => {
 
     // Édition Solo (CHF 9/mois) = BYOK obligatoire : l'abonné paie son propre
     // fournisseur IA, pas de bascule silencieuse sur l'IA managée plateforme.
-    const { data: profileRow } = await adminClient()
-      .from("profiles")
+    // Lu sur nova.accounts (pas nova.profiles) depuis la migration 013 : un
+    // compte peut désormais avoir plusieurs projets, .maybeSingle() sur
+    // profiles.user_id casserait dès le 2e projet créé.
+    const { data: accountRow } = await adminClient()
+      .from("accounts")
       .select("plan")
       .eq("user_id", user.id)
       .maybeSingle();
     const hasByokConfig = config?.mode === "byok_remote" &&
       !!config.key_ciphertext && !!config.key_iv;
-    if (profileRow?.plan === "solo" && !hasByokConfig && config?.mode !== "byok_local") {
+    if (accountRow?.plan === "solo" && !hasByokConfig && config?.mode !== "byok_local") {
       return json({
         error: "Configurez votre clé IA dans Réglages pour utiliser l'IA — offre Solo (BYOK).",
         code: "byok_required",

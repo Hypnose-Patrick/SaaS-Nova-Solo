@@ -37,32 +37,50 @@ serve(async (req) => {
       });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("stripe_customer_id, email, name")
+    // Depuis la migration 013 (multi-projets), l'abonnement vit sur nova.accounts
+    // (1 par utilisateur), plus sur nova.profiles (qui est désormais "un projet").
+    const { data: account } = await supabase
+      .from("accounts")
+      .select("stripe_customer_id")
       .eq("user_id", user.id)
       .single();
+    // .limit(1) plutôt que .maybeSingle() : un compte peut désormais avoir
+    // plusieurs projets (profiles), tous avec le même user_id dénormalisé —
+    // .maybeSingle() lèverait une erreur dès le 2e projet.
+    const { data: profileRows } = await supabase
+      .from("profiles")
+      .select("email, name")
+      .eq("user_id", user.id)
+      .limit(1);
+    const profile = profileRows?.[0];
 
     const appUrl = Deno.env.get("APP_URL") ?? "https://start-mybusiness.com";
 
     // Palier choisi : Solo = CHF 9/mois (BYOK) ; Pro = CHF 29/mois (IA managée,
-    // c'est l'offre historique déjà vendue sur la landing avant l'ajout de Solo).
+    // offre historique) ; Trio = CHF 39/mois (IA managée, jusqu'à 3 projets).
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
-    const plan = body?.plan === "pro" ? "pro" : "solo";
+    const rawPlan = String(body?.plan ?? "solo");
+    const plan = rawPlan === "pro" ? "pro" : rawPlan === "trio" ? "trio" : "solo";
     // STRIPE_PRICE_ID = ancien secret mono-tarif (CHF 29/mois, déjà en place) —
     // conservé en repli pour Pro tant que STRIPE_PRICE_ID_PRO n'est pas posé,
     // afin de ne pas casser le bouton "Commencer — Solo" déjà public sur la landing.
     const priceId = plan === "pro"
       ? (Deno.env.get("STRIPE_PRICE_ID_PRO") ?? Deno.env.get("STRIPE_PRICE_ID"))
+      : plan === "trio"
+      ? Deno.env.get("STRIPE_PRICE_ID_TRIO")
       : Deno.env.get("STRIPE_PRICE_ID_SOLO");
     if (!priceId) {
-      const missing = plan === "pro" ? "STRIPE_PRICE_ID_PRO / STRIPE_PRICE_ID" : "STRIPE_PRICE_ID_SOLO";
+      const missing = plan === "pro"
+        ? "STRIPE_PRICE_ID_PRO / STRIPE_PRICE_ID"
+        : plan === "trio"
+        ? "STRIPE_PRICE_ID_TRIO"
+        : "STRIPE_PRICE_ID_SOLO";
       return new Response(JSON.stringify({ error: `Configuration manquante : ${missing}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    let customerId = profile?.stripe_customer_id;
+    let customerId = account?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email ?? profile?.email,
@@ -71,7 +89,7 @@ serve(async (req) => {
       });
       customerId = customer.id;
       await supabase
-        .from("profiles")
+        .from("accounts")
         .update({ stripe_customer_id: customerId })
         .eq("user_id", user.id);
     }

@@ -30,12 +30,36 @@ serve(async (req) => {
     { db: { schema: "nova" } }
   );
 
+  // Depuis la migration 013 (multi-projets), l'abonnement vit sur nova.accounts
+  // (1 par utilisateur) — nova.profiles est désormais "un projet" et ne porte
+  // plus stripe_customer_id/subscription_*.
+  const PLAN_MAX_PROJECTS: Record<string, number> = { solo: 1, pro: 1, trio: 3 };
+  const GRACE_PERIOD_DAYS = 30;
+
   async function updateByCustomer(customerId: string, patch: Record<string, unknown>) {
     const { error } = await supabase
-      .from("profiles")
+      .from("accounts")
       .update(patch)
       .eq("stripe_customer_id", customerId);
     if (error) console.error("[stripe-webhook] update error", error);
+  }
+
+  function withMaxProjects(patch: Record<string, unknown>): Record<string, unknown> {
+    const plan = patch.plan as string | undefined;
+    if (plan && PLAN_MAX_PROJECTS[plan]) {
+      return { ...patch, max_projects: PLAN_MAX_PROJECTS[plan] };
+    }
+    return patch;
+  }
+
+  // Les versions récentes de l'API Stripe ont déplacé `current_period_end` de
+  // la racine de l'objet Subscription vers `items.data[0].current_period_end`.
+  // On lit les deux emplacements pour rester compatible dans tous les cas.
+  function periodEnd(sub: Stripe.Subscription): number | null {
+    const legacy = (sub as unknown as { current_period_end?: number }).current_period_end;
+    if (legacy) return legacy;
+    const itemEnd = sub.items?.data?.[0]?.current_period_end;
+    return itemEnd ?? null;
   }
 
   switch (event.type) {
@@ -45,39 +69,47 @@ serve(async (req) => {
         const patch: Record<string, unknown> = {
           subscription_status: "active",
           subscription_id: String(session.subscription),
+          // Réabonnement = annule une éventuelle purge programmée (résiliation
+          // précédente ou auto-suppression volontaire, cf. account-delete).
+          scheduled_purge_at: null,
         };
         const plan = session.metadata?.plan;
-        if (plan === "solo" || plan === "pro") patch.plan = plan;
-        await updateByCustomer(String(session.customer), patch);
+        if (plan === "solo" || plan === "pro" || plan === "trio") patch.plan = plan;
+        await updateByCustomer(String(session.customer), withMaxProjects(patch));
       }
       break;
     }
 
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
+      const end = periodEnd(sub);
+      const isActive = sub.status === "active" || sub.status === "trialing";
       const patch: Record<string, unknown> = {
-        subscription_status: sub.status === "active" || sub.status === "trialing"
-          ? sub.status
-          : "inactive",
+        subscription_status: isActive ? sub.status : "inactive",
         subscription_id: sub.id,
-        subscription_end: sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null,
+        subscription_end: end ? new Date(end * 1000).toISOString() : null,
       };
+      // Reprise d'un abonnement (ex. carte régularisée après échec de paiement) =
+      // annule une purge déjà programmée.
+      if (isActive) patch.scheduled_purge_at = null;
       // Le plan ne change pas tant qu'il n'y a qu'un tarif ; on le rafraîchit
       // seulement s'il est présent dans les metadata (posé au checkout).
       const plan = sub.metadata?.plan;
-      if (plan === "solo" || plan === "pro") patch.plan = plan;
-      await updateByCustomer(String(sub.customer), patch);
+      if (plan === "solo" || plan === "pro" || plan === "trio") patch.plan = plan;
+      await updateByCustomer(String(sub.customer), withMaxProjects(patch));
       break;
     }
 
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription;
+      // Résiliation = délai de grâce de 30 jours avant purge définitive
+      // (cf. migration 014 + purge-expired-accounts), pas un effacement immédiat.
+      const purgeAt = new Date(Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString();
       await updateByCustomer(String(sub.customer), {
         subscription_status: "canceled",
         subscription_id: null,
         subscription_end: null,
+        scheduled_purge_at: purgeAt,
       });
       break;
     }
