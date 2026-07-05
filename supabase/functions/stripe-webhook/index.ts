@@ -62,6 +62,24 @@ serve(async (req) => {
     return itemEnd ?? null;
   }
 
+  // Déduit le palier depuis le PRIX Stripe réel de l'abonnement, pas les
+  // metadata (qui ne changent pas quand l'abonné bascule de palier via le
+  // Portail Client Stripe — cf. stripe-portal). Les metadata ne servent que
+  // de repli si le prix ne correspond à aucun palier connu.
+  const PRICE_TO_PLAN: Record<string, string> = {};
+  if (Deno.env.get("STRIPE_PRICE_ID_SOLO")) PRICE_TO_PLAN[Deno.env.get("STRIPE_PRICE_ID_SOLO")!] = "solo";
+  if (Deno.env.get("STRIPE_PRICE_ID_PRO")) PRICE_TO_PLAN[Deno.env.get("STRIPE_PRICE_ID_PRO")!] = "pro";
+  if (Deno.env.get("STRIPE_PRICE_ID")) PRICE_TO_PLAN[Deno.env.get("STRIPE_PRICE_ID")!] = "pro";
+  if (Deno.env.get("STRIPE_PRICE_ID_TRIO")) PRICE_TO_PLAN[Deno.env.get("STRIPE_PRICE_ID_TRIO")!] = "trio";
+
+  function resolvePlan(sub: Stripe.Subscription): string | undefined {
+    const priceId = sub.items?.data?.[0]?.price?.id;
+    if (priceId && PRICE_TO_PLAN[priceId]) return PRICE_TO_PLAN[priceId];
+    const metaPlan = sub.metadata?.plan;
+    if (metaPlan === "solo" || metaPlan === "pro" || metaPlan === "trio") return metaPlan;
+    return undefined;
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -92,10 +110,11 @@ serve(async (req) => {
       // Reprise d'un abonnement (ex. carte régularisée après échec de paiement) =
       // annule une purge déjà programmée.
       if (isActive) patch.scheduled_purge_at = null;
-      // Le plan ne change pas tant qu'il n'y a qu'un tarif ; on le rafraîchit
-      // seulement s'il est présent dans les metadata (posé au checkout).
-      const plan = sub.metadata?.plan;
-      if (plan === "solo" || plan === "pro" || plan === "trio") patch.plan = plan;
+      // Déduit le palier du prix réel — couvre aussi bien un changement fait
+      // depuis le Portail Client Stripe (upgrade/downgrade) qu'un événement
+      // de renouvellement standard.
+      const plan = resolvePlan(sub);
+      if (plan) patch.plan = plan;
       await updateByCustomer(String(sub.customer), withMaxProjects(patch));
       break;
     }

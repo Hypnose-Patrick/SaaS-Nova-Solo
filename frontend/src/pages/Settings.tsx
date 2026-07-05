@@ -502,7 +502,7 @@ export function Settings() {
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4) 0" }}>
           Accès complet à Nova Solo — tous les modules, l'IA illimitée, les exports.
         </p>
-        <SubscribeButton subscriptionStatus={account?.subscription_status} />
+        <SubscribeButton subscriptionStatus={account?.subscription_status} plan={account?.plan} />
       </Card>
 
       {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
