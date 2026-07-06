@@ -527,20 +527,22 @@ function DiagBoardSVG({ stones }: { stones: { col: number; row: number; color: S
 }
 
 // ── Victor Bubble ──────────────────────────────────────────────────────────────
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function formatVictorHTML(text: string): string {
-  // Convert **Section** → styled section div
+  // Convert **Section** → styled section div (text escaped to prevent XSS)
   const parts = text.split(/\*\*([^*]+)\*\*/g);
   let html = "";
   let inSection = false;
   for (let i = 0; i < parts.length; i++) {
     if (i % 2 === 0) {
-      // plain text
-      const t = parts[i].replace(/\n/g, "<br>");
-      html += inSection ? t : t;
+      html += escHtml(parts[i]).replace(/\n/g, "<br>");
     } else {
-      // section title
       if (inSection) html += `</div>`;
-      html += `<div class="vs"><div class="vs-t">${parts[i]}</div>`;
+      html += `<div class="vs"><div class="vs-t">${escHtml(parts[i])}</div>`;
       inSection = true;
     }
   }
