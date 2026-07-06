@@ -21,7 +21,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          supabase: ["@supabase/supabase-js", "@supabase/ssr", "@supabase/auth-ui-react", "@supabase/auth-ui-shared"],
+          supabase: ["@supabase/supabase-js", "@supabase/auth-ui-react", "@supabase/auth-ui-shared"],
           charts: ["chart.js", "react-chartjs-2"],
           router: ["react-router-dom"],
         },
