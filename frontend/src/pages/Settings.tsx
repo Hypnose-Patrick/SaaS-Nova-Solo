@@ -157,7 +157,14 @@ export function Settings() {
     if (!form) return;
     setSaving(true);
     setSaved(false);
+    const capitalNum = form.capital ? parseFloat(form.capital) : 0;
+    const chargesNum = form.charges_fixes ? parseFloat(form.charges_fixes) : 0;
+    // Même formule que le "Runway estimé" affiché juste au-dessous du formulaire —
+    // persistée ici pour que le KPI Runway du Dashboard (profile.runway_months,
+    // jusqu'ici jamais écrit) reflète ce que l'abonné voit dans ses Réglages.
+    const runwayMonths = chargesNum > 0 ? Math.floor(capitalNum / chargesNum) : null;
     await updateProfile({
+      runway_months:   runwayMonths,
       name:            form.name || null,
       statut:          form.statut ?? null,
       activite_type:   form.activite_type ?? null,
@@ -175,8 +182,8 @@ export function Settings() {
       contact_tel:     form.contact_tel || null,
       contact_adresse: form.contact_adresse || null,
       website:         form.website || null,
-      capital:         form.capital ? parseFloat(form.capital) : 0,
-      charges_fixes:   form.charges_fixes ? parseFloat(form.charges_fixes) : 0,
+      capital:         capitalNum,
+      charges_fixes:   chargesNum,
       pricing_tarif:   form.pricing_tarif ? parseFloat(form.pricing_tarif) : null,
       pricing_clients: form.pricing_clients ? parseInt(form.pricing_clients) : null,
     });
