@@ -9,7 +9,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptDossier, DOSSIER_TEMPLATES, type DossierTemplate, type DossierRecipient } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
-import { printHtml, downloadWord, slugify } from "@/lib/exportDoc";
+import { printHtml, downloadWord, slugify, renderStaticHtml } from "@/lib/exportDoc";
 import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
 import dossierTemplateHtml from "@/lib/templates/dossier.html?raw";
@@ -73,7 +73,7 @@ export function Dossier() {
     if (r) { setDossier(r); saveLocal("ns_dossier_result", r); }
   }
 
-  function buildDocHtml(): string {
+  function buildDocHtml(): Promise<string> {
     const contentHtml = dossier ? mdToHtml(dossier) : "";
     let html = fillTemplate(dossierTemplateHtml, {
       LOGO_URL:        profile?.logo_url      ?? "",
@@ -96,11 +96,11 @@ export function Dossier() {
         `<div class="content-area" id="content-area">${contentHtml}</div>`,
       );
     }
-    return html;
+    return renderStaticHtml(html);
   }
 
-  function exportPdf() { if (dossier) printHtml(buildDocHtml()); }
-  function exportWord() { if (dossier) downloadWord(`dossier-${slugify(tplLabel)}`, buildDocHtml()); }
+  async function exportPdf() { if (dossier) printHtml(await buildDocHtml()); }
+  async function exportWord() { if (dossier) downloadWord(`dossier-${slugify(tplLabel)}`, await buildDocHtml()); }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", maxWidth: 820 }}>

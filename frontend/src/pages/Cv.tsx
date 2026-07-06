@@ -7,7 +7,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptCvGenerate, promptCvImprove, CV_TYPES, type CvType } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal } from "@/lib/local";
-import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { printHtml, downloadWord, renderStaticHtml } from "@/lib/exportDoc";
 import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
 import cvTemplateHtml from "@/lib/templates/cv.html?raw";
@@ -105,8 +105,8 @@ export function Cv() {
     }).join("\n\n");
   }
 
-  function buildDocHtml(): string {
-    return fillTemplate(cvTemplateHtml, {
+  function buildDocHtml(): Promise<string> {
+    return renderStaticHtml(fillTemplate(cvTemplateHtml, {
       LOGO_URL:     profile?.logo_url     ?? "",
       ACCENT_COLOR: profile?.accent_color ?? "#8b6f47",
       NAME:         fullName,
@@ -120,11 +120,11 @@ export function Cv() {
       EXP:          normalizeExp(f.exp),
       FORMATION:    f.formation,
       LANGUES:      f.langues,
-    });
+    }));
   }
 
-  function printCv() { printHtml(buildDocHtml()); }
-  function exportWordCv() { downloadWord(`cv-${fullName}`, buildDocHtml()); }
+  async function printCv() { printHtml(await buildDocHtml()); }
+  async function exportWordCv() { downloadWord(`cv-${fullName}`, await buildDocHtml()); }
 
   const previewSection = (title: string, body: string) => (
     <div style={{ marginBottom: "var(--space-3)" }}>

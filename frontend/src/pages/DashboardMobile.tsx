@@ -177,8 +177,8 @@ export function DashboardMobile() {
 
       {/* 2. KPI 2×2 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-        <Kpi label="Revenus" value={fmt(revenus)} unit="CHF" tone="var(--color-success)" />
-        <Kpi label="Dépenses" value={fmt(depenses)} unit="CHF" tone="var(--color-warning)" />
+        <Kpi label="Revenus (cumul)" value={fmt(revenus)} unit="CHF" tone="var(--color-success)" />
+        <Kpi label="Dépenses (cumul)" value={fmt(depenses)} unit="CHF" tone="var(--color-warning)" />
         <Kpi label="Trésorerie" value={fmt(treso)} unit="CHF" tone={treso >= 0 ? "var(--color-text-primary)" : "var(--color-danger)"} />
         {runwayMonths !== null
           ? <Kpi label="Runway" value={String(runwayMonths)} unit={runwayMonths >= 3 ? "mois" : "mois · vigilance"} tone={runwayMonths >= 3 ? "var(--color-gold)" : "var(--color-danger)"} />

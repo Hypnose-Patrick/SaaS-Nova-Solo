@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { askAgent } from "@/lib/ai";
-import { printHtml, downloadWord } from "@/lib/exportDoc";
+import { printHtml, downloadWord, renderStaticHtml } from "@/lib/exportDoc";
 import { fillTemplate } from "@/lib/fillTemplate";
 import bpTemplateHtml from "@/lib/templates/business-plan.html?raw";
 import { loadFinanceModel, buildBudgetMarkdown } from "@/lib/finance";
@@ -217,10 +217,10 @@ export function BusinessPlan() {
   const filledCount = SECTIONS.filter((s) => getContent(s.key)).length;
 
   // Construit le document complet via le template Claude Design.
-  function buildDocHtml(): string {
+  function buildDocHtml(): Promise<string> {
     const today = new Date().toLocaleDateString("fr-CH", { day: "numeric", month: "long", year: "numeric" });
     const g = (key: SectionKey) => getContent(key);
-    return fillTemplate(bpTemplateHtml, {
+    return renderStaticHtml(fillTemplate(bpTemplateHtml, {
       LOGO_URL:            profile?.logo_url     ?? "",
       ACCENT_COLOR:        profile?.accent_color ?? "#8b6f47",
       BRAND_NAME:          profile?.brand_name   ?? profile?.name ?? "",
@@ -238,13 +238,13 @@ export function BusinessPlan() {
       SECTION_CONCURRENCE: [g("bp_organisation"), g("bp_legal") ? `\n\n**Forme juridique**\n${g("bp_legal")}` : ""].join(""),
       SECTION_RISQUES:     g("bp_risks"),
       SECTION_PLAN_ACTION: g("bp_roadmap"),
-    });
+    }));
   }
 
-  function exportPdf() { printHtml(buildDocHtml()); }
+  async function exportPdf() { printHtml(await buildDocHtml()); }
 
-  function exportWord() {
-    downloadWord(`business-plan-${profile?.brand_name || profile?.name || "nova"}`, buildDocHtml());
+  async function exportWord() {
+    downloadWord(`business-plan-${profile?.brand_name || profile?.name || "nova"}`, await buildDocHtml());
   }
 
   return (

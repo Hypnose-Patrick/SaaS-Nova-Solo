@@ -28,6 +28,36 @@ export function slugify(s: unknown, fallback = "nova"): string {
   return base || fallback;
 }
 
+// Certains templates (business-plan, cv, dossier) peuplent leur contenu via un <script>
+// exécuté au chargement (DOMContentLoaded → innerHTML). Ça fonctionne pour l'impression
+// PDF (onglet navigateur réel, le script s'exécute), mais pas pour l'export Word : Word
+// n'exécute jamais le JavaScript d'un fichier HTML importé, donc le .doc livré est vide.
+// Cette fonction exécute le script dans un iframe caché, attend le DOM peuplé, puis
+// renvoie le HTML final sans scripts — à appeler avant printHtml()/downloadWord().
+export function renderStaticHtml(rawHtml: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:-99999px;top:0;width:1px;height:1px;border:0;";
+    // srcdoc doit être posé AVANT l'insertion dans le DOM : sinon appendChild() navigue
+    // d'abord vers about:blank, ce qui déclenche un premier "load" (document vide) que
+    // l'iframe peut capturer avant même que le contenu réel ne soit chargé.
+    iframe.srcdoc = rawHtml;
+    iframe.onload = () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc) throw new Error("Rendu impossible (iframe inaccessible).");
+        doc.querySelectorAll("script").forEach((s) => s.remove());
+        resolve("<!DOCTYPE html>\n" + doc.documentElement.outerHTML);
+      } catch (e) {
+        reject(e);
+      } finally {
+        iframe.remove();
+      }
+    };
+    document.body.appendChild(iframe);
+  });
+}
+
 // Ouvre le HTML dans un onglet et déclenche l'impression (→ PDF).
 export function printHtml(fullHtml: string, delay = 350): void {
   const w = window.open("", "_blank");

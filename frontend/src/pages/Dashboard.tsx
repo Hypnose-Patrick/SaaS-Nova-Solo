@@ -160,8 +160,8 @@ function DashboardDesktop() {
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "var(--space-4)" }}>
-        <KpiCard label="Revenus" value={fmt(revenus)} color="success" />
-        <KpiCard label="Dépenses" value={fmt(depenses)} color="warning" />
+        <KpiCard label="Revenus (cumul total)" value={fmt(revenus)} color="success" />
+        <KpiCard label="Dépenses (cumul total)" value={fmt(depenses)} color="warning" />
         <KpiCard
           label="Trésorerie"
           value={fmt(treso)}
