@@ -27,7 +27,8 @@ import { Marketing } from "@/pages/Marketing";
 import { Hermes } from "@/pages/Hermes";
 import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
-import { MobileChrono } from "@/pages/MobileChrono";
+import { Terrain } from "@/pages/Terrain";
+import { Mandats } from "@/pages/Mandats";
 import { Legal } from "@/pages/Legal";
 import { Subscribe } from "@/pages/Subscribe";
 import { hasAccess } from "@/lib/useSubscription";
@@ -53,8 +54,9 @@ function ProtectedRoutes() {
         <Route path="hermes" element={<Hermes />} />
         <Route path="simulation" element={<Simulation />} />
         <Route path="goban-coach" element={<GobanCoach />} />
-        {/* Maquette companion mobile (prototype de test, sans persistance) — protégée */}
-        <Route path="mobile-chrono" element={<MobileChrono />} />
+        {/* Compagnon terrain — chrono + captures (remplace la maquette /mobile-chrono) */}
+        <Route path="terrain" element={<Terrain />} />
+        <Route path="mandats" element={<Mandats />} />
         <Route path="finances" element={<Finances />} />
         <Route path="compta" element={<Compta />} />
         <Route path="facture" element={<Factures />} />
