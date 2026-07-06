@@ -13,6 +13,7 @@ interface AppState {
   upsertBmcBlock: (block: Partial<BmcBlock> & { profile_id: string; block_key: string }) => Promise<void>;
   fetchProspects: (profileId: string) => Promise<void>;
   moveProspect: (id: string, column: Prospect["column_key"]) => Promise<void>;
+  updateProspectNotes: (id: string, notes: string) => Promise<void>;
   fetchCompta: (profileId: string) => Promise<void>;
   fetchEvents: (profileId: string) => Promise<void>;
   reset: () => void;
@@ -64,6 +65,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       prospects: s.prospects.map((p) =>
         p.id === id ? { ...p, column_key: column } : p,
+      ),
+    }));
+  },
+
+  updateProspectNotes: async (id, notes) => {
+    const trimmed = notes.trim() || null;
+    await supabase.from("prospects").update({ notes: trimmed }).eq("id", id);
+    set((s) => ({
+      prospects: s.prospects.map((p) =>
+        p.id === id ? { ...p, notes: trimmed } : p,
       ),
     }));
   },

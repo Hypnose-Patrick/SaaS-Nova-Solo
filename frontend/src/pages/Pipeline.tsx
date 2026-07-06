@@ -41,6 +41,7 @@ interface NewProspectForm {
   email: string;
   soncas: SonCas | "";
   est_value: string;
+  notes: string;
 }
 
 // Aiguillage responsive : version mobile dédiée sous 768px, kanban desktop au-dessus.
@@ -51,12 +52,17 @@ export function Pipeline() {
 
 function PipelineDesktop() {
   const profile = useUserStore((s) => s.profile);
-  const { prospects, fetchProspects, loadingProspects, moveProspect } = useAppStore();
+  const { prospects, fetchProspects, loadingProspects, moveProspect, updateProspectNotes } = useAppStore();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<NewProspectForm>({ name: "", company: "", email: "", soncas: "", est_value: "" });
+  const [form, setForm] = useState<NewProspectForm>({ name: "", company: "", email: "", soncas: "", est_value: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [researching, setResearching] = useState<string | null>(null);
   const [researchResult, setResearchResult] = useState<Record<string, string>>({});
+
+  // Panneau « Notes » — texte libre par prospect, indépendant des autres panneaux IA.
+  const [notesOpen, setNotesOpen] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [notesSaving, setNotesSaving] = useState<string | null>(null);
 
   // Mail IA de prise de contact
   const [emailOpen, setEmailOpen] = useState<string | null>(null);
@@ -139,6 +145,7 @@ function PipelineDesktop() {
         email: form.email || null,
         soncas: form.soncas || null,
         est_value: parseFloat(form.est_value) || 0,
+        notes: form.notes.trim() || null,
         column_key: "nouveau",
       })
       .select()
@@ -147,7 +154,7 @@ function PipelineDesktop() {
     if (data) {
       useAppStore.setState((s) => ({ prospects: [data as Prospect, ...s.prospects] }));
     }
-    setForm({ name: "", company: "", email: "", soncas: "", est_value: "" });
+    setForm({ name: "", company: "", email: "", soncas: "", est_value: "", notes: "" });
     setShowForm(false);
     setSaving(false);
   }
@@ -156,6 +163,20 @@ function PipelineDesktop() {
     const next = NEXT_COLUMN[prospect.column_key];
     if (!next) return;
     await moveProspect(prospect.id, next);
+  }
+
+  function openNotes(p: Prospect) {
+    setNotesDraft((d) => (p.id in d ? d : { ...d, [p.id]: p.notes ?? "" }));
+    setNotesOpen((o) => (o === p.id ? null : p.id));
+  }
+
+  async function saveNotes(p: Prospect) {
+    setNotesSaving(p.id);
+    try {
+      await updateProspectNotes(p.id, notesDraft[p.id] ?? "");
+    } finally {
+      setNotesSaving(null);
+    }
   }
 
   async function research(prospect: Prospect) {
@@ -244,6 +265,18 @@ function PipelineDesktop() {
             </div>
             <Input label="Valeur estimée (CHF)" type="number" value={form.est_value} onChange={(e) => setForm((f) => ({ ...f, est_value: e.target.value }))} placeholder="1440" />
           </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", marginTop: "var(--space-4)" }}>
+            <label style={{ fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
+              Notes
+            </label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Contexte, historique du contact, prochaine étape…"
+              rows={3}
+              style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", padding: "var(--space-3) var(--space-4)", outline: "none", resize: "vertical" }}
+            />
+          </div>
           <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
             <Button size="sm" variant="gold" loading={saving} onClick={addProspect}>Ajouter</Button>
             <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Annuler</Button>
@@ -310,8 +343,16 @@ function PipelineDesktop() {
                         transition: "border-color var(--transition-fast), opacity var(--transition-fast)",
                       }}
                     >
-                      <div style={{ fontWeight: 500, fontSize: "var(--text-sm)", color: "var(--color-text-primary)" }}>{p.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                        <span style={{ fontWeight: 500, fontSize: "var(--text-sm)", color: "var(--color-text-primary)" }}>{p.name}</span>
+                        {p.notes && <span title="Notes présentes" style={{ fontSize: 10 }}>📝</span>}
+                      </div>
                       {p.company && <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>{p.company}</div>}
+                      {p.notes && (
+                        <div style={{ fontSize: 10, color: "var(--color-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {p.notes}
+                        </div>
+                      )}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         {p.soncas && <Badge color={SONCAS_COLOR[p.soncas as SonCas]}>{p.soncas}</Badge>}
                         {p.est_value > 0 && (
@@ -360,6 +401,14 @@ function PipelineDesktop() {
                           style={{ fontSize: 10, padding: "2px 6px" }}
                         >
                           📄 Dossier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openNotes(p)}
+                          style={{ fontSize: 10, padding: "2px 6px" }}
+                        >
+                          📝 Notes
                         </Button>
                       </div>
 
@@ -450,6 +499,24 @@ function PipelineDesktop() {
                               {dossierResult[p.id]}
                             </p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Panneau Notes — texte libre, édité et sauvegardé indépendamment */}
+                      {notesOpen === p.id && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", borderTop: "var(--border-subtle)", paddingTop: "var(--space-2)" }}>
+                          <textarea
+                            value={notesDraft[p.id] ?? ""}
+                            onChange={(e) => setNotesDraft((d) => ({ ...d, [p.id]: e.target.value }))}
+                            placeholder="Contexte, historique du contact, prochaine étape…"
+                            rows={3}
+                            style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: 10, padding: "var(--space-2)", outline: "none", resize: "vertical" }}
+                          />
+                          <div>
+                            <Button size="sm" variant="gold" loading={notesSaving === p.id} onClick={() => saveNotes(p)} style={{ fontSize: 10, padding: "2px 6px" }}>
+                              Enregistrer
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
