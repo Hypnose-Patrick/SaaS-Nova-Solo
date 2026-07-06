@@ -2,7 +2,9 @@ import { NavLink } from "react-router-dom";
 
 // Barre d'onglets basse — visible uniquement en mobile (montée par AppShell).
 // Câblée aux routes existantes ; l'onglet actif passe en or.
-type TabDef = { to: string; label: string; end?: boolean; icon: React.ReactNode };
+// Le compagnon terrain occupe le bouton central proéminent (geste principal du
+// mobile) — l'onglet Diagnostic a cédé sa place (flux ponctuel, dispo desktop).
+type TabDef = { to: string; label: string; end?: boolean; central?: boolean; icon: React.ReactNode };
 
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
@@ -17,19 +19,20 @@ const TABS: TabDef[] = [
     ),
   },
   {
-    to: "/diagnostic", label: "Diagnostic",
-    icon: (
-      <svg width="21" height="21" viewBox="0 0 24 24" {...stroke}>
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-  {
     to: "/pipeline", label: "Pipeline",
     icon: (
       <svg width="21" height="21" viewBox="0 0 24 24" {...stroke}>
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    to: "/terrain", label: "Terrain", central: true,
+    icon: (
+      <svg width="26" height="26" viewBox="0 0 24 24" {...stroke}>
+        <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5" />
+        <path d="M9 2h6" /><path d="M12 2v3" />
       </svg>
     ),
   },
@@ -83,7 +86,27 @@ export function MobileTabBar() {
             transition: "color var(--transition-base)",
           })}
         >
-          {tab.icon}
+          {tab.central ? (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 52,
+                height: 52,
+                marginTop: -22,
+                borderRadius: "50%",
+                background: "var(--color-bg-elevated)",
+                border: "1px solid var(--color-gold)",
+                color: "var(--color-gold)",
+                boxShadow: "0 0 20px var(--color-gold-glow)",
+              }}
+            >
+              {tab.icon}
+            </span>
+          ) : (
+            tab.icon
+          )}
           <span>{tab.label}</span>
         </NavLink>
       ))}

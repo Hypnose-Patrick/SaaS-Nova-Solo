@@ -151,6 +151,54 @@ export interface Invoice {
   created_at: string;
 }
 
+// Compagnon terrain (migration 016) — entité générique de rattachement.
+// Le libellé UI vient du preset activite_type (« chantier » / « mandat » / « commande »).
+export interface Mandat {
+  id: string;
+  profile_id: string;
+  title: string;
+  client_name: string | null;
+  prospect_id: string | null;
+  hourly_rate: number | null;
+  status: "open" | "done" | "invoiced";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CaptureKind = "photo" | "voice" | "note"; // 'devis' réservé V2
+
+// mandat_id NULL = capture orpheline ; triaged_at NULL = dans l'inbox « à trier ».
+export interface CaptureItem {
+  id: string;
+  profile_id: string;
+  mandat_id: string | null;
+  kind: CaptureKind;
+  storage_path: string | null;
+  transcript: string | null;
+  note: string | null;
+  meta: Record<string, unknown>;
+  compta_entry_id: string | null;
+  triaged_at: string | null;
+  captured_at: string;
+  created_at: string;
+}
+
+// ended_at NULL = chrono en cours (un seul par profil, index unique en base).
+// duration_min (éditable au stop) est la source de vérité pour la facturation.
+export interface TimeEntry {
+  id: string;
+  profile_id: string;
+  mandat_id: string | null;
+  started_at: string;
+  ended_at: string | null;
+  duration_min: number | null;
+  hourly_rate: number | null;
+  note: string | null;
+  billed: boolean;
+  created_at: string;
+}
+
 export interface AiProxyRequest {
   agent?: AgentKey;
   messages: Array<{ role: "user" | "assistant"; content: string }>;

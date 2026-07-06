@@ -8,6 +8,7 @@ import { ChatOverlay } from "@/pages/ChatOverlay";
 import { useUserStore } from "@/stores/useUserStore";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { applyAccent } from "@/lib/theme";
+import { activitePreset } from "@/lib/activite";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Tableau de bord",
@@ -15,6 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/bmc": "Business Model Canvas",
   "/business-plan": "Business Plan",
   "/pipeline": "Pipeline commercial",
+  "/terrain": "Terrain",
   "/finances": "Finances",
   "/compta": "Comptabilité",
   "/facture": "Factures",
@@ -25,8 +27,14 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function AppShell() {
   const { pathname } = useLocation();
-  const title = PAGE_TITLES[pathname] ?? "Nova Solo";
-  const accent = useUserStore((s) => s.profile?.accent_color);
+  const profile = useUserStore((s) => s.profile);
+  // Titre « Mandats » adapté au métier (chantiers / commandes…).
+  const mandatTitle = (() => {
+    const p = activitePreset(profile).mandatLabelPlural;
+    return p.charAt(0).toUpperCase() + p.slice(1);
+  })();
+  const title = pathname === "/mandats" ? mandatTitle : PAGE_TITLES[pathname] ?? "Nova Solo";
+  const accent = profile?.accent_color;
   const isMobile = useIsMobile();
 
   // Recolore l'interface dès que la couleur d'accent du profil change.

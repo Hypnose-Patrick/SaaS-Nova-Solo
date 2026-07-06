@@ -418,3 +418,22 @@ export async function ocrReceipt(storagePath: string): Promise<ReceiptOcr> {
   const data = await res.json();
   return data.data as ReceiptOcr;
 }
+
+// Transcription d'une note vocale (compagnon terrain) — appelle transcribe-note
+// (Whisper). La fonction écrit elle-même captures.transcript ; on renvoie le
+// texte pour permettre au client de rafraîchir l'affichage sans re-fetch.
+export async function transcribeNote(storagePath: string, captureId: string): Promise<string> {
+  const authHeader = await getBearerHeader();
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-note`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { ...authHeader, "Content-Type": "application/json" },
+    body: JSON.stringify({ storage_path: storagePath, capture_id: captureId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? err.error ?? `Transcription échouée ${res.status}`);
+  }
+  const data = await res.json();
+  return (data.transcript ?? "") as string;
+}

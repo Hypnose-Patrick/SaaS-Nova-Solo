@@ -6,6 +6,9 @@ import type { Profile } from "@/types";
 
 export type ActiviteType = "prestation" | "artisanat" | "commerce";
 
+/** Actions de capture du compagnon terrain, dans l'ordre d'affichage. */
+export type CaptureAction = "photo" | "voice" | "note";
+
 export interface ActivitePreset {
   /** Libellé affiché dans le menu déroulant Réglages. */
   label: string;
@@ -19,6 +22,14 @@ export interface ActivitePreset {
   hasMateriel: boolean;
   /** Postes OPEX additionnels injectés dans le budget d'exploitation (mode vierge). */
   opexExtra: string[];
+  /** Libellé de l'entité de rattachement terrain (table nova.mandats), singulier. */
+  mandatLabel: string;
+  /** Idem, pluriel. */
+  mandatLabelPlural: string;
+  /** Boutons de capture du compagnon terrain, dans l'ordre d'affichage. */
+  captureActions: CaptureAction[];
+  /** Micro-texte d'accueil du compagnon terrain. */
+  terrainHint: string;
 }
 
 export const ACTIVITE_PRESETS: Record<ActiviteType, ActivitePreset> = {
@@ -29,6 +40,10 @@ export const ACTIVITE_PRESETS: Record<ActiviteType, ActivitePreset> = {
     unite: "client",
     hasMateriel: false,
     opexExtra: [],
+    mandatLabel: "mandat",
+    mandatLabelPlural: "mandats",
+    captureActions: ["voice", "note", "photo"], // note post-rendez-vous d'abord
+    terrainHint: "Note après rendez-vous, avant que ça s'évapore",
   },
   artisanat: {
     label: "Artisanat / chantier (plomberie, peinture, menuiserie…)",
@@ -42,6 +57,10 @@ export const ACTIVITE_PRESETS: Record<ActiviteType, ActivitePreset> = {
       "Outillage & équipement",
       "Sous-traitance",
     ],
+    mandatLabel: "chantier",
+    mandatLabelPlural: "chantiers",
+    captureActions: ["photo", "voice", "note"], // preuve visuelle d'abord
+    terrainHint: "Photo avant intervention = preuve en cas de litige",
   },
   commerce: {
     label: "Commerce / vente (boutique, revente, e-commerce)",
@@ -54,6 +73,10 @@ export const ACTIVITE_PRESETS: Record<ActiviteType, ActivitePreset> = {
       "Stock & logistique",
       "Emballage & expédition",
     ],
+    mandatLabel: "commande",
+    mandatLabelPlural: "commandes",
+    captureActions: ["photo", "note", "voice"], // ticket / bon de livraison d'abord
+    terrainHint: "Photo du ticket ou du bon de livraison",
   },
 };
 

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
 import { ProjectSwitcher } from "@/components/layout/ProjectSwitcher";
+import { activitePreset } from "@/lib/activite";
 import type { Profile } from "@/types";
 
 // Navigation regroupée par thématique de parcours (pilotage → stratégie →
@@ -40,6 +41,7 @@ const SECTIONS: { title: string; items: { to: string; label: string; icon: strin
   {
     title: "Gestion",
     items: [
+      // { to: "/mandats", … } inséré dynamiquement (libellé selon le métier)
       { to: "/finances", label: "Finances", icon: "◇" },
       { to: "/compta", label: "Comptabilité", icon: "◈" },
       { to: "/facture", label: "Factures", icon: "◻" },
@@ -77,6 +79,15 @@ export function Sidebar() {
 
   const doneCount = profile ? MILESTONES.filter((m) => m.done(profile)).length : 0;
   const progress = Math.round((doneCount / MILESTONES.length) * 100);
+
+  // Libellé de l'entrée « Mandats » adapté au métier (chantiers / commandes…).
+  const mandatPlural = activitePreset(profile).mandatLabelPlural;
+  const mandatNavLabel = mandatPlural.charAt(0).toUpperCase() + mandatPlural.slice(1);
+  const sections = SECTIONS.map((section) =>
+    section.title === "Gestion"
+      ? { ...section, items: [{ to: "/mandats", label: mandatNavLabel, icon: "▤" }, ...section.items] }
+      : section,
+  );
 
   return (
     <aside
@@ -234,7 +245,7 @@ export function Sidebar() {
 
       {/* Nav par sections */}
       <nav style={{ flex: 1, padding: "var(--space-3) 0" }}>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.title} style={{ marginBottom: "var(--space-3)" }}>
             <div
               style={{
