@@ -35,6 +35,9 @@ export function SubscribeButton({ subscriptionStatus, plan }: Props) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
+          // Ce bouton vend l'offre Pro (29 CHF/mois, cf. libellé ci-dessous) —
+          // sans ce plan, le backend défaut sur "solo" (stripe-checkout/index.ts).
+          body: JSON.stringify({ plan: "pro" }),
         }
       );
       const json = await res.json();
