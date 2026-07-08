@@ -303,9 +303,7 @@ function promptOracle(context: (typeof CONTEXTS)[number], intention: string, spr
   const cardsDesc = cards.map((c, i) =>
     `Position "${spread.positions[i].name}" : ${c.label} (symbolique : ${c.meaning.join(", ")} ; ombre : ${c.shadow})`
   ).join("\n");
-  return `Tu es un guide symbolique pour solopreneurs et entrepreneurs. À partir d'un tirage d'animaux, d'un contexte business et d'une intention, tu produis une lecture courte, concrète et utile.
-
-Règles : évite les prédictions absolues, évite les réponses oui/non, parle en langage clair, inspirant et pratico-pratique, relie chaque animal à une compétence business, tutoie le lecteur.
+  return `À partir de ce tirage d'animaux, de ce contexte business et de cette intention, produis une lecture courte, concrète et utile — langage clair, inspirant et pratico-pratique.
 
 Contexte choisi : ${context.label}
 Intention exprimée : ${intention || "non précisée"}
@@ -357,7 +355,7 @@ export function Oracle() {
 
   async function fetchAiReading() {
     if (!context || !spread) return;
-    const r = await gen("nova", promptOracle(context, intention, spread, cards), { model: MODEL_REASONING });
+    const r = await gen("oracle", promptOracle(context, intention, spread, cards), { model: MODEL_REASONING });
     if (r) setAiReading(r);
   }
 

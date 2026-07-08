@@ -56,11 +56,7 @@ Fais des ponts discrets et naturels (maximum 1 par séance) :
 Ne force jamais ces métaphores. Un pont par séance suffit.
 </goban_career_bridge>` : "";
 
-  return `<system_role>
-Tu es Victor, un instructeur de Go patient, exigeant et pédagogue. Tu enseignes le Go depuis 20 ans, des débutants absolus aux joueurs de club. Tu es aussi le guide officiel de la méthode "Le Goban de Carrière", qui utilise les concepts du Go comme métaphores de développement professionnel.
-</system_role>
-
-<session_context>
+  return `<session_context>
 Niveau du joueur : ${lvlMap[level]}
 Taille du goban : ${size}×${size}
 Mode Goban de Carrière : ${career === "oui" ? "OUI — faire des ponts discrets avec la métaphore carrière" : "NON — rester sur le jeu pur"}
@@ -120,7 +116,7 @@ Jamais plus de 2 stratégies à la fois.
 }
 
 function buildDiagSystemPrompt(): string {
-  return `Tu es Victor, guide expert de la méthode "Le Goban de Carrière". Tu utilises exclusivement les concepts du Go comme métaphores du développement professionnel et entrepreneurial. Français, tutoiement, précis et encourageant.`;
+  return `Utilise exclusivement les concepts du Go comme métaphores du développement professionnel et entrepreneurial. Français, tutoiement, précis et encourageant.`;
 }
 
 // ── Game logic (pure functions) ────────────────────────────────────────────────
@@ -708,7 +704,7 @@ export function GobanCoach() {
     let result = "";
     try {
       result = await callAIStream(
-        { agent: "strategist", messages: [{ role: "user", content: fullPrompt }], model: MODEL_REASONING, stream: true },
+        { agent: "victor", messages: [{ role: "user", content: fullPrompt }], model: MODEL_REASONING, stream: true },
         (accumulated) => {
           streamAccRef.current = accumulated;
           setStreamingText(accumulated);
@@ -720,7 +716,7 @@ export function GobanCoach() {
     // on bascule sur l'appel non-streaming classique.
     if (!result) {
       setStreamingText(null);
-      const resp = await gen("strategist", fullPrompt, { model: MODEL_REASONING });
+      const resp = await gen("victor", fullPrompt, { model: MODEL_REASONING });
       result = resp ?? "";
     }
 
@@ -865,7 +861,7 @@ export function GobanCoach() {
     const recent = moveHistory.slice(-8).map((m) => `${m.num}.${m.color === "B" ? "⚫" : "⚪"}${m.label}`).join(" ");
     const prompt = `La partie est terminée sur un goban ${size}×${size}. Score final : Noir ${sc.B}, Blanc ${sc.W}. ${winner === "Égalité" ? "Match nul." : winner + " gagne."} Derniers coups : ${recent}. Fais un débrief Socratique : 3 questions de réflexion sur les moments clés et 1 conseil pour la prochaine partie.`;
     setEndDebrief(null);
-    const debrief = await gen("strategist", prompt, { model: MODEL_REASONING });
+    const debrief = await gen("victor", prompt, { model: MODEL_REASONING });
     setEndDebrief(debrief ?? "Bien joué ! Réfléchis au coup le plus décisif de la partie, à un moment où tu as perdu l'initiative, et à ce que tu aurais joué différemment.\n\nConseil : concentre-toi sur la connexion de tes groupes avant de chercher à attaquer.");
   }
 
@@ -902,7 +898,7 @@ export function GobanCoach() {
     const whiteCount = responses.filter((r) => r.isBlack === false).length;
     const boardDesc = responses.map((r, i) => `Q${i+1}: "${r.question}" → ${r.answer}${r.concept ? ` [${r.concept}]` : ""}`).join("\n");
     const prompt = `L'entrepreneur a complété un auto-diagnostic en 10 questions. Position :\n\n${boardDesc}\n\nPierres noires (forces) : ${blackCount} | Blanches (fragilités) : ${whiteCount}\n\nAnalyse cette position comme un joueur de Go lirait un plateau après 10 coups d'ouverture.\n\nSTRUCTURE EXACTE (titres en gras):\n**Lecture de ta position** — 2-3 phrases sur l'image globale\n**Ton groupe le plus fort** — pilier principal\n**Le groupe en danger** — fragilité urgente\n**L'Aji à activer** — opportunité dormante\n**Ton prochain coup** — 1 action concrète cette semaine`;
-    const analysis = await gen("strategist", `${buildDiagSystemPrompt()}\n\n${prompt}`, { model: MODEL_REASONING });
+    const analysis = await gen("victor", `${buildDiagSystemPrompt()}\n\n${prompt}`, { model: MODEL_REASONING });
     setDiagAnalysis(analysis ?? "Victor analyse ta position… Relance le diagnostic pour obtenir une analyse complète.");
   }
 

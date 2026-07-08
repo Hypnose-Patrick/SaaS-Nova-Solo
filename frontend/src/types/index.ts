@@ -59,7 +59,9 @@ export type AgentKey =
   | "financier"
   | "communicant"
   | "commercial"
-  | "technicien";
+  | "technicien"
+  | "oracle"
+  | "victor";
 
 export interface ChatMessage {
   id: string;
