@@ -47,7 +47,7 @@ export function Aide() {
         placeholder="Rechercher un module (ex. Factures, Agenda, Terrain…)"
         style={{
           background: "var(--color-bg-input)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: "var(--border-subtle)",
           borderRadius: "var(--radius-sm)",
           color: "var(--color-text-primary)",
           fontFamily: "var(--font-body)",

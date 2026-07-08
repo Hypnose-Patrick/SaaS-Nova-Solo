@@ -76,7 +76,7 @@ export function DangerZoneCard() {
       <p style={SECTION_TITLE}>Zone de danger</p>
 
       {/* Reset d'un projet — palier Pro/Trio uniquement */}
-      <div style={{ paddingBottom: "var(--space-4)", marginBottom: "var(--space-4)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ paddingBottom: "var(--space-4)", marginBottom: "var(--space-4)", borderBottom: "var(--border-subtle)" }}>
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-primary)", fontWeight: 500, margin: "0 0 var(--space-1) 0" }}>
           Réinitialiser ce projet
         </p>

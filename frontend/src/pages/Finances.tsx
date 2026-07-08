@@ -120,7 +120,7 @@ function FinChart({ rows }: { rows: FinRow[] }) {
   const line = rows.map((r, i) => `${(padL + groupW * i + groupW / 2).toFixed(1)},${y(r.treso).toFixed(1)}`).join(" ");
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 240 }} preserveAspectRatio="xMidYMid meet">
-      <line x1={padL} y1={base} x2={W - padR} y2={base} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+      <line x1={padL} y1={base} x2={W - padR} y2={base} stroke="var(--color-border-rgb)" strokeWidth={1} />
       {rows.map((r, i) => {
         const cx = padL + groupW * i;
         const caH = Math.abs(y(r.ca) - base), chH = Math.abs(y(r.charges) - base);
@@ -459,7 +459,7 @@ export function Finances() {
             </div>
             <Button size="sm" variant="gold" loading={aiLoading} onClick={analyseIA}>✦ Analyser (IA)</Button>
             <Button size="sm" variant="ghost" onClick={exportCsv}>⬇ Excel / Sheets</Button>
-            <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "var(--radius-xs)", padding: "var(--space-2) var(--space-4)", textTransform: "uppercase", letterSpacing: "var(--tracking-wider)", fontWeight: 500 }}>
+            <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", padding: "var(--space-2) var(--space-4)", textTransform: "uppercase", letterSpacing: "var(--tracking-wider)", fontWeight: 500 }}>
               ⬆ Importer Excel / CSV<input type="file" accept=".xlsx,.xls,.csv,text/csv" style={{ display: "none" }} onChange={(e) => importBudget(e.target)} />
             </label>
             <Button size="sm" variant="ghost" onClick={resetCanon}>↺ Canonique</Button>
@@ -532,7 +532,7 @@ export function Finances() {
               <div key={phase}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--color-text-secondary)" }}>{title}</span>
-                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 6px", borderRadius: "var(--radius-xs)", background: target > 0 ? (ok ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)") : "rgba(255,255,255,0.05)", color: target > 0 ? (ok ? "var(--color-success)" : "var(--color-warning)") : "var(--color-text-muted)" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 6px", borderRadius: "var(--radius-xs)", background: target > 0 ? (ok ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.12)") : "var(--color-bg-input)", color: target > 0 ? (ok ? "var(--color-success)" : "var(--color-warning)") : "var(--color-text-muted)" }}>
                     {target > 0 ? `${chf(tot)} / ${chf(target)} CHF` : `${chf(tot)} CHF`}
                   </span>
                 </div>

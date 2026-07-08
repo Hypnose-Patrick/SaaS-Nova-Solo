@@ -338,7 +338,7 @@ export function Symbolique() {
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                 {map.intake.plan.map((s, i) => (
                   <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--color-gold)", color: "#0d0d0d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--color-gold)", color: "var(--color-text-inverse)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
                     <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>{s}</span>
                   </div>
                 ))}
@@ -373,7 +373,7 @@ export function Symbolique() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
             {map.actions.map((a, i) => (
               <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start", padding: "var(--space-2) 0", borderTop: i ? "var(--border-subtle)" : "none" }}>
-                <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--color-gold)", color: "#0d0d0d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--color-gold)", color: "var(--color-text-inverse)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
                 <div>
                   <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)" }}>{a.titre}</div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>⏱ {a.echeance || "—"} &nbsp;·&nbsp; 🎯 {a.mesure || "—"}</div>
@@ -389,7 +389,7 @@ export function Symbolique() {
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-3)" }}>Une étape à la fois, une question à la fois. Direct, ancré dans le réel — pas de thérapie.</p>
         <div style={{ height: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-2)", background: "var(--color-bg-input)", borderRadius: "var(--radius-sm)" }}>
           {messages.map((m, i) => (
-            <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", background: m.role === "user" ? "var(--color-gold)" : "var(--color-bg-surface)", color: m.role === "user" ? "#0d0d0d" : "var(--color-text-secondary)", border: m.role === "user" ? "none" : "var(--border-subtle)", borderRadius: "var(--radius-sm)", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)", lineHeight: "var(--leading-normal)", whiteSpace: "pre-wrap" }}>
+            <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", background: m.role === "user" ? "var(--color-gold)" : "var(--color-bg-surface)", color: m.role === "user" ? "var(--color-text-inverse)" : "var(--color-text-secondary)", border: m.role === "user" ? "none" : "var(--border-subtle)", borderRadius: "var(--radius-sm)", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)", lineHeight: "var(--leading-normal)", whiteSpace: "pre-wrap" }}>
               {m.meta && <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: "var(--color-gold)", letterSpacing: "var(--tracking-wide)", marginBottom: 4 }}>{m.meta}</span>}
               {m.text}
             </div>

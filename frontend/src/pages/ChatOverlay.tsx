@@ -260,9 +260,9 @@ export function ChatOverlay() {
             style={{
               padding: "2px 10px",
               borderRadius: "var(--radius-xs)",
-              border: `1px solid ${activeAgent === a.key ? "var(--color-gold)" : "rgba(255,255,255,0.08)"}`,
+              border: `1px solid ${activeAgent === a.key ? "var(--color-gold)" : "var(--color-border-rgb)"}`,
               background:
-                activeAgent === a.key ? "rgba(197,165,114,0.12)" : "transparent",
+                activeAgent === a.key ? "var(--color-gold-glow)" : "transparent",
               color:
                 activeAgent === a.key
                   ? "var(--color-gold)"
@@ -316,7 +316,7 @@ export function ChatOverlay() {
                     padding: "var(--space-2) var(--space-3)",
                     borderRadius: "var(--radius-sm)",
                     border: "var(--border-subtle)",
-                    background: "rgba(255,255,255,0.03)",
+                    background: "var(--color-bg-input)",
                     color: "var(--color-text-secondary)",
                     fontSize: "var(--text-xs)",
                     cursor: thinking ? "default" : "pointer",
@@ -341,15 +341,15 @@ export function ChatOverlay() {
               lineHeight: "var(--leading-normal)",
               background:
                 m.role === "user"
-                  ? "rgba(197,165,114,0.15)"
-                  : "rgba(255,255,255,0.04)",
+                  ? "var(--color-gold-border)"
+                  : "var(--color-bg-input)",
               color:
                 m.role === "user"
                   ? "var(--color-text-primary)"
                   : "var(--color-text-secondary)",
               border:
                 m.role === "user"
-                  ? "1px solid rgba(197,165,114,0.2)"
+                  ? "1px solid var(--color-gold-border)"
                   : "var(--border-subtle)",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",

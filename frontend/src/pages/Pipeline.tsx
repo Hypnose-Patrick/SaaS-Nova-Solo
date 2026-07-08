@@ -522,7 +522,7 @@ function PipelineDesktop() {
                     </div>
                   ))}
                   {cards.length === 0 && (
-                    <div style={{ border: "1px dashed rgba(255,255,255,0.06)", borderRadius: "var(--radius-sm)", padding: "var(--space-4)", textAlign: "center" }}>
+                    <div style={{ border: "1px dashed var(--color-border-rgb)", borderRadius: "var(--radius-sm)", padding: "var(--space-4)", textAlign: "center" }}>
                       <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Vide</span>
                     </div>
                   )}

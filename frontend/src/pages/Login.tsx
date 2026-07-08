@@ -91,8 +91,8 @@ export function Login() {
               justifyContent: "center",
               gap: "var(--space-3)",
               padding: "10px var(--space-4)",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.10)",
+              background: "var(--color-bg-input)",
+              border: "var(--border-subtle)",
               borderRadius: "var(--radius-sm)",
               color: "var(--color-text-primary)",
               fontSize: "var(--text-sm)",
@@ -116,9 +116,9 @@ export function Login() {
 
           {/* Séparateur */}
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-5)" }}>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ flex: 1, height: 1, background: "var(--color-border-rgb)" }} />
             <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>OU</span>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ flex: 1, height: 1, background: "var(--color-border-rgb)" }} />
           </div>
 
           <Auth
@@ -128,16 +128,16 @@ export function Login() {
               variables: {
                 default: {
                   colors: {
-                    brand: "#c5a572",
-                    brandAccent: "#d4b88a",
-                    inputBackground: "rgba(255,255,255,0.04)",
-                    inputText: "#f5f5f0",
-                    inputPlaceholder: "#6b6b66",
-                    inputBorder: "rgba(255,255,255,0.06)",
+                    brand: "var(--color-gold)",
+                    brandAccent: "var(--color-gold-light)",
+                    inputBackground: "var(--color-bg-input)",
+                    inputText: "var(--color-text-primary)",
+                    inputPlaceholder: "var(--color-text-muted)",
+                    inputBorder: "var(--color-border-rgb)",
                     inputBorderFocus: "rgba(197,165,114,0.4)",
-                    messageText: "#a8a89e",
-                    anchorTextColor: "#c5a572",
-                    dividerBackground: "rgba(255,255,255,0.06)",
+                    messageText: "var(--color-text-secondary)",
+                    anchorTextColor: "var(--color-gold)",
+                    dividerBackground: "var(--color-border-rgb)",
                   },
                   radii: { borderRadiusButton: "2px", inputBorderRadius: "4px" },
                   fonts: { bodyFontFamily: "Inter, system-ui, sans-serif" },

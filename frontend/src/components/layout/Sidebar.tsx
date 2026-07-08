@@ -97,7 +97,7 @@ export function Sidebar() {
       style={{
         width: 240,
         minHeight: "100vh",
-        background: "#0d0d0d",
+        background: "var(--color-bg-sidebar)",
         borderRight: "var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
@@ -168,7 +168,7 @@ export function Sidebar() {
               width: 36,
               height: 36,
               borderRadius: "50%",
-              background: "rgba(197,165,114,0.12)",
+              background: "var(--color-gold-glow)",
               border: "var(--border-gold)",
               display: "flex",
               alignItems: "center",
@@ -230,7 +230,7 @@ export function Sidebar() {
             style={{
               height: 4,
               borderRadius: 2,
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--color-track)",
               overflow: "hidden",
             }}
           >
@@ -278,7 +278,7 @@ export function Sidebar() {
                   fontSize: "var(--text-sm)",
                   fontWeight: isActive ? 500 : 400,
                   borderLeft: isActive ? "2px solid var(--color-gold)" : "2px solid transparent",
-                  background: isActive ? "rgba(197,165,114,0.05)" : "transparent",
+                  background: isActive ? "var(--color-gold-glow)" : "transparent",
                   transition: "all var(--transition-fast)",
                 })}
               >

@@ -552,7 +552,7 @@ function VictorBubble({ bubble }: { bubble: BubbleData }) {
 
   if (isSystem) {
     return (
-      <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", padding: "4px 10px", margin: "4px 0", background: "rgba(255,255,255,0.03)", borderRadius: 6, borderLeft: "2px solid rgba(255,255,255,0.1)" }}>
+      <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", padding: "4px 10px", margin: "4px 0", background: "var(--color-bg-input)", borderRadius: 6, borderLeft: "2px solid var(--color-border-rgb)" }}>
         {bubble.text}
       </div>
     );
@@ -912,8 +912,8 @@ export function GobanCoach() {
   const BtnOpt = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button onClick={onClick} style={{
       padding: "7px 14px", borderRadius: 7, border: "1px solid",
-      borderColor: active ? "var(--color-gold)" : "rgba(255,255,255,0.1)",
-      background: active ? "rgba(197,165,114,0.15)" : "rgba(255,255,255,0.04)",
+      borderColor: active ? "var(--color-gold)" : "var(--color-border-rgb)",
+      background: active ? "var(--color-gold-border)" : "var(--color-bg-input)",
       color: active ? "var(--color-gold)" : "var(--color-text-secondary)",
       fontSize: "var(--text-sm)", fontWeight: active ? 600 : 400,
       cursor: "pointer", transition: "all 0.15s",
@@ -921,7 +921,7 @@ export function GobanCoach() {
   );
 
   const SidebarSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+    <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border-rgb)" }}>
       <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>{title}</div>
       {children}
     </div>
@@ -993,7 +993,7 @@ export function GobanCoach() {
               <BtnOpt active={career === "non"} onClick={() => setCareer("non")}>🎯 Go pur uniquement</BtnOpt>
             </div>
           </div>
-          <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+          <div style={{ height: 1, background: "var(--color-border-rgb)" }} />
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Button variant="gold" onClick={startGame} disabled={loading}>
               {loading ? "Initialisation…" : "Lancer la session →"}
@@ -1079,7 +1079,7 @@ export function GobanCoach() {
               <div style={{ fontSize: 10, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
                 Question {diagStep + 1} / {DIAG_QUESTIONS.length}
               </div>
-              <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 16, overflow: "hidden" }}>
+              <div style={{ height: 3, borderRadius: 2, background: "var(--color-track)", marginBottom: 16, overflow: "hidden" }}>
                 <div style={{ width: `${Math.round((diagStep / DIAG_QUESTIONS.length) * 100)}%`, height: "100%", background: "var(--color-gold)", transition: "width .3s" }} />
               </div>
               <div style={{ fontSize: "var(--text-base)", color: "var(--color-text-primary)", fontWeight: 500, marginBottom: 8 }}>
@@ -1138,7 +1138,7 @@ export function GobanCoach() {
             </div>
           </div>
         </div>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
+        <div style={{ borderTop: "1px solid var(--color-border-rgb)", paddingTop: 16 }}>
           <div style={{ fontSize: 10, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🎭 Débrief Victor</div>
           {loading && !endDebrief && <div style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)" }}>Victor analyse la partie…</div>}
           {endDebrief && (
@@ -1163,7 +1163,7 @@ export function GobanCoach() {
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
 
         {/* LEFT SIDEBAR */}
-        <div style={{ width: 200, flexShrink: 0, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ width: 200, flexShrink: 0, background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)", borderRadius: 10, overflow: "hidden" }}>
           <SidebarSection title="Score estimé">
             {([["B","⚫","Noir"],["W","⚪","Blanc"]] as [("B"|"W"), string, string][]).map(([color, icon, label]) => (
               <div key={color} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -1200,7 +1200,7 @@ export function GobanCoach() {
             </div>
           </div>
 
-          <div style={{ padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ padding: "12px 14px", borderTop: "1px solid var(--color-border-rgb)" }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Actions</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {[
@@ -1212,8 +1212,8 @@ export function GobanCoach() {
               ].map((btn) => (
                 <button key={btn.label} onClick={btn.onClick} disabled={btn.disabled}
                   style={{
-                    padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)",
-                    background: "transparent", color: btn.disabled ? "rgba(255,255,255,0.3)" : "var(--color-text-secondary)",
+                    padding: "6px 10px", borderRadius: 6, border: "1px solid var(--color-border-rgb)",
+                    background: "transparent", color: btn.disabled ? "var(--color-text-muted)" : "var(--color-text-secondary)",
                     fontSize: 12, cursor: btn.disabled ? "not-allowed" : "pointer", textAlign: "left",
                     transition: "all 0.1s",
                   }}
@@ -1232,16 +1232,16 @@ export function GobanCoach() {
 
         {/* CENTER — Board */}
         <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "var(--space-3)", display: "inline-block" }}>
+          <div style={{ background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)", borderRadius: 10, padding: "var(--space-3)", display: "inline-block" }}>
             <BoardSVG board={board} size={size} moveHistory={moveHistory} onPlace={placeStone} />
           </div>
         </div>
 
         {/* RIGHT — Victor panel */}
         <div style={{ flex: 1, minWidth: 260, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", flexDirection: "column", minHeight: 420 }}>
+          <div style={{ background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)", borderRadius: 10, display: "flex", flexDirection: "column", minHeight: 420 }}>
             {/* Victor header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid var(--color-border-rgb)" }}>
               <span style={{ fontSize: 22 }}>🎭</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)" }}>Victor</div>
@@ -1263,7 +1263,7 @@ export function GobanCoach() {
             </div>
 
             {/* Input */}
-            <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--color-border-rgb)" }}>
               <input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
@@ -1271,7 +1271,7 @@ export function GobanCoach() {
                 placeholder="Réponds à Victor ou pose une question…"
                 style={{
                   flex: 1, padding: "8px 12px", borderRadius: 8,
-                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)",
                   color: "var(--color-text-primary)", fontSize: "var(--text-sm)", outline: "none",
                 }}
               />

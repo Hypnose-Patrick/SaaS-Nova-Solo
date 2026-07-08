@@ -39,3 +39,20 @@ export function applyAccent(hex?: string | null): void {
   root.style.setProperty("--color-gold-border", `rgba(${r}, ${g}, ${b}, 0.15)`);
   root.style.setProperty("--color-gold-glow", `rgba(${r}, ${g}, ${b}, 0.08)`);
 }
+
+// Applique le thème clair/sombre choisi (ou déduit du système) en posant
+// data-theme sur <html> — voir les blocs :root[data-theme=...] de tokens.css.
+
+export type ThemeMode = "dark" | "light" | "system";
+
+export function resolveTheme(mode: ThemeMode): "dark" | "light" {
+  if (mode !== "system") return mode;
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+}
+
+export function applyTheme(mode: ThemeMode): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-theme", resolveTheme(mode));
+}

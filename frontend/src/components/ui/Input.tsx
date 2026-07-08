@@ -49,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           onBlur={(e) => {
             e.currentTarget.style.borderColor = error
               ? "var(--color-danger)"
-              : "rgba(255,255,255,0.06)";
+              : "var(--color-border-rgb)";
             props.onBlur?.(e);
           }}
           {...props}

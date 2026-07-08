@@ -10,7 +10,7 @@ const COLORS: Record<BadgeColor, React.CSSProperties> = {
   success: { color: "var(--color-success)", background: "rgba(90,138,90,0.12)", border: "1px solid rgba(90,138,90,0.25)" },
   warning: { color: "var(--color-warning)", background: "rgba(184,146,58,0.12)", border: "1px solid rgba(184,146,58,0.25)" },
   danger: { color: "var(--color-danger)", background: "rgba(168,90,90,0.12)", border: "1px solid rgba(168,90,90,0.25)" },
-  muted: { color: "var(--color-text-muted)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" },
+  muted: { color: "var(--color-text-muted)", background: "var(--color-bg-input)", border: "var(--border-subtle)" },
 };
 
 export function Badge({ children, color = "muted" }: BadgeProps) {

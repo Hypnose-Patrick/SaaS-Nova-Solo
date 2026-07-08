@@ -23,7 +23,7 @@ const VARIANT: Record<string, React.CSSProperties> = {
   ghost: {
     background: "transparent",
     color: "var(--color-text-secondary)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "var(--border-subtle)",
     borderRadius: "var(--radius-xs)",
   },
   danger: {

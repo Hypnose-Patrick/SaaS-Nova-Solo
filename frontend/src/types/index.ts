@@ -25,6 +25,7 @@ export interface Profile {
   slogan: string | null;
   logo_url: string | null;
   accent_color: string | null;
+  theme_preference: "dark" | "light" | "system";
   contact_email: string | null;
   contact_tel: string | null;
   contact_adresse: string | null;

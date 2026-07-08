@@ -738,7 +738,7 @@ function NoteSheet({ onSave, onClose }: { onSave: (text: string) => void; onClos
 
 function MiniRow({ icon, label, value, highlight }: { icon: string; label: string; value: string; highlight?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-surface)", border: highlight ? "1px solid var(--color-gold-border)" : "1px solid rgba(255,255,255,0.05)", borderRadius: "var(--radius-md)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-surface)", border: highlight ? "1px solid var(--color-gold-border)" : "var(--border-subtle)", borderRadius: "var(--radius-md)" }}>
       <span style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
         <span style={{ fontSize: 18 }}>{icon}</span>
         <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "var(--tracking-wide)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>{label}</span>
@@ -800,7 +800,7 @@ const captureBtn: React.CSSProperties = {
   gap: "var(--space-2)",
   padding: "var(--space-4) var(--space-2)",
   background: "var(--color-bg-surface)",
-  border: "1px solid rgba(255,255,255,0.06)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-md)",
   cursor: "pointer",
 };
@@ -813,7 +813,7 @@ const recordingStyle: React.CSSProperties = {
 const adjustBtn: React.CSSProperties = {
   padding: "var(--space-2) var(--space-4)",
   background: "transparent",
-  border: "1px solid rgba(255,255,255,0.1)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-sm)",
   color: "var(--color-text-secondary)",
   fontFamily: "var(--font-mono)",
@@ -847,7 +847,7 @@ const mandatRow: React.CSSProperties = {
   width: "100%",
   padding: "var(--space-4)",
   background: "var(--color-bg-surface)",
-  border: "1px solid rgba(255,255,255,0.06)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-md)",
   cursor: "pointer",
 };
@@ -866,7 +866,7 @@ const smallBtn: React.CSSProperties = {
 const smallBtnGhost: React.CSSProperties = {
   padding: "var(--space-2) var(--space-3)",
   background: "transparent",
-  border: "1px solid rgba(255,255,255,0.1)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-sm)",
   color: "var(--color-text-secondary)",
   fontFamily: "var(--font-body)",
@@ -877,7 +877,7 @@ const smallBtnGhost: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: "100%",
   background: "var(--color-bg-input)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-sm)",
   color: "var(--color-text-primary)",
   fontFamily: "var(--font-body)",
@@ -888,7 +888,7 @@ const inputStyle: React.CSSProperties = {
 const textareaStyle: React.CSSProperties = {
   width: "100%",
   background: "var(--color-bg-input)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  border: "var(--border-subtle)",
   borderRadius: "var(--radius-sm)",
   color: "var(--color-text-primary)",
   fontFamily: "var(--font-body)",

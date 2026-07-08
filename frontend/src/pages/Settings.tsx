@@ -7,7 +7,7 @@ import type { Profile } from "@/types";
 import { ACTIVITE_PRESETS, DEFAULT_ACTIVITE } from "@/lib/activite";
 import { useAiGen } from "@/lib/useAiGen";
 import { promptBio } from "@/lib/lancementPrompts";
-import { applyAccent, DEFAULT_ACCENT } from "@/lib/theme";
+import { applyAccent, applyTheme, DEFAULT_ACCENT, type ThemeMode } from "@/lib/theme";
 import { AiEngineCard } from "@/components/settings/AiEngineCard";
 import { TelegramCard } from "@/components/settings/TelegramCard";
 import { N8nCard } from "@/components/settings/N8nCard";
@@ -67,6 +67,7 @@ interface FormState {
   brand_name: string;
   slogan: string;
   accent_color: string;
+  theme_preference: ThemeMode;
   logo_url: string;
   bio: string;
   contact_email: string;
@@ -92,6 +93,7 @@ function profileToForm(p: Profile): FormState {
     brand_name:      p.brand_name ?? "",
     slogan:          p.slogan ?? "",
     accent_color:    p.accent_color ?? DEFAULT_ACCENT,
+    theme_preference: p.theme_preference ?? "dark",
     logo_url:        p.logo_url ?? "",
     bio:             p.bio ?? "",
     contact_email:   p.contact_email ?? "",
@@ -149,6 +151,11 @@ export function Settings() {
     return () => applyAccent(profile?.accent_color);
   }, [profile?.accent_color]);
 
+  // Idem pour le thème : on annule la prévisualisation si elle n'a pas été sauvegardée.
+  useEffect(() => {
+    return () => applyTheme(profile?.theme_preference ?? "dark");
+  }, [profile?.theme_preference]);
+
   function setF(patch: Partial<FormState>) {
     setForm((f) => f ? { ...f, ...patch } : f);
   }
@@ -176,6 +183,7 @@ export function Settings() {
       brand_name:      form.brand_name || null,
       slogan:          form.slogan || null,
       accent_color:    form.accent_color || null,
+      theme_preference: form.theme_preference,
       logo_url:        form.logo_url || null,
       bio:             form.bio || null,
       contact_email:   form.contact_email || null,
@@ -376,6 +384,21 @@ export function Settings() {
               )}
             </div>
           </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <label style={LABEL_STYLE}>Thème</label>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+              {(["dark", "light", "system"] as const).map((m) => (
+                <Button
+                  key={m}
+                  size="sm"
+                  variant={form.theme_preference === m ? "gold" : "ghost"}
+                  onClick={() => { setF({ theme_preference: m }); applyTheme(m); }}
+                >
+                  {m === "dark" ? "Sombre" : m === "light" ? "Clair" : "Système"}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
         <div style={{ marginTop: "var(--space-4)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -542,7 +565,7 @@ export function Settings() {
       <DangerZoneCard />
 
       {/* Note stockage local */}
-      <div style={{ padding: "var(--space-3) var(--space-4)", background: "rgba(255,255,255,0.03)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+      <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: 1.6 }}>
         <strong style={{ color: "var(--color-text-secondary)" }}>Stockage des données Lancement</strong> — les résultats générés par les modules Lancement (CV, dossier, BMC…) sont conservés dans le stockage local de votre navigateur, sur cet appareil uniquement. Ils ne sont pas synchronisés entre vos appareils et disparaissent si vous effacez les données du navigateur. Pour un accès multi-appareils, exportez vos documents.
       </div>
 

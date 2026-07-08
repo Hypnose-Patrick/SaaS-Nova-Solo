@@ -382,7 +382,7 @@ export function Marketing() {
                 type="color"
                 value={siteCouleur}
                 onChange={(e) => setSiteCouleur(e.target.value)}
-                style={{ width: 40, height: 36, padding: 2, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", background: "transparent" }}
+                style={{ width: 40, height: 36, padding: 2, borderRadius: 6, border: "var(--border-subtle)", cursor: "pointer", background: "transparent" }}
               />
               <input
                 value={siteCouleur}
@@ -417,8 +417,8 @@ export function Marketing() {
                 onClick={() => toggleSiteSection(s)}
                 style={{
                   padding: "6px 12px", borderRadius: 6, border: "1px solid",
-                  borderColor: siteSections.includes(s) ? "var(--color-gold)" : "rgba(255,255,255,0.1)",
-                  background: siteSections.includes(s) ? "rgba(197,165,114,0.15)" : "rgba(255,255,255,0.04)",
+                  borderColor: siteSections.includes(s) ? "var(--color-gold)" : "var(--color-border-rgb)",
+                  background: siteSections.includes(s) ? "var(--color-gold-border)" : "var(--color-bg-input)",
                   color: siteSections.includes(s) ? "var(--color-gold)" : "var(--color-text-secondary)",
                   fontSize: "var(--text-xs)", cursor: "pointer", transition: "all 0.15s",
                 }}
@@ -452,7 +452,7 @@ export function Marketing() {
             <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "var(--tracking-wider)", marginBottom: "var(--space-2)" }}>
               Aperçu
             </div>
-            <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, overflow: "hidden" }}>
+            <div style={{ border: "var(--border-subtle)", borderRadius: 8, overflow: "hidden" }}>
               <iframe
                 srcDoc={siteHtml}
                 title="Aperçu site vitrine"

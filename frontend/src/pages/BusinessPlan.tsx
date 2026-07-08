@@ -389,7 +389,7 @@ export function BusinessPlan() {
                     padding: "var(--space-3)",
                     borderRadius: "var(--radius-xs)",
                     background: filled ? "var(--color-bg-primary)" : "transparent",
-                    border: filled ? "var(--border-subtle)" : "1px dashed rgba(255,255,255,0.06)",
+                    border: filled ? "var(--border-subtle)" : "1px dashed var(--color-border-rgb)",
                     transition: "background var(--transition-fast)",
                   }}
                 >
