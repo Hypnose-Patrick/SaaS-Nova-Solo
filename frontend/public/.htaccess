@@ -1,6 +1,14 @@
 Options -MultiViews
 RewriteEngine On
 
+# Sans ceci, Hostinger sert les .mjs en "text/plain" — combiné à nosniff
+# ci-dessous, le navigateur refuse de les charger comme module ES (worker
+# pdfjs, notamment). Vu en prod le 2026-07-08 : "Failed to fetch dynamically
+# imported module .../pdf.worker.min-*.mjs".
+<IfModule mod_mime.c>
+  AddType text/javascript .mjs
+</IfModule>
+
 # Landing page at root
 RewriteRule ^$ /landing.html [L]
 
