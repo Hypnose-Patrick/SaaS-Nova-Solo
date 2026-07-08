@@ -61,6 +61,29 @@ export function Agenda() {
   const profile = useUserStore((s) => s.profile);
   const { events, fetchEvents } = useAppStore();
 
+  // Matrice d'Eisenhower — état levé ici pour qu'un événement de l'agenda puisse y être envoyé directement.
+  const [board, setBoard] = useState<Board>(() => loadLocal<Board>("ns_eisenhower", EMPTY_BOARD));
+
+  function persistBoard(next: Board) {
+    setBoard(next);
+    saveLocal("ns_eisenhower", next);
+  }
+  function addToMatrix(q: Quad, text: string) {
+    const t = text.trim();
+    if (!t || board[q].length >= MATRIX_LIMIT) return;
+    const id = `${q}-${Date.now()}-${t.slice(0, 8)}`;
+    persistBoard({ ...board, [q]: [...board[q], { id, text: t }] });
+  }
+  function removeFromMatrix(q: Quad, id: string) {
+    persistBoard({ ...board, [q]: board[q].filter((t) => t.id !== id) });
+  }
+  function moveInMatrix(from: Quad, to: Quad, id: string) {
+    if (from === to || board[to].length >= MATRIX_LIMIT) return;
+    const task = board[from].find((t) => t.id === id);
+    if (!task) return;
+    persistBoard({ ...board, [from]: board[from].filter((t) => t.id !== id), [to]: [...board[to], task] });
+  }
+
   const now = new Date();
   const [viewYear, setViewYear]   = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -298,13 +321,34 @@ export function Agenda() {
                           {e.location ? ` · ${e.location}` : ""}
                         </span>
                       </div>
-                      <button
-                        onClick={() => deleteEvent(e.id)}
-                        title="Supprimer"
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, opacity: 0.4, padding: 2, lineHeight: 1 }}
-                      >
-                        ✕
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {QUADS.map((q) => {
+                          const full = board[q.key].length >= MATRIX_LIMIT;
+                          return (
+                            <button
+                              key={q.key}
+                              onClick={() => addToMatrix(q.key, e.title)}
+                              disabled={full}
+                              title={full ? `${q.title} — quadrant plein (4 max)` : `Envoyer vers la matrice : ${q.title}`}
+                              style={{
+                                width: 16, height: 16, borderRadius: 4, border: `1px solid ${q.accent}`,
+                                background: "transparent", color: q.accent, fontSize: 9, fontWeight: 700,
+                                cursor: full ? "not-allowed" : "pointer", opacity: full ? 0.3 : 1,
+                                display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: 1,
+                              }}
+                            >
+                              {q.key.slice(1)}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() => deleteEvent(e.id)}
+                          title="Supprimer"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, opacity: 0.4, padding: 2, lineHeight: 1 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -421,7 +465,7 @@ export function Agenda() {
       </div>
 
       {/* Matrice d'Eisenhower */}
-      <EisenhowerMatrix />
+      <EisenhowerMatrix board={board} onAdd={addToMatrix} onRemove={removeFromMatrix} onMove={moveInMatrix} />
     </div>
   );
 }
@@ -438,90 +482,93 @@ const QUADS: { key: Quad; title: string; accent: string }[] = [
   { key: "q4", title: "Ni urgent ni important", accent: "var(--color-text-muted)" },
 ];
 const EMPTY_BOARD: Board = { q1: [], q2: [], q3: [], q4: [] };
+const MATRIX_LIMIT = 4;
 
-function EisenhowerMatrix() {
-  const [board, setBoard] = useState<Board>(() => loadLocal<Board>("ns_eisenhower", EMPTY_BOARD));
+interface EisenhowerMatrixProps {
+  board: Board;
+  onAdd: (q: Quad, text: string) => void;
+  onRemove: (q: Quad, id: string) => void;
+  onMove: (from: Quad, to: Quad, id: string) => void;
+}
+
+function EisenhowerMatrix({ board, onAdd, onRemove, onMove }: EisenhowerMatrixProps) {
   const [draft, setDraft] = useState<Record<Quad, string>>({ q1: "", q2: "", q3: "", q4: "" });
   const [drag, setDrag] = useState<{ from: Quad; id: string } | null>(null);
   const [over, setOver] = useState<Quad | null>(null);
 
-  function persist(next: Board) {
-    setBoard(next);
-    saveLocal("ns_eisenhower", next);
-  }
   function addTask(q: Quad) {
-    const text = draft[q].trim();
-    if (!text) return;
-    const id = `${q}-${board[q].length}-${text.slice(0, 8)}-${board.q1.length + board.q2.length + board.q3.length + board.q4.length}`;
-    persist({ ...board, [q]: [...board[q], { id, text }] });
+    onAdd(q, draft[q]);
     setDraft((d) => ({ ...d, [q]: "" }));
-  }
-  function removeTask(q: Quad, id: string) {
-    persist({ ...board, [q]: board[q].filter((t) => t.id !== id) });
-  }
-  function drop(to: Quad) {
-    const d = drag;
-    setOver(null);
-    setDrag(null);
-    if (!d || d.from === to) return;
-    const task = board[d.from].find((t) => t.id === d.id);
-    if (!task) return;
-    persist({ ...board, [d.from]: board[d.from].filter((t) => t.id !== d.id), [to]: [...board[to], task] });
   }
 
   return (
     <Card glass title="Matrice d'Eisenhower">
       <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", margin: "0 0 var(--space-4)" }}>
-        Priorisez vos tâches par quadrant — glissez-déposez une tâche d'une case à l'autre.
+        Priorisez vos tâches par quadrant — glissez-déposez une tâche d'une case à l'autre. 4 tâches maximum par quadrant : gardez chaque case à l'essentiel.
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
-        {QUADS.map((q) => (
-          <div
-            key={q.key}
-            onDragOver={(e) => { e.preventDefault(); if (over !== q.key) setOver(q.key); }}
-            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver((o) => (o === q.key ? null : o)); }}
-            onDrop={() => drop(q.key)}
-            style={{
-              display: "flex", flexDirection: "column", gap: "var(--space-2)",
-              padding: "var(--space-3)", minHeight: 130,
-              borderRadius: "var(--radius-sm)",
-              border: over === q.key ? "1px dashed var(--color-gold)" : "var(--border-subtle)",
-              borderLeft: `2px solid ${q.accent}`,
-              background: over === q.key ? "rgba(197,165,114,0.05)" : "var(--color-bg-surface)",
-              transition: "background var(--transition-fast)",
-            }}
-          >
-            <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: q.accent }}>
-              {q.title}
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              {board[q.key].map((t) => (
-                <div
-                  key={t.id}
-                  draggable
-                  onDragStart={() => setDrag({ from: q.key, id: t.id })}
-                  onDragEnd={() => { setDrag(null); setOver(null); }}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)",
-                    background: "var(--color-bg-primary)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)",
-                    padding: "var(--space-2) var(--space-3)", cursor: "grab",
-                    opacity: drag?.id === t.id ? 0.5 : 1,
-                  }}
-                >
-                  <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>{t.text}</span>
-                  <button onClick={() => removeTask(q.key, t.id)} title="Supprimer" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, opacity: 0.4, padding: 2, lineHeight: 1 }}>✕</button>
-                </div>
-              ))}
+        {QUADS.map((q) => {
+          const full = board[q.key].length >= MATRIX_LIMIT;
+          const blockedDrop = !!drag && drag.from !== q.key && full;
+          return (
+            <div
+              key={q.key}
+              onDragOver={(e) => { e.preventDefault(); if (over !== q.key) setOver(q.key); }}
+              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver((o) => (o === q.key ? null : o)); }}
+              onDrop={() => { if (drag) onMove(drag.from, q.key, drag.id); setOver(null); setDrag(null); }}
+              style={{
+                display: "flex", flexDirection: "column", gap: "var(--space-2)",
+                padding: "var(--space-3)", minHeight: 130,
+                borderRadius: "var(--radius-sm)",
+                border: over === q.key ? `1px dashed ${blockedDrop ? "var(--color-danger)" : "var(--color-gold)"}` : "var(--border-subtle)",
+                borderLeft: `2px solid ${q.accent}`,
+                background: over === q.key ? (blockedDrop ? "rgba(220,38,38,0.06)" : "rgba(197,165,114,0.05)") : "var(--color-bg-surface)",
+                transition: "background var(--transition-fast)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: q.accent }}>
+                  {q.title}
+                </span>
+                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: full ? "var(--color-danger)" : "var(--color-text-muted)" }}>
+                  {board[q.key].length}/{MATRIX_LIMIT}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+                {board[q.key].map((t) => (
+                  <div
+                    key={t.id}
+                    draggable
+                    onDragStart={() => setDrag({ from: q.key, id: t.id })}
+                    onDragEnd={() => { setDrag(null); setOver(null); }}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)",
+                      background: "var(--color-bg-primary)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)",
+                      padding: "var(--space-2) var(--space-3)", cursor: "grab",
+                      opacity: drag?.id === t.id ? 0.5 : 1,
+                    }}
+                  >
+                    <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>{t.text}</span>
+                    <button onClick={() => onRemove(q.key, t.id)} title="Supprimer" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, opacity: 0.4, padding: 2, lineHeight: 1 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <input
+                value={draft[q.key]}
+                onChange={(e) => setDraft((d) => ({ ...d, [q.key]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") addTask(q.key); }}
+                disabled={full}
+                placeholder={full ? "Quadrant plein (4 max)" : "+ Ajouter une tâche…"}
+                style={{
+                  background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)",
+                  color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)",
+                  padding: "var(--space-2) var(--space-3)", outline: "none", width: "100%", boxSizing: "border-box",
+                  opacity: full ? 0.5 : 1, cursor: full ? "not-allowed" : "text",
+                }}
+              />
             </div>
-            <input
-              value={draft[q.key]}
-              onChange={(e) => setDraft((d) => ({ ...d, [q.key]: e.target.value }))}
-              onKeyDown={(e) => { if (e.key === "Enter") addTask(q.key); }}
-              placeholder="+ Ajouter une tâche…"
-              style={{ background: "var(--color-bg-input)", border: "var(--border-subtle)", borderRadius: "var(--radius-xs)", color: "var(--color-text-primary)", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", padding: "var(--space-2) var(--space-3)", outline: "none", width: "100%", boxSizing: "border-box" }}
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

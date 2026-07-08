@@ -125,6 +125,7 @@ export interface ComptaEntry {
   fournisseur: string | null;
   category: string | null;
   receipt_url: string | null;
+  invoice_id: string | null;
   created_at: string;
 }
 

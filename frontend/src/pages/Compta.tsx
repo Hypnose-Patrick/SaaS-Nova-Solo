@@ -11,8 +11,11 @@ import type { ComptaEntry } from "@/types";
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
 
+// "Facturation client" est la catégorie des écritures générées automatiquement
+// à l'encaissement d'une facture (voir Factures.tsx) — neutre vis-à-vis du métier
+// (coach, artisan, commerce…), cohérente avec l'approche agnostique métiers de l'app.
 const CATEGORIES_REVENU = [
-  "Coaching", "Formation", "Consulting", "Conférence",
+  "Facturation client", "Coaching", "Formation", "Consulting", "Conférence",
   "Produit numérique", "Autre",
 ];
 const CATEGORIES_DEPENSE = [
@@ -236,6 +239,7 @@ export function Compta() {
         fournisseur: null,
         category: null,
         receipt_url: null,
+        invoice_id: null,
       });
     });
     if (rows.length === 0) {
@@ -300,6 +304,7 @@ export function Compta() {
         fournisseur: null,
         category: null,
         receipt_url: null,
+        invoice_id: null,
       }));
       const { data } = await supabase.from("compta_entries").insert(rows).select();
       if (data) {

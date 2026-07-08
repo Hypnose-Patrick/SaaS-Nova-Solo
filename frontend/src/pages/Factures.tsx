@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { useSubscription } from "@/lib/useSubscription";
 import { supabase } from "@/lib/supabase";
 import { printHtml, downloadWord, escapeHtml } from "@/lib/exportDoc";
-import type { Invoice } from "@/types";
+import type { ComptaEntry, Invoice } from "@/types";
 
 const STATUS_LABEL: Record<Invoice["status"], string> = {
   draft: "Brouillon",
@@ -141,12 +142,68 @@ export function Factures() {
   async function updateStatus(id: string, status: Invoice["status"]) {
     await supabase.from("invoices").update({ status }).eq("id", id);
     setInvoices((inv) => inv.map((i) => (i.id === id ? { ...i, status } : i)));
+    if (status === "paid") await recordPaymentInCompta(id);
+  }
+
+  // Comptabilité de caisse : le revenu n'est comptabilisé qu'à l'encaissement
+  // (statut "paid"), jamais à l'envoi — sinon une facture envoyée puis jamais
+  // payée gonflerait le compte d'exploitation. invoice_id est UNIQUE en base
+  // (migration 017) : ce garde-fou applicatif + la contrainte DB empêchent
+  // toute écriture en double si le statut est re-déclenché.
+  async function recordPaymentInCompta(invoiceId: string) {
+    if (!profile?.id) return;
+    const inv = invoices.find((i) => i.id === invoiceId);
+    if (!inv) return;
+
+    const { data: existing } = await supabase
+      .from("compta_entries")
+      .select("id")
+      .eq("invoice_id", invoiceId)
+      .maybeSingle();
+    if (existing) return;
+
+    const { data } = await supabase
+      .from("compta_entries")
+      .insert({
+        profile_id: profile.id,
+        invoice_id: invoiceId,
+        date: new Date().toISOString().slice(0, 10),
+        description: `Facture ${inv.number}${inv.client_name ? ` — ${inv.client_name}` : ""}`,
+        amount: inv.amount_ttc ?? 0,
+        type: "revenu",
+        tva: inv.tva_rate,
+        fournisseur: inv.client_name,
+        category: "Facturation client",
+      })
+      .select()
+      .single();
+
+    if (data) {
+      useAppStore.setState((s) => ({
+        compta: [data as ComptaEntry, ...s.compta].sort((a, b) => b.date.localeCompare(a.date)),
+      }));
+    }
   }
 
   async function deleteInvoice(inv: Invoice) {
-    if (!window.confirm(`Supprimer la facture ${inv.number} (${inv.client_name ?? "client"}) ? Cette action est irréversible.`)) return;
+    // Vérifié en base (pas via le store local, qui peut être vide si l'onglet
+    // Comptabilité n'a pas encore été ouvert dans la session) — la facture "Payée"
+    // a forcément une écriture liée (créée par recordPaymentInCompta) sinon.
+    const { data: linked } = await supabase
+      .from("compta_entries")
+      .select("id")
+      .eq("invoice_id", inv.id)
+      .maybeSingle();
+
+    const warning = linked
+      ? `Supprimer la facture ${inv.number} (${inv.client_name ?? "client"}) ? L'écriture comptable liée (revenu encaissé) sera supprimée aussi. Cette action est irréversible.`
+      : `Supprimer la facture ${inv.number} (${inv.client_name ?? "client"}) ? Cette action est irréversible.`;
+    if (!window.confirm(warning)) return;
+
     await supabase.from("invoices").delete().eq("id", inv.id);
+    if (linked) await supabase.from("compta_entries").delete().eq("invoice_id", inv.id);
     setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+    useAppStore.setState((s) => ({ compta: s.compta.filter((e) => e.invoice_id !== inv.id) }));
     if (editingId === inv.id) resetForm();
   }
 
