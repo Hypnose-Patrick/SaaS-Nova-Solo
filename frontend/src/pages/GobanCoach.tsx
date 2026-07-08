@@ -3,9 +3,11 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useUserStore } from "@/stores/useUserStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { callAIStream } from "@/lib/ai";
 import { loadLocal, saveLocal } from "@/lib/local";
+import type { Profile, Prospect } from "@/types";
 
 // ── CDN Audio (Bunny.net) ──────────────────────────────────────────────────────
 // Set to your Bunny.net CDN base URL ending with "/" to enable audio
@@ -37,29 +39,34 @@ interface BubbleData { who: "victor" | "user" | "system"; text: string; id: numb
 interface DiagResponse { question: string; answer: "Oui" | "Non"; concept: string | null; isBlack: boolean | null }
 
 // ── System Prompts ─────────────────────────────────────────────────────────────
-function buildSystemPrompt(level: CoachLevel, size: BoardSize, career: CareerMode): string {
+function buildSystemPrompt(level: CoachLevel, size: BoardSize, career: CareerMode, bizContext?: string | null): string {
   const lvlMap: Record<CoachLevel, string> = {
     debutant: "NIVEAU 1 — Débutant",
     intermediaire: "NIVEAU 2 — Intermédiaire",
     expert: "NIVEAU 3 — Avancé",
   };
-  const careerBridge = career === "oui" ? `\n\n<goban_career_bridge>
-Fais des ponts discrets et naturels (maximum 1 par séance) :
-- Territoire = poste ou domaine de compétence acquis
+  const careerBridge = career === "oui" ? `\n\n<goban_entrepreneur>
+Le joueur a choisi le MODE ENTREPRENEUR : chaque tour doit éclairer son business à travers le Go.
+Correspondances à utiliser librement :
+- Territoire = revenus sécurisés, clients récurrents
 - Influence = réputation, réseau, rayonnement
 - Épaisseur = compétences solides qui résistent à la pression
-- Aji = potentiel latent, compétences dormantes
-- Sente = initiative, proactivité
+- Aji = potentiel latent, opportunités dormantes
+- Sente = initiative, proactivité commerciale
 - Gote = réactivité, subir le marché
-- Sacrifice = quitter un poste/titre pour rebondir plus fort
-- Whole board thinking = vision systémique de sa carrière
-Ne force jamais ces métaphores. Un pont par séance suffit.
-</goban_career_bridge>` : "";
+- Sacrifice = abandonner une activité/un client pour rebondir plus fort
+- Whole board thinking = vision systémique de son activité
+Le **Conseil / Stratégie** nomme la stratégie Go PUIS son équivalent entrepreneurial en une phrase.
+La **Question de réflexion** est TOUJOURS 100% entrepreneuriale : elle part de la situation concrète sur le goban (groupe faible, territoire, initiative, aji…) et la relie à la situation réelle du joueur. Jamais une question purement Go dans cette section.${bizContext ? `\nAppuie-toi sur <contexte_entrepreneur> pour personnaliser : cite des éléments concrets de sa situation (offre, pipeline, finances, diagnostic) quand c'est pertinent.` : ""}
+</goban_entrepreneur>${bizContext ? `\n\n<contexte_entrepreneur>\n${bizContext}\n</contexte_entrepreneur>` : ""}` : `\n\n<go_pur>
+Le joueur a choisi le MODE GO PUR : aucune métaphore business, aucune référence à l'entrepreneuriat ou à la carrière. Concentre-toi exclusivement sur la stratégie du jeu : lecture du plateau, formes, direction de jeu, initiative.
+La **Question de réflexion** oriente uniquement le prochain coup ou la lecture de la position.
+</go_pur>`;
 
   return `<session_context>
 Niveau du joueur : ${lvlMap[level]}
 Taille du goban : ${size}×${size}
-Mode Goban de Carrière : ${career === "oui" ? "OUI — faire des ponts discrets avec la métaphore carrière" : "NON — rester sur le jeu pur"}
+Orientation du coaching : ${career === "oui" ? "MODE ENTREPRENEUR — chaque tour relie le Go à la situation business du joueur" : "MODE GO PUR — stratégie du jeu uniquement, zéro référence business"}
 </session_context>
 
 <tone>
@@ -82,7 +89,7 @@ Pour chaque coup du joueur, réponds TOUJOURS avec cette structure exacte :
 [1 stratégie adaptée au niveau avec son nom si niveau 2+. Max 3 phrases.]
 
 **Question de réflexion**
-[Une question orientant le prochain coup]
+[${career === "oui" ? "Une question entrepreneuriale concrète reliant la position du goban à la situation business du joueur" : "Une question orientant le prochain coup"}]
 
 Maximum 5 paragraphes par réponse. Ne jamais faire de pavé de texte.${level === "debutant" ? "\nLONGUEUR : 2-3 phrases maximum par section, vocabulaire du quotidien, pas de termes japonais." : ""}
 </structure_per_turn>
@@ -117,6 +124,46 @@ Jamais plus de 2 stratégies à la fois.
 
 function buildDiagSystemPrompt(): string {
   return `Utilise exclusivement les concepts du Go comme métaphores du développement professionnel et entrepreneurial. Français, tutoiement, précis et encourageant.`;
+}
+
+// Résumé compact des données déjà collectées dans l'app, injecté dans le
+// prompt de Victor quand le joueur active « Relier mes données Nova Solo ».
+function buildBizContext(profile: Profile | null, prospects: Prospect[]): string | null {
+  if (!profile) return null;
+  const statutMap: Record<string, string> = {
+    laci: "en transition (LACI)", reconversion: "en reconversion",
+    creation: "en création d'activité", existant: "activité existante",
+  };
+  const L: string[] = [];
+  if (profile.brand_name || profile.project_name) L.push(`Projet : ${profile.brand_name ?? profile.project_name}`);
+  if (profile.statut) L.push(`Statut : ${statutMap[profile.statut] ?? profile.statut}`);
+  if (profile.domaine) L.push(`Domaine : ${profile.domaine}${profile.activite_type ? ` (${profile.activite_type})` : ""}`);
+  if (profile.situation) L.push(`Situation décrite au diagnostic : ${profile.situation.slice(0, 400)}`);
+  if (profile.profil) L.push(`Profil : ${profile.profil.slice(0, 300)}`);
+  if (profile.pricing_tarif) L.push(`Offre : tarif ${profile.pricing_tarif} CHF${profile.pricing_clients ? ` · objectif ${profile.pricing_clients} clients/mois` : ""}`);
+  if (profile.capital || profile.charges_fixes) L.push(`Finances : capital ${profile.capital} CHF · charges fixes ${profile.charges_fixes} CHF/mois${profile.runway_months ? ` · runway ${profile.runway_months} mois` : ""}`);
+  if (prospects.length) {
+    const by: Record<string, number> = {};
+    prospects.forEach((p) => { by[p.column_key] = (by[p.column_key] ?? 0) + 1; });
+    L.push(`Pipeline : ${prospects.length} prospect${prospects.length > 1 ? "s" : ""} (${Object.entries(by).map(([k, n]) => `${n} ${k}`).join(", ")})`);
+  }
+  return L.length ? L.join("\n") : null;
+}
+
+// Extrait le conseil stratégique et la question de réflexion d'une réponse
+// structurée de Victor, pour les mettre en évidence hors du fil de chat.
+function extractInsight(text: string): { conseil: string | null; question: string | null } {
+  const parts = text.split(/\*\*([^*]+)\*\*/g);
+  let conseil: string | null = null;
+  let question: string | null = null;
+  for (let i = 1; i < parts.length; i += 2) {
+    const title = parts[i].toLowerCase();
+    const body = (parts[i + 1] ?? "").split(/\*\*/)[0].trim();
+    if (!body) continue;
+    if (!conseil && /conseil|strat/.test(title)) conseil = body;
+    else if (!question && /r[ée]flexion/.test(title)) question = body;
+  }
+  return { conseil, question };
 }
 
 // ── Game logic (pure functions) ────────────────────────────────────────────────
@@ -588,30 +635,35 @@ function VictorBubble({ bubble }: { bubble: BubbleData }) {
 }
 
 // ── Thinking dots ──────────────────────────────────────────────────────────────
+function GcStyles() {
+  return (
+    <style>{`
+      @keyframes gc-dot { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+      .gc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:rgba(197,165,114,0.7); margin:0 2px; animation:gc-dot 1.4s infinite; }
+      .gc-dot:nth-child(2){animation-delay:.16s}
+      .gc-dot:nth-child(3){animation-delay:.32s}
+      .vs { margin-bottom:8px; }
+      .vs-t { font-size:11px; font-weight:600; color:rgba(197,165,114,0.9); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+    `}</style>
+  );
+}
+
 function ThinkingDots() {
   return (
-    <>
-      <style>{`
-        @keyframes gc-dot { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
-        .gc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:rgba(197,165,114,0.7); margin:0 2px; animation:gc-dot 1.4s infinite; }
-        .gc-dot:nth-child(2){animation-delay:.16s}
-        .gc-dot:nth-child(3){animation-delay:.32s}
-        .vs { margin-bottom:8px; }
-        .vs-t { font-size:11px; font-weight:600; color:rgba(197,165,114,0.9); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
-      `}</style>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 20 }}>🎭</span>
-        <span className="gc-dot" />
-        <span className="gc-dot" />
-        <span className="gc-dot" />
-      </div>
-    </>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <span style={{ fontSize: 20 }}>🎭</span>
+      <span className="gc-dot" />
+      <span className="gc-dot" />
+      <span className="gc-dot" />
+    </div>
   );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export function GobanCoach() {
-  useUserStore((s) => s.profile);
+  const profile = useUserStore((s) => s.profile);
+  const prospects = useAppStore((s) => s.prospects);
+  const fetchProspects = useAppStore((s) => s.fetchProspects);
   const { gen, loading } = useAiGen();
 
   // Config
@@ -619,6 +671,7 @@ export function GobanCoach() {
   const [mode, setMode] = useState<GameMode>("2p");
   const [level, setLevel] = useState<CoachLevel>("debutant");
   const [career, setCareer] = useState<CareerMode>("oui");
+  const [bizData, setBizData] = useState(true);
   const [screen, setScreen] = useState<Screen>("intro");
 
   // Game state
@@ -638,6 +691,8 @@ export function GobanCoach() {
   const streamAccRef = useRef<string>("");
   const [userInput, setUserInput] = useState("");
   const bubblesRef = useRef<HTMLDivElement>(null);
+  const [insight, setInsight] = useState<{ conseil: string | null; question: string | null } | null>(null);
+  const [chatOpen, setChatOpen] = useState(true);
 
   // Rules
   const [ruleIdx, setRuleIdx] = useState(0);
@@ -679,8 +734,8 @@ export function GobanCoach() {
 
   // Persist config
   useEffect(() => {
-    const saved = loadLocal<{ size: BoardSize; level: CoachLevel; career: CareerMode } | null>("ns_goban_cfg", null);
-    if (saved) { setSize(saved.size); setLevel(saved.level); setCareer(saved.career); }
+    const saved = loadLocal<{ size: BoardSize; level: CoachLevel; career: CareerMode; bizData?: boolean } | null>("ns_goban_cfg", null);
+    if (saved) { setSize(saved.size); setLevel(saved.level); setCareer(saved.career); setBizData(saved.bizData ?? true); }
   }, []);
 
   useEffect(() => {
@@ -693,7 +748,8 @@ export function GobanCoach() {
   }, []);
 
   const callVictor = useCallback(async (userMessage: string): Promise<string | null> => {
-    const sysPart = buildSystemPrompt(level, size, career);
+    const bizCtx = career === "oui" && bizData ? buildBizContext(profile, prospects) : null;
+    const sysPart = buildSystemPrompt(level, size, career, bizCtx);
     const history = convHistory.slice(-10);
     const fullPrompt = `${sysPart}\n\n---\n${history.map((m) => `${m.role === "user" ? "JOUEUR" : "VICTOR"}: ${m.content}`).join("\n")}\nJOUEUR: ${userMessage}\nVICTOR:`;
 
@@ -725,13 +781,16 @@ export function GobanCoach() {
       setConvHistory((h) => [...h, { role: "user", content: userMessage }, { role: "assistant", content: result }]);
     }
     return result || null;
-  }, [level, size, career, convHistory, gen]);
+  }, [level, size, career, bizData, profile, prospects, convHistory, gen]);
 
   const displayVictor = useCallback(async (prompt: string) => {
     setThinking(true);
     const text = await callVictor(prompt);
     const isFallback = !text;
-    addBubble("victor", text ?? FALLBACKS[level][Math.floor(Math.random() * FALLBACKS[level].length)]);
+    const finalText = text ?? FALLBACKS[level][Math.floor(Math.random() * FALLBACKS[level].length)];
+    addBubble("victor", finalText);
+    const ins = extractInsight(finalText);
+    if (ins.conseil || ins.question) setInsight(ins);
     if (isFallback) playFallbackAudio();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callVictor, addBubble, level]);
@@ -747,15 +806,17 @@ export function GobanCoach() {
     setBubbles([]);
     setConsecutivePasses(0);
     setLastBoardState(null);
+    setInsight(null);
   }, [size]);
 
   async function startGame() {
     stopAudio();
-    saveLocal("ns_goban_cfg", { size, level, career });
+    saveLocal("ns_goban_cfg", { size, level, career, bizData });
+    if (career === "oui" && bizData && profile) fetchProspects(profile.id);
     initBoard();
     setScreen("game");
     playAudio(`welcome-${level}.mp3`);
-    const prompt = `Commence la session. Le joueur est ${level}. Goban ${size}×${size}. Mode Goban de Carrière : ${career}. Lance le jeu avec quelques mots d'accueil et un conseil d'ouverture.`;
+    const prompt = `Commence la session. Le joueur est ${level}. Goban ${size}×${size}. Orientation : ${career === "oui" ? "Mode Entrepreneur" : "Mode Go pur"}. Lance le jeu avec quelques mots d'accueil et un conseil d'ouverture.`;
     await displayVictor(prompt);
   }
 
@@ -859,7 +920,7 @@ export function GobanCoach() {
     const winnerKey = sc.B > sc.W ? "noir" : sc.B < sc.W ? "blanc" : "egal";
     playAudio(`endgame-${winnerKey}.mp3`);
     const recent = moveHistory.slice(-8).map((m) => `${m.num}.${m.color === "B" ? "⚫" : "⚪"}${m.label}`).join(" ");
-    const prompt = `La partie est terminée sur un goban ${size}×${size}. Score final : Noir ${sc.B}, Blanc ${sc.W}. ${winner === "Égalité" ? "Match nul." : winner + " gagne."} Derniers coups : ${recent}. Fais un débrief Socratique : 3 questions de réflexion sur les moments clés et 1 conseil pour la prochaine partie.`;
+    const prompt = `La partie est terminée sur un goban ${size}×${size}. Score final : Noir ${sc.B}, Blanc ${sc.W}. ${winner === "Égalité" ? "Match nul." : winner + " gagne."} Derniers coups : ${recent}. Fais un débrief Socratique : 3 questions de réflexion sur les moments clés et 1 conseil pour la prochaine partie.${career === "oui" ? " Mode Entrepreneur : relie chaque question à la situation business du joueur (territoire = revenus, groupes faibles = dépendances, sente = initiative commerciale)." : " Mode Go pur : reste exclusivement sur le jeu, aucune métaphore business."}`;
     setEndDebrief(null);
     const debrief = await gen("victor", prompt, { model: MODEL_REASONING });
     setEndDebrief(debrief ?? "Bien joué ! Réfléchis au coup le plus décisif de la partie, à un moment où tu as perdu l'initiative, et à ce que tu aurais joué différemment.\n\nConseil : concentre-toi sur la connexion de tes groupes avant de chercher à attaquer.");
@@ -987,11 +1048,22 @@ export function GobanCoach() {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Méthode Goban de Carrière</div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Orientation du coaching</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <BtnOpt active={career === "oui"} onClick={() => setCareer("oui")}>✅ Activer les ponts métaphores</BtnOpt>
-              <BtnOpt active={career === "non"} onClick={() => setCareer("non")}>🎯 Go pur uniquement</BtnOpt>
+              <BtnOpt active={career === "oui"} onClick={() => setCareer("oui")}>🧭 Entrepreneur — le Go éclaire ton business</BtnOpt>
+              <BtnOpt active={career === "non"} onClick={() => setCareer("non")}>⚫ Go pur — stratégie du jeu uniquement</BtnOpt>
             </div>
+            {career === "oui" && (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 12, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+                <input
+                  type="checkbox"
+                  checked={bizData}
+                  onChange={(e) => setBizData(e.target.checked)}
+                  style={{ accentColor: "var(--color-gold)", marginTop: 3, flexShrink: 0 }}
+                />
+                <span>Relier mes données Nova Solo — Victor s'appuie sur ton diagnostic, ton offre, ton pipeline et tes finances pour personnaliser ses questions.</span>
+              </label>
+            )}
           </div>
           <div style={{ height: 1, background: "var(--color-border-rgb)" }} />
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1067,6 +1139,7 @@ export function GobanCoach() {
   // ── DIAGNOSTIC ─────────────────────────────────────────────────────────────
   if (screen === "diagnostic") return (
     <div style={{ padding: "var(--space-6)", maxWidth: 760, margin: "0 auto" }}>
+      <GcStyles />
       <PageHeader title="Diagnostic Goban de Carrière" subtitle="10 questions · Victor lit ta position entrepreneuriale" />
       <div style={{ display: "flex", gap: "var(--space-4)", flexWrap: "wrap" }}>
         <Card style={{ flex: "0 0 auto" }}>
@@ -1123,6 +1196,7 @@ export function GobanCoach() {
   // ── END ────────────────────────────────────────────────────────────────────
   if (screen === "end") return (
     <div style={{ padding: "var(--space-6)", maxWidth: 640, margin: "0 auto" }}>
+      <GcStyles />
       <PageHeader title="🏁 Fin de partie" subtitle="Victor débriefe la session" />
       <Card style={{ marginBottom: "var(--space-4)" }}>
         <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
@@ -1159,7 +1233,7 @@ export function GobanCoach() {
   // ── GAME ───────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "var(--space-3)", maxWidth: 1200, margin: "0 auto" }}>
-      <ThinkingDots />
+      <GcStyles />
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
 
         {/* LEFT SIDEBAR */}
@@ -1239,28 +1313,81 @@ export function GobanCoach() {
 
         {/* RIGHT — Victor panel */}
         <div style={{ flex: 1, minWidth: 260, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <div style={{ background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)", borderRadius: 10, display: "flex", flexDirection: "column", minHeight: 420 }}>
+
+          {/* Éclairage stratégique — toujours visible, remplacé à chaque coup */}
+          <div style={{
+            background: "var(--color-bg-input)", border: "1px solid rgba(197,165,114,0.35)",
+            borderRadius: 10, padding: "14px 16px", boxShadow: "0 0 24px rgba(197,165,114,0.06)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 16 }}>{career === "oui" ? "🧭" : "⚫"}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--color-gold)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                Éclairage de Victor
+              </span>
+            </div>
+            {insight ? (
+              <>
+                {insight.conseil && (
+                  <div style={{ marginBottom: insight.question ? 12 : 0 }}>
+                    <div style={{ fontSize: 10, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Conseil · Stratégie</div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-secondary)", lineHeight: 1.65 }}>{insight.conseil}</div>
+                  </div>
+                )}
+                {insight.question && (
+                  <div style={{ padding: "10px 12px", background: "rgba(197,165,114,0.08)", borderLeft: "3px solid var(--color-gold)", borderRadius: 6 }}>
+                    <div style={{ fontSize: 10, color: "var(--color-gold)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                      {career === "oui" ? "Question entrepreneur" : "Question stratégique"}
+                    </div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-primary)", lineHeight: 1.6, fontStyle: "italic" }}>{insight.question}</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+                Joue ton premier coup — le conseil stratégique de Victor s'affichera ici.
+              </div>
+            )}
+          </div>
+
+          {/* Dialogue — hauteur fixe, repliable */}
+          <div style={{ background: "var(--color-bg-input)", border: "1px solid var(--color-border-rgb)", borderRadius: 10, display: "flex", flexDirection: "column" }}>
             {/* Victor header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid var(--color-border-rgb)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: chatOpen ? "1px solid var(--color-border-rgb)" : "none" }}>
               <span style={{ fontSize: 22 }}>🎭</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-text-primary)" }}>Victor</div>
-                <div style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Instructeur · Goban de Carrière</div>
+                <div style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
+                  {career === "oui" ? "Instructeur · Goban de Carrière" : "Instructeur de Go"}
+                </div>
               </div>
               {BUNNY_BASE && (
                 <button onClick={playFallbackAudio} title="Réécouter"
                   style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, opacity: 0.6 }}>🔊</button>
               )}
+              <button onClick={() => setChatOpen((o) => !o)}
+                title={chatOpen ? "Réduire le dialogue" : "Afficher le dialogue"}
+                style={{
+                  background: "none", border: "1px solid var(--color-border-rgb)", borderRadius: 6,
+                  cursor: "pointer", fontSize: 11, color: "var(--color-text-muted)", padding: "4px 8px",
+                }}
+              >{chatOpen ? "▾ Réduire" : `▸ Dialogue (${bubbles.length})`}</button>
             </div>
 
-            {/* Bubbles */}
-            <div ref={bubblesRef} style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
-              {bubbles.map((b) => <VictorBubble key={b.id} bubble={b} />)}
-              {streamingText !== null && (
-                <VictorBubble bubble={{ who: "victor", text: streamingText || "…", id: -1 }} />
-              )}
-              {thinking && <ThinkingDots />}
-            </div>
+            {/* Bubbles — fenêtre à hauteur fixe : la page ne s'allonge plus */}
+            {chatOpen && (
+              <div ref={bubblesRef} style={{ height: 300, overflowY: "auto", padding: "12px 14px" }}>
+                {bubbles.map((b) => <VictorBubble key={b.id} bubble={b} />)}
+                {streamingText !== null && (
+                  <VictorBubble bubble={{ who: "victor", text: streamingText || "…", id: -1 }} />
+                )}
+                {thinking && <ThinkingDots />}
+              </div>
+            )}
+            {!chatOpen && (thinking || streamingText !== null) && (
+              <div style={{ padding: "8px 14px", fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
+                🎭 Victor réfléchit…
+              </div>
+            )}
 
             {/* Input */}
             <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--color-border-rgb)" }}>
