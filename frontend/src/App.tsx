@@ -29,6 +29,7 @@ import { Simulation } from "@/pages/Simulation";
 import { GobanCoach } from "@/pages/GobanCoach";
 import { Terrain } from "@/pages/Terrain";
 import { Mandats } from "@/pages/Mandats";
+import { Aide } from "@/pages/Aide";
 import { Legal } from "@/pages/Legal";
 import { Subscribe } from "@/pages/Subscribe";
 import { hasAccess } from "@/lib/useSubscription";
@@ -63,6 +64,7 @@ function ProtectedRoutes() {
         <Route path="agenda" element={<Agenda />} />
         <Route path="documents" element={<Documents />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="aide" element={<Aide />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

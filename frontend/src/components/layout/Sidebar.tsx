@@ -51,7 +51,10 @@ const SECTIONS: { title: string; items: { to: string; label: string; icon: strin
   },
   {
     title: "Compte",
-    items: [{ to: "/settings", label: "Réglages", icon: "◈" }],
+    items: [
+      { to: "/settings", label: "Réglages", icon: "◈" },
+      { to: "/aide", label: "Aide & tutoriels", icon: "❔" },
+    ],
   },
 ];
 

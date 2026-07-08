@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/agenda": "Agenda",
   "/documents": "Documents",
   "/settings": "Réglages",
+  "/aide": "Aide & tutoriels",
 };
 
 export function AppShell() {
