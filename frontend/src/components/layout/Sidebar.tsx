@@ -6,7 +6,7 @@ import type { Profile } from "@/types";
 
 // Navigation regroupée par thématique de parcours (pilotage → stratégie →
 // acquisition → gestion → compte). Générique : aucun lien personnel.
-const SECTIONS: { title: string; items: { to: string; label: string; icon: string }[] }[] = [
+const SECTIONS: { title: string; items: { to: string; label: string; icon: string; external?: boolean }[] }[] = [
   {
     title: "Pilotage",
     items: [
@@ -53,7 +53,7 @@ const SECTIONS: { title: string; items: { to: string; label: string; icon: strin
     title: "Compte",
     items: [
       { to: "/settings", label: "Réglages", icon: "◈" },
-      { to: "/aide", label: "Aide & tutoriels", icon: "❔" },
+      { to: "/presentation/", label: "Aide & tutoriels", icon: "❔", external: true },
     ],
   },
 ];
@@ -263,29 +263,54 @@ export function Sidebar() {
             >
               {section.title}
             </div>
-            {section.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                style={({ isActive }) => ({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  padding: "var(--space-2) var(--space-6)",
-                  color: isActive ? "var(--color-gold)" : "var(--color-text-secondary)",
-                  textDecoration: "none",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: isActive ? 500 : 400,
-                  borderLeft: isActive ? "2px solid var(--color-gold)" : "2px solid transparent",
-                  background: isActive ? "var(--color-gold-glow)" : "transparent",
-                  transition: "all var(--transition-fast)",
-                })}
-              >
-                <span style={{ fontSize: 14, opacity: 0.7 }}>{item.icon}</span>
-                {item.label}
-              </NavLink>
-            ))}
+            {section.items.map((item) =>
+              item.external ? (
+                <a
+                  key={item.to}
+                  href={item.to}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-3)",
+                    padding: "var(--space-2) var(--space-6)",
+                    color: "var(--color-text-secondary)",
+                    textDecoration: "none",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 400,
+                    borderLeft: "2px solid transparent",
+                    transition: "all var(--transition-fast)",
+                  }}
+                >
+                  <span style={{ fontSize: 14, opacity: 0.7 }}>{item.icon}</span>
+                  {item.label}
+                  <span style={{ marginLeft: "auto", fontSize: 10, opacity: 0.5 }}>↗</span>
+                </a>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  style={({ isActive }) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-3)",
+                    padding: "var(--space-2) var(--space-6)",
+                    color: isActive ? "var(--color-gold)" : "var(--color-text-secondary)",
+                    textDecoration: "none",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: isActive ? 500 : 400,
+                    borderLeft: isActive ? "2px solid var(--color-gold)" : "2px solid transparent",
+                    background: isActive ? "var(--color-gold-glow)" : "transparent",
+                    transition: "all var(--transition-fast)",
+                  })}
+                >
+                  <span style={{ fontSize: 14, opacity: 0.7 }}>{item.icon}</span>
+                  {item.label}
+                </NavLink>
+              ),
+            )}
           </div>
         ))}
       </nav>

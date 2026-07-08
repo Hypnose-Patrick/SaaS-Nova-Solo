@@ -14,7 +14,7 @@ import { N8nCard } from "@/components/settings/N8nCard";
 import { GoogleDriveCard } from "@/components/settings/GoogleDriveCard";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { SubscribeButton } from "@/components/SubscribeButton";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const MAX_LOGO_BYTES = 500 * 1024; // 500 Ko — stocké en data URL dans le profil
 
@@ -227,8 +227,10 @@ export function Settings() {
         <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", marginTop: "var(--space-1)" }}>
           Votre profil, votre marque, et les paramètres financiers utilisés par le Dashboard.
         </p>
-        <Link
-          to="/aide"
+        <a
+          href="/presentation/"
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
             display: "inline-block",
             marginTop: "var(--space-2)",
@@ -239,8 +241,8 @@ export function Settings() {
             textDecoration: "none",
           }}
         >
-          ❔ Aide & tutoriels — un guide vidéo et écrit par module
-        </Link>
+          ❔ Aide & tutoriels — un guide vidéo et écrit par module ↗
+        </a>
       </div>
 
       {/* Section : Identité */}
