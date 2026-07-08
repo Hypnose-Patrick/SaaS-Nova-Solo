@@ -7,8 +7,11 @@ import { askAgent } from "@/lib/ai";
 
 const BUCKET = "nova-docs";
 
-// Extensions dont le contenu est lisible en texte → analysables par l'IA.
+// Extensions dont le contenu est lisible en texte brut → analysables par l'IA
+// directement. PDF et DOCX sont analysables aussi, via extraction dédiée
+// (voir pdfToText/docxToText) — le .doc binaire (Word 97-2003) ne l'est pas.
 const TEXT_EXTS = ["txt", "csv", "md", "json", "log", "tsv"];
+const ANALYZABLE_EXTS = [...TEXT_EXTS, "pdf", "docx"];
 const MAX_ANALYZE_CHARS = 6000;
 
 interface StorageFile {
@@ -41,6 +44,7 @@ export function Documents() {
   const [files, setFiles]       = useState<StorageFile[]>([]);
   const [loading, setLoading]   = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [signing, setSigning]   = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
@@ -66,9 +70,8 @@ export function Documents() {
     setLoading(false);
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !folder) return;
+  async function uploadFile(file: File) {
+    if (!folder) return;
     setUploading(true);
     setError(null);
     const path = `${folder}/${file.name}`;
@@ -76,7 +79,26 @@ export function Documents() {
     if (err) setError(err.message);
     else await loadFiles();
     setUploading(false);
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) await uploadFile(file);
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    if (!dragOver) setDragOver(true);
+  }
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
+  }
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await uploadFile(file);
   }
 
   async function downloadFile(name: string) {
@@ -98,7 +120,31 @@ export function Documents() {
     setAnalysis((a) => { const next = { ...a }; delete next[name]; return next; });
   }
 
-  // Analyse IA d'un document texte : télécharge le contenu et le résume.
+  // Extrait le texte d'un PDF côté navigateur (pdfjs, chargé à la demande).
+  async function pdfToText(blob: Blob): Promise<string> {
+    const pdfjs = await import("pdfjs-dist");
+    const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const doc = await pdfjs.getDocument({ data: await blob.arrayBuffer() }).promise;
+    let text = "";
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map((it) => ("str" in it ? it.str : "")).join(" ") + "\n";
+    }
+    return text;
+  }
+
+  // Extrait le texte d'un .docx côté navigateur (mammoth, chargé à la demande).
+  // Le format binaire .doc (Word 97-2003) n'a pas d'équivalent client-side viable — non supporté.
+  async function docxToText(blob: Blob): Promise<string> {
+    const mammoth = await import("mammoth");
+    const { value } = await mammoth.extractRawText({ arrayBuffer: await blob.arrayBuffer() });
+    return value;
+  }
+
+  // Analyse IA d'un document : télécharge le contenu, en extrait le texte
+  // (PDF/DOCX en plus des formats texte bruts), puis le résume.
   async function analyzeDoc(name: string) {
     if (!folder) return;
     setError(null);
@@ -107,8 +153,13 @@ export function Documents() {
     try {
       const { data, error: dErr } = await supabase.storage.from(BUCKET).download(`${folder}/${name}`);
       if (dErr || !data) throw new Error(dErr?.message ?? "Téléchargement impossible");
-      const text = (await data.text()).slice(0, MAX_ANALYZE_CHARS);
-      if (!text.trim()) throw new Error("Document vide");
+
+      const ext = fileExt(name);
+      const rawText = ext === "pdf" ? await pdfToText(data)
+        : ext === "docx" ? await docxToText(data)
+        : await data.text();
+      const text = rawText.slice(0, MAX_ANALYZE_CHARS);
+      if (!text.trim()) throw new Error(ext === "pdf" ? "PDF sans texte exploitable (probablement scanné)." : "Document vide.");
       const reply = await askAgent(
         "nova",
         `Analyse ce document professionnel intitulé « ${name} ». Donne : (1) le type de document, (2) un résumé en 3-4 points clés, (3) une catégorie de classement suggérée, (4) toute action ou échéance à ne pas manquer si présente. Sois concis. Document :\n"""${text}"""`,
@@ -174,8 +225,18 @@ export function Documents() {
         </div>
       )}
 
-      {/* Liste */}
-      <Card glass>
+      {/* Liste / zone de dépôt — glisser-déposer un fichier n'importe où ici l'envoie */}
+      <Card
+        glass
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{
+          border: dragOver ? "1px dashed var(--color-gold)" : undefined,
+          background: dragOver ? "rgba(197,165,114,0.06)" : undefined,
+          transition: "background var(--transition-fast), border-color var(--transition-fast)",
+        }}
+      >
         {loading ? (
           <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", padding: "var(--space-4)" }}>
             Chargement…
@@ -187,7 +248,9 @@ export function Documents() {
             </div>
             <div>
               <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", margin: 0 }}>
-                Aucun fichier. Cliquez sur <strong style={{ color: "var(--color-gold)" }}>+ Téléverser</strong> pour commencer.
+                {dragOver ? "Lâchez pour envoyer…" : (
+                  <>Glissez-déposez un fichier ici, ou cliquez sur <strong style={{ color: "var(--color-gold)" }}>+ Téléverser</strong>.</>
+                )}
               </p>
               <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-xs)", marginTop: "var(--space-2)" }}>
                 PDF, images, Word, Excel — tout format accepté.
@@ -212,7 +275,7 @@ export function Documents() {
                 ? new Date(file.updated_at).toLocaleDateString("fr-CH", { day: "2-digit", month: "short", year: "numeric" })
                 : "—";
 
-              const canAnalyze = TEXT_EXTS.includes(ext);
+              const canAnalyze = ANALYZABLE_EXTS.includes(ext);
 
               return (
                 <div key={file.name} style={{ borderBottom: "var(--border-subtle)" }}>
@@ -288,7 +351,7 @@ export function Documents() {
                       onClick={() => downloadFile(file.name)}
                       style={{ fontSize: "var(--text-xs)", padding: "2px 8px" }}
                     >
-                      Ouvrir
+                      Télécharger
                     </Button>
                     <button
                       onClick={() => deleteFile(file.name)}
@@ -320,8 +383,8 @@ export function Documents() {
 
       {/* Note sécurité */}
       <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", paddingTop: "var(--space-2)" }}>
-        Vos fichiers sont stockés dans un bucket privé — inaccessibles sans authentification. Les liens d'ouverture expirent après 1 heure.
-        Les fichiers texte (txt, csv, md, json…) peuvent être analysés par Nova directement depuis la liste.
+        Vos fichiers sont stockés dans un bucket privé — inaccessibles sans authentification. Les liens de téléchargement expirent après 1 heure.
+        Les fichiers texte (txt, csv, md, json…), les PDF et les documents Word (.docx) peuvent être analysés par Nova directement depuis la liste — le format .doc (Word 97-2003) n'est pas encore supporté.
       </p>
     </div>
   );
