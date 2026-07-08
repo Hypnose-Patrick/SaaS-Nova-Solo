@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
+import { useSubscription } from "@/lib/useSubscription";
 import { supabase } from "@/lib/supabase";
+import { printHtml, downloadWord, escapeHtml } from "@/lib/exportDoc";
 import type { Invoice } from "@/types";
 
 const STATUS_LABEL: Record<Invoice["status"], string> = {
@@ -34,6 +37,8 @@ interface LineItem {
 
 export function Factures() {
   const profile = useUserStore((s) => s.profile);
+  const navigate = useNavigate();
+  const { isActive } = useSubscription();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -42,6 +47,7 @@ export function Factures() {
   const [clientEmail, setClientEmail] = useState("");
   const [lines, setLines] = useState<LineItem[]>([{ description: "", qty: 1, unit_price: 0 }]);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -74,40 +80,171 @@ export function Factures() {
     setLines((l) => l.map((line, idx) => (idx === i ? { ...line, [field]: value } : line)));
   }
 
-  async function createInvoice() {
+  function resetForm() {
+    setClientName("");
+    setClientEmail("");
+    setLines([{ description: "", qty: 1, unit_price: 0 }]);
+    setEditingId(null);
+    setShowForm(false);
+  }
+
+  function startEdit(inv: Invoice) {
+    setEditingId(inv.id);
+    setClientName(inv.client_name ?? "");
+    setClientEmail(inv.client_email ?? "");
+    setLines(inv.items && inv.items.length > 0 ? inv.items : [{ description: "", qty: 1, unit_price: 0 }]);
+    setShowForm(true);
+  }
+
+  async function saveInvoice() {
     if (!profile?.id || !clientName.trim()) return;
     setSaving(true);
-    const num = `INV-${Date.now().toString().slice(-6)}`;
     const ht = amountHt();
     const ttc = amountTtc();
-    const { data } = await supabase
-      .from("invoices")
-      .insert({
-        profile_id: profile.id,
-        number: num,
+
+    if (editingId) {
+      const patch = {
         client_name: clientName,
         client_email: clientEmail || null,
-        date: new Date().toISOString().slice(0, 10),
         amount_ht: ht,
         tva_rate: TVA_CH,
         amount_ttc: ttc,
         items: lines,
-        status: "draft",
-      })
-      .select()
-      .single();
+      };
+      const { data } = await supabase.from("invoices").update(patch).eq("id", editingId).select().single();
+      if (data) setInvoices((prev) => prev.map((i) => (i.id === editingId ? (data as Invoice) : i)));
+    } else {
+      const num = `INV-${Date.now().toString().slice(-6)}`;
+      const { data } = await supabase
+        .from("invoices")
+        .insert({
+          profile_id: profile.id,
+          number: num,
+          client_name: clientName,
+          client_email: clientEmail || null,
+          date: new Date().toISOString().slice(0, 10),
+          amount_ht: ht,
+          tva_rate: TVA_CH,
+          amount_ttc: ttc,
+          items: lines,
+          status: "draft",
+        })
+        .select()
+        .single();
+      if (data) setInvoices((prev) => [data as Invoice, ...prev]);
+    }
 
-    if (data) setInvoices((prev) => [data as Invoice, ...prev]);
-    setClientName("");
-    setClientEmail("");
-    setLines([{ description: "", qty: 1, unit_price: 0 }]);
-    setShowForm(false);
+    resetForm();
     setSaving(false);
   }
 
   async function updateStatus(id: string, status: Invoice["status"]) {
     await supabase.from("invoices").update({ status }).eq("id", id);
     setInvoices((inv) => inv.map((i) => (i.id === id ? { ...i, status } : i)));
+  }
+
+  async function deleteInvoice(inv: Invoice) {
+    if (!window.confirm(`Supprimer la facture ${inv.number} (${inv.client_name ?? "client"}) ? Cette action est irréversible.`)) return;
+    await supabase.from("invoices").delete().eq("id", inv.id);
+    setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+    if (editingId === inv.id) resetForm();
+  }
+
+  // Export PDF/Word d'une facture individuelle — réservé aux abonnés (même règle que CV/Business plan/Dossier).
+  function buildInvoiceHtml(inv: Invoice): string {
+    const company = profile?.brand_name || profile?.name || "Indépendant·e";
+    const items = inv.items ?? [];
+    const rows = items
+      .map(
+        (it) =>
+          `<tr><td>${escapeHtml(it.description)}</td>` +
+          `<td style="text-align:right">${it.qty}</td>` +
+          `<td style="text-align:right">${formatChf(it.unit_price)}</td>` +
+          `<td style="text-align:right">${formatChf(it.qty * it.unit_price)}</td></tr>`,
+      )
+      .join("");
+    const tva = (inv.amount_ttc ?? 0) - (inv.amount_ht ?? 0);
+
+    return (
+      `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Facture ${escapeHtml(inv.number)}</title>` +
+      `<style>
+        body{font-family:Calibri,Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 24px;color:#1a1a1a;font-size:13px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
+        h1{font-size:20px;margin:0 0 4px}
+        .muted{color:#666;font-size:12px}
+        .block{margin-bottom:24px}
+        table{width:100%;border-collapse:collapse;margin-bottom:16px}
+        th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#666;border-bottom:1px solid #ccc;padding:6px 4px}
+        td{padding:6px 4px;border-bottom:1px solid #eee}
+        .totals{margin-left:auto;width:260px}
+        .totals div{display:flex;justify-content:space-between;padding:4px 0}
+        .totals .total{font-weight:700;font-size:15px;border-top:1px solid #333;padding-top:8px;margin-top:4px}
+      </style></head><body>` +
+      `<div class="head">` +
+      `<div><h1>${escapeHtml(company)}</h1>` +
+      (profile?.contact_adresse ? `<div class="muted">${escapeHtml(profile.contact_adresse)}</div>` : "") +
+      (profile?.contact_email ? `<div class="muted">${escapeHtml(profile.contact_email)}</div>` : "") +
+      (profile?.contact_tel ? `<div class="muted">${escapeHtml(profile.contact_tel)}</div>` : "") +
+      `</div>` +
+      `<div style="text-align:right">` +
+      `<h1>Facture ${escapeHtml(inv.number)}</h1>` +
+      `<div class="muted">Date : ${escapeHtml(inv.date)}</div>` +
+      `<div class="muted">Statut : ${escapeHtml(STATUS_LABEL[inv.status])}</div>` +
+      `</div></div>` +
+      `<div class="block"><div class="muted" style="text-transform:uppercase;font-size:11px;letter-spacing:.05em;margin-bottom:4px">Facturé à</div>` +
+      `<div>${escapeHtml(inv.client_name || "—")}</div>` +
+      (inv.client_email ? `<div class="muted">${escapeHtml(inv.client_email)}</div>` : "") +
+      `</div>` +
+      `<table><thead><tr><th>Description</th><th style="text-align:right">Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Total</th></tr></thead>` +
+      `<tbody>${rows}</tbody></table>` +
+      `<div class="totals">` +
+      `<div><span>Sous-total HT</span><span>${formatChf(inv.amount_ht)}</span></div>` +
+      `<div><span>TVA ${inv.tva_rate}%</span><span>${formatChf(tva)}</span></div>` +
+      `<div class="total"><span>Total TTC</span><span>${formatChf(inv.amount_ttc)}</span></div>` +
+      `</div></body></html>`
+    );
+  }
+
+  function exportInvoicePdf(inv: Invoice) {
+    if (!isActive) { navigate("/settings"); return; }
+    printHtml(buildInvoiceHtml(inv));
+  }
+  function exportInvoiceWord(inv: Invoice) {
+    if (!isActive) { navigate("/settings"); return; }
+    downloadWord(`facture-${inv.number}`, buildInvoiceHtml(inv));
+  }
+
+  // Export CSV de l'ensemble des factures (donnée brute, non réservé aux abonnés — même règle que Compta/Finances).
+  function csvField(s: string | number): string {
+    const v = String(s ?? "");
+    const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return /[";\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  }
+  function exportInvoicesCsv() {
+    if (invoices.length === 0) return;
+    const header = ["N°", "Client", "Email", "Date", "Montant HT", "TVA %", "Montant TTC", "Statut"];
+    const body = invoices.map((i) =>
+      [
+        i.number,
+        i.client_name ?? "",
+        i.client_email ?? "",
+        i.date,
+        (i.amount_ht ?? 0).toFixed(2),
+        String(i.tva_rate),
+        (i.amount_ttc ?? 0).toFixed(2),
+        STATUS_LABEL[i.status],
+      ]
+        .map(csvField)
+        .join(";"),
+    );
+    const csv = "﻿" + [header.map(csvField).join(";"), ...body].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `factures_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 150);
   }
 
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + (i.amount_ttc ?? 0), 0);
@@ -125,9 +262,21 @@ export function Factures() {
             Créez et suivez vos factures clients (TVA {TVA_CH}%).
           </p>
         </div>
-        <Button size="sm" variant="gold" onClick={() => setShowForm(!showForm)}>
-          + Nouvelle facture
-        </Button>
+        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <Button size="sm" variant="ghost" disabled={invoices.length === 0} onClick={exportInvoicesCsv}>
+            ⬇ Export CSV
+          </Button>
+          <Button
+            size="sm"
+            variant="gold"
+            onClick={() => {
+              if (showForm) resetForm();
+              else setShowForm(true);
+            }}
+          >
+            {showForm ? "Annuler" : "+ Nouvelle facture"}
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -141,7 +290,7 @@ export function Factures() {
       {showForm && (
         <Card glass>
           <p style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--color-text-primary)", marginBottom: "var(--space-4)" }}>
-            Nouvelle facture
+            {editingId ? "Modifier la facture" : "Nouvelle facture"}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
             <Input label="Client *" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Société SA" />
@@ -211,8 +360,10 @@ export function Factures() {
           </div>
 
           <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <Button size="sm" variant="gold" loading={saving} onClick={createInvoice}>Créer la facture</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Annuler</Button>
+            <Button size="sm" variant="gold" loading={saving} onClick={saveInvoice}>
+              {editingId ? "Enregistrer les modifications" : "Créer la facture"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={resetForm}>Annuler</Button>
           </div>
         </Card>
       )}
@@ -230,8 +381,8 @@ export function Factures() {
         <Card glass>
           <div style={{ display: "flex", flexDirection: "column" }}>
             {/* En-tête tableau */}
-            <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 120px 120px 140px", gap: "var(--space-4)", padding: "var(--space-2) var(--space-4)", borderBottom: "var(--border-subtle)" }}>
-              {["N°", "Client", "Email", "Date", "Montant TTC", "Statut"].map((h) => (
+            <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 1fr 100px 110px 120px 150px", gap: "var(--space-4)", padding: "var(--space-2) var(--space-4)", borderBottom: "var(--border-subtle)" }}>
+              {["N°", "Client", "Email", "Date", "Montant TTC", "Statut", "Actions"].map((h) => (
                 <span key={h} style={{ fontSize: "var(--text-xs)", fontWeight: 500, letterSpacing: "var(--tracking-wider)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
                   {h}
                 </span>
@@ -243,7 +394,7 @@ export function Factures() {
                 key={inv.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "120px 1fr 1fr 120px 120px 140px",
+                  gridTemplateColumns: "110px 1fr 1fr 100px 110px 120px 150px",
                   gap: "var(--space-4)",
                   padding: "var(--space-3) var(--space-4)",
                   borderBottom: "var(--border-subtle)",
@@ -285,6 +436,36 @@ export function Factures() {
                       ✓
                     </button>
                   )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => startEdit(inv)}
+                    title="Modifier la facture"
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", padding: "2px" }}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => deleteInvoice(inv)}
+                    title="Supprimer la facture"
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-danger)", padding: "2px" }}
+                  >
+                    🗑
+                  </button>
+                  <button
+                    onClick={() => exportInvoicePdf(inv)}
+                    title={isActive ? "Exporter en PDF" : "Export PDF réservé aux abonnés"}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: isActive ? 1 : 0.5, padding: "2px" }}
+                  >
+                    🖨
+                  </button>
+                  <button
+                    onClick={() => exportInvoiceWord(inv)}
+                    title={isActive ? "Exporter en Word" : "Export Word réservé aux abonnés"}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: isActive ? 1 : 0.5, padding: "2px" }}
+                  >
+                    📝
+                  </button>
                 </div>
               </div>
             ))}
