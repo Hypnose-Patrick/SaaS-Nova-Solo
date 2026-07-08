@@ -76,7 +76,7 @@ async function callOpenRouter(
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 1500,
+      max_tokens: 4000,
       temperature: 0.7,
     }),
   });
@@ -106,7 +106,7 @@ async function callOpenRouterStream(
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 1500,
+      max_tokens: 4000,
       temperature: 0.7,
       stream: true,
     }),
@@ -144,7 +144,7 @@ async function callAnthropic(
       model,
       system,
       messages,
-      max_tokens: 1500,
+      max_tokens: 4000,
     }),
   });
   if (!res.ok) {
@@ -176,7 +176,7 @@ async function callOpenAICompatible(
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 1500,
+      max_tokens: 4000,
       temperature: 0.7,
     }),
   });
@@ -204,7 +204,7 @@ async function callAnthropicByok(
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, system, messages, max_tokens: 1500 }),
+    body: JSON.stringify({ model, system, messages, max_tokens: 4000 }),
   });
   if (!res.ok) {
     const detail = await res.text();
