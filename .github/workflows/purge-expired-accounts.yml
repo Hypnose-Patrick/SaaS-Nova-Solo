@@ -16,5 +16,6 @@ jobs:
         run: |
           curl --fail-with-body -sS -X POST \
             "${{ secrets.SUPABASE_URL }}/functions/v1/purge-expired-accounts" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
             -H "x-purge-secret: ${{ secrets.PURGE_CRON_SECRET }}" \
             -H "Content-Type: application/json"
