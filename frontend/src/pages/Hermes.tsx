@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useUserStore } from "@/stores/useUserStore";
 import { askAgent } from "@/lib/ai";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import type { AgentKey } from "@/types";
 
 // Les 6 agents-conseils du Cabinet Hermès (nova = copilote global, hors cabinet).
@@ -43,22 +43,53 @@ interface Turn {
   content: string;
 }
 
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon des fils du dernier projet actif.
+function migrateLegacyHermes(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_hermes_threads", projectId)) != null) return;
+  const v = localStorage.getItem("ns_hermes_threads");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_hermes_threads", projectId), v);
+  localStorage.removeItem("ns_hermes_threads");
+}
+
+function loadHermes(projectId: string | null | undefined) {
+  return {
+    threads: loadLocal<Record<string, Turn[]>>(projectKey("ns_hermes_threads", projectId), {}),
+  };
+}
+
 export function Hermes() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const [active, setActive] = useState<Conseiller | null>(null);
-  const [threads, setThreads] = useState<Record<string, Turn[]>>(() =>
-    loadLocal("ns_hermes_threads", {} as Record<string, Turn[]>),
-  );
+
+  useEffect(() => { if (projectId) migrateLegacyHermes(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [threads, setThreads] = useState<Record<string, Turn[]>>(() => loadHermes(projectId).threads);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // les fils propres à ce projet au lieu de garder ceux affichés à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadHermes(projectId);
+    setThreads(d.threads);
+    setActive(null);
+  }, [projectId]);
 
   const history = active ? threads[active.key] ?? [] : [];
 
   function persist(next: Record<string, Turn[]>) {
     setThreads(next);
-    saveLocal("ns_hermes_threads", next);
+    saveLocal(projectKey("ns_hermes_threads", projectId), next);
   }
 
   async function send(text?: string) {

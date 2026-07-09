@@ -6,7 +6,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { callAIStream } from "@/lib/ai";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import type { Profile, Prospect } from "@/types";
 
 // ── CDN Audio (Bunny.net) ──────────────────────────────────────────────────────
@@ -33,6 +33,23 @@ type Screen = "intro" | "setup" | "game" | "end" | "rules" | "diagnostic";
 type CoachLevel = "debutant" | "intermediaire" | "expert";
 type CareerMode = "oui" | "non";
 type GameMode = "solo" | "2p";
+
+interface GobanCfg { size: BoardSize; level: CoachLevel; career: CareerMode; bizData?: boolean }
+
+// Reprend l'ancienne config globale (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis l'efface — sans ça
+// tout nouveau projet hériterait de la config du dernier projet actif.
+function migrateLegacyGobanCfg(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_goban_cfg", projectId)) != null) return;
+  const v = localStorage.getItem("ns_goban_cfg");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_goban_cfg", projectId), v);
+  localStorage.removeItem("ns_goban_cfg");
+}
+
+function loadGobanCfg(projectId: string | null | undefined) {
+  return loadLocal<GobanCfg | null>(projectKey("ns_goban_cfg", projectId), null);
+}
 
 interface Move { row: number; col: number; color: Stone; label: string; num: number }
 interface BubbleData { who: "victor" | "user" | "system"; text: string; id: number }
@@ -662,9 +679,13 @@ function ThinkingDots() {
 // ── Main component ─────────────────────────────────────────────────────────────
 export function GobanCoach() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const prospects = useAppStore((s) => s.prospects);
   const fetchProspects = useAppStore((s) => s.fetchProspects);
   const { gen, loading } = useAiGen();
+  const prevProjectId = useRef(projectId);
+
+  useEffect(() => { if (projectId) migrateLegacyGobanCfg(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Config
   const [size, setSize] = useState<BoardSize>(9);
@@ -734,9 +755,20 @@ export function GobanCoach() {
 
   // Persist config
   useEffect(() => {
-    const saved = loadLocal<{ size: BoardSize; level: CoachLevel; career: CareerMode; bizData?: boolean } | null>("ns_goban_cfg", null);
+    const saved = loadGobanCfg(projectId);
     if (saved) { setSize(saved.size); setLevel(saved.level); setCareer(saved.career); setBizData(saved.bizData ?? true); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // la config propre à ce projet au lieu de garder celle affichée à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const saved = loadGobanCfg(projectId);
+    if (saved) { setSize(saved.size); setLevel(saved.level); setCareer(saved.career); setBizData(saved.bizData ?? true); }
+  }, [projectId]);
 
   useEffect(() => {
     if (bubblesRef.current) bubblesRef.current.scrollTop = bubblesRef.current.scrollHeight;
@@ -811,7 +843,7 @@ export function GobanCoach() {
 
   async function startGame() {
     stopAudio();
-    saveLocal("ns_goban_cfg", { size, level, career, bizData });
+    saveLocal(projectKey("ns_goban_cfg", projectId), { size, level, career, bizData });
     if (career === "oui" && bizData && profile) fetchProspects(profile.id);
     initBoard();
     setScreen("game");

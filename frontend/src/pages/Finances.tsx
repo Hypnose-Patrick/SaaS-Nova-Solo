@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { KpiCard } from "@/components/ui/KpiCard";
@@ -7,7 +7,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptFinanceAnalyse } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import type { Profile } from "@/types";
 import { activitePreset } from "@/lib/activite";
 import {
@@ -65,6 +65,29 @@ function buildNeutralModel(profile: Profile | null): FinModel {
 }
 function profileSeeded(profile: Profile | null): boolean {
   return !!profile && ((Number(profile.capital) || 0) > 0 || (Number(profile.charges_fixes) || 0) > 0);
+}
+
+const ANALYSE_KEY = "ns_finance_analyse";
+const FIN_MODULE_KEYS = [FIN_KEY, ANALYSE_KEY] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du budget du dernier projet actif.
+function migrateLegacyFinances(projectId: string) {
+  if (localStorage.getItem(projectKey(FIN_KEY, projectId)) != null) return;
+  if (localStorage.getItem(FIN_KEY) == null) return;
+  for (const base of FIN_MODULE_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  FIN_MODULE_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadFinances(profile: Profile | null, projectId: string | null | undefined) {
+  return {
+    fin: loadLocal<FinModel | null>(projectKey(FIN_KEY, projectId), null) ?? buildNeutralModel(profile),
+    analyse: loadLocal<string | null>(projectKey(ANALYSE_KEY, projectId), null),
+  };
 }
 
 
@@ -162,12 +185,16 @@ const numTd: React.CSSProperties = { ...tdStyle, textAlign: "right", fontFamily:
 
 export function Finances() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { compta, fetchCompta } = useAppStore();
   const { loading: aiLoading, error: aiError, gen } = useAiGen();
 
-  const [fin, setFin] = useState<FinModel>(() => loadLocal<FinModel>(FIN_KEY, buildNeutralModel(useUserStore.getState().profile)));
-  const [analyse, setAnalyse] = useState<string | null>(() => loadLocal<string | null>("ns_finance_analyse", null));
+  useEffect(() => { if (projectId) migrateLegacyFinances(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [fin, setFin] = useState<FinModel>(() => loadFinances(profile, projectId).fin);
+  const [analyse, setAnalyse] = useState<string | null>(() => loadFinances(profile, projectId).analyse);
   const [sarlCA, setSarlCA] = useState("");
+  const prevProjectId = useRef(projectId);
 
   useEffect(() => {
     if (profile?.id) fetchCompta(profile.id);
@@ -176,14 +203,24 @@ export function Finances() {
   // Pré-remplissage depuis le profil : seulement si aucun budget n'a encore été
   // saisi (on n'écrase jamais les données de l'utilisateur déjà enregistrées).
   useEffect(() => {
-    if (profile && localStorage.getItem(FIN_KEY) == null) setFin(buildNeutralModel(profile));
+    if (profile && localStorage.getItem(projectKey(FIN_KEY, projectId)) == null) setFin(buildNeutralModel(profile));
   }, [profile?.id]);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le budget propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadFinances(profile, projectId);
+    setFin(d.fin); setAnalyse(d.analyse);
+  }, [projectId]);
 
   function update(mut: (f: FinModel) => void) {
     setFin((prev) => {
       const next: FinModel = JSON.parse(JSON.stringify(prev));
       mut(next);
-      saveLocal(FIN_KEY, next);
+      saveLocal(projectKey(FIN_KEY, projectId), next);
       return next;
     });
   }
@@ -232,7 +269,7 @@ export function Finances() {
   function resetCanon() {
     if (!confirm("Réinitialiser le budget ? Tes modifications seront perdues et les valeurs repartiront de ton profil (capital, charges fixes).")) return;
     const seed = buildNeutralModel(profile);
-    saveLocal(FIN_KEY, seed); setFin(seed);
+    saveLocal(projectKey(FIN_KEY, projectId), seed); setFin(seed);
   }
 
   function exportCsv() {
@@ -247,7 +284,7 @@ export function Finances() {
   // Applique un résultat d'import au modèle et notifie l'utilisateur.
   function applyImport(res: { next: FinModel; applied: string[] }, source: string) {
     if (res.applied.length) {
-      saveLocal(FIN_KEY, res.next); setFin(res.next);
+      saveLocal(projectKey(FIN_KEY, projectId), res.next); setFin(res.next);
       alert(`Budget importé (${source}) : ${res.applied.join(" · ")} mis à jour.`);
     } else {
       alert("Rien à importer. Le fichier doit comporter des colonnes reconnaissables (Mois / CA / Charges), une ligne par mois — ou exporte d'abord un modèle CSV pour retrouver le format.");
@@ -370,7 +407,7 @@ export function Finances() {
       ? ` Capital injecté à M${fin.injectionMonth} : ${chf(fin.capitalInjection)} CHF.` : "";
     const resume = `Scénario ${fin.scenario} (${fin.scenarios[fin.scenario].label}), 12 mois (${rows[0]?.period} → ${rows[rows.length - 1]?.period}). CA total ${chf(k.caTot)} CHF, charges ${chf(k.chTot)} CHF, EBITDA ${chf(k.ebTot)} CHF. Trésorerie : plancher ${chf(k.tresoMin)} CHF, pic ${chf(k.tresoMax)} CHF. 1er mois EBITDA positif : ${k.be}.${inj} Détail : ${rows.map((r) => `${r.m} CA ${chf(r.ca)}/ch ${chf(r.charges)}→tréso ${chf(r.treso)}`).join(" ; ")}.`;
     const r = await gen("financier", promptFinanceAnalyse(profile, resume), { model: MODEL_REASONING });
-    if (r) { setAnalyse(r); saveLocal("ns_finance_analyse", r); }
+    if (r) { setAnalyse(r); saveLocal(projectKey(ANALYSE_KEY, projectId), r); }
   }
 
   // ── Calculateur RI → Sàrl ──

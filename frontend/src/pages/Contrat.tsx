@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -6,7 +6,7 @@ import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptContrat } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
 import { ExportGate } from "@/components/ExportGate";
 
@@ -27,20 +27,58 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const CONTRAT_KEYS = ["ns_contrat_type", "ns_contrat_duree", "ns_contrat_result"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du contrat du dernier projet actif.
+function migrateLegacyContrat(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_contrat_type", projectId)) != null) return;
+  if (localStorage.getItem("ns_contrat_type") == null) return;
+  for (const base of CONTRAT_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  CONTRAT_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadContrat(projectId: string | null | undefined) {
+  return {
+    type: loadLocal<string>(projectKey("ns_contrat_type", projectId), TYPES[0]),
+    duree: loadLocal<string>(projectKey("ns_contrat_duree", projectId), DUREES[0]),
+    result: loadLocal<string | null>(projectKey("ns_contrat_result", projectId), null),
+  };
+}
+
 export function Contrat() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { loading, error, gen } = useAiGen();
-  const [type, setType] = useState(() => loadLocal("ns_contrat_type", TYPES[0]));
-  const [duree, setDuree] = useState(() => loadLocal("ns_contrat_duree", DUREES[0]));
-  const [result, setResult] = useState<string | null>(() => loadLocal<string | null>("ns_contrat_result", null));
+
+  useEffect(() => { if (projectId) migrateLegacyContrat(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [type, setType] = useState(() => loadContrat(projectId).type);
+  const [duree, setDuree] = useState(() => loadContrat(projectId).duree);
+  const [result, setResult] = useState<string | null>(() => loadContrat(projectId).result);
 
   const [copied, setCopied] = useState(false);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le contrat propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadContrat(projectId);
+    setType(d.type); setDuree(d.duree); setResult(d.result);
+  }, [projectId]);
 
   async function generate() {
-    saveLocal("ns_contrat_type", type);
-    saveLocal("ns_contrat_duree", duree);
+    saveLocal(projectKey("ns_contrat_type", projectId), type);
+    saveLocal(projectKey("ns_contrat_duree", projectId), duree);
     const r = await gen("juriste", promptContrat(profile, type, duree), { model: MODEL_REASONING });
-    if (r) { setResult(r); saveLocal("ns_contrat_result", r); }
+    if (r) { setResult(r); saveLocal(projectKey("ns_contrat_result", projectId), r); }
   }
 
   const fileBase = `contrat_${type.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;

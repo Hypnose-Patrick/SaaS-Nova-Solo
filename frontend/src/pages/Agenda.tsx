@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import type { CalendarEvent } from "@/types";
 
 const DAYS_FR   = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -57,16 +57,48 @@ interface NewEvent {
   all_day: boolean;
 }
 
+const EISENHOWER_KEYS = ["ns_eisenhower"] as const;
+
+// Reprend l'ancienne matrice globale (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis l'efface — sans ça
+// tout nouveau projet hériterait sinon de la matrice du dernier projet actif.
+function migrateLegacyEisenhower(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_eisenhower", projectId)) != null) return;
+  if (localStorage.getItem("ns_eisenhower") == null) return;
+  for (const base of EISENHOWER_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  EISENHOWER_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadBoard(projectId: string | null | undefined): Board {
+  return loadLocal<Board>(projectKey("ns_eisenhower", projectId), EMPTY_BOARD);
+}
+
 export function Agenda() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { events, fetchEvents } = useAppStore();
 
+  useEffect(() => { if (projectId) migrateLegacyEisenhower(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Matrice d'Eisenhower — état levé ici pour qu'un événement de l'agenda puisse y être envoyé directement.
-  const [board, setBoard] = useState<Board>(() => loadLocal<Board>("ns_eisenhower", EMPTY_BOARD));
+  const [board, setBoard] = useState<Board>(() => loadBoard(projectId));
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // la matrice propre à ce projet au lieu de garder celle affichée à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    setBoard(loadBoard(projectId));
+  }, [projectId]);
 
   function persistBoard(next: Board) {
     setBoard(next);
-    saveLocal("ns_eisenhower", next);
+    saveLocal(projectKey("ns_eisenhower", projectId), next);
   }
   function addToMatrix(q: Quad, text: string) {
     const t = text.trim();

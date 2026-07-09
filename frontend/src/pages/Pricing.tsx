@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -7,7 +7,8 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptPricing } from "@/lib/lancementPrompts";
 import { activitePreset } from "@/lib/activite";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
+import type { Profile } from "@/types";
 
 const TEXTAREA: React.CSSProperties = {
   width: "100%", minHeight: 110, marginTop: "var(--space-2)",
@@ -45,30 +46,68 @@ const MVP_STEPS = [
   "Ajuster l'offre et fixer le prix définitif",
 ];
 
+const PRICING_KEYS = ["ns_pricing_offre", "ns_pricing_result", "ns_pricing_calc", "ns_pricing_mvp"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon des données du dernier projet actif.
+function migrateLegacyPricing(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_pricing_offre", projectId)) != null) return;
+  if (localStorage.getItem("ns_pricing_offre") == null) return;
+  for (const base of PRICING_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  PRICING_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadPricing(projectId: string | null | undefined, profile: Profile | null | undefined) {
+  return {
+    offre: loadLocal(projectKey("ns_pricing_offre", projectId), profile?.domaine ?? ""),
+    result: loadLocal<string | null>(projectKey("ns_pricing_result", projectId), null),
+    calc: loadLocal<CalcState>(projectKey("ns_pricing_calc", projectId), {
+      tarif: profile?.pricing_tarif ? String(profile.pricing_tarif) : "",
+      clients: profile?.pricing_clients ? String(profile.pricing_clients) : "",
+      charges: profile?.charges_fixes ? String(profile.charges_fixes) : "",
+      materiel: "",
+    }),
+    mvp: loadLocal<boolean[]>(projectKey("ns_pricing_mvp", projectId), MVP_STEPS.map(() => false)),
+  };
+}
+
 export function Pricing() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const preset = activitePreset(profile);
   const { loading, error, gen } = useAiGen();
-  const [offre, setOffre] = useState(() => loadLocal("ns_pricing_offre", profile?.domaine ?? ""));
-  const [result, setResult] = useState<string | null>(() => loadLocal<string | null>("ns_pricing_result", null));
 
-  const [calc, setCalc] = useState<CalcState>(() => loadLocal<CalcState>("ns_pricing_calc", {
-    tarif: profile?.pricing_tarif ? String(profile.pricing_tarif) : "",
-    clients: profile?.pricing_clients ? String(profile.pricing_clients) : "",
-    charges: profile?.charges_fixes ? String(profile.charges_fixes) : "",
-    materiel: "",
-  }));
-  const [mvp, setMvp] = useState<boolean[]>(() => loadLocal<boolean[]>("ns_pricing_mvp", MVP_STEPS.map(() => false)));
+  useEffect(() => { if (projectId) migrateLegacyPricing(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [offre, setOffre] = useState(() => loadPricing(projectId, profile).offre);
+  const [result, setResult] = useState<string | null>(() => loadPricing(projectId, profile).result);
+  const [calc, setCalc] = useState<CalcState>(() => loadPricing(projectId, profile).calc);
+  const [mvp, setMvp] = useState<boolean[]>(() => loadPricing(projectId, profile).mvp);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // les données propres à ce projet au lieu de garder celles affichées à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadPricing(projectId, profile);
+    setOffre(d.offre); setResult(d.result); setCalc(d.calc); setMvp(d.mvp);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function patchCalc(p: Partial<CalcState>) {
     const next = { ...calc, ...p };
     setCalc(next);
-    saveLocal("ns_pricing_calc", next);
+    saveLocal(projectKey("ns_pricing_calc", projectId), next);
   }
   function toggleMvp(i: number) {
     const next = mvp.map((v, j) => (j === i ? !v : v));
     setMvp(next);
-    saveLocal("ns_pricing_mvp", next);
+    saveLocal(projectKey("ns_pricing_mvp", projectId), next);
   }
 
   const tarif = Number(calc.tarif) || 0;
@@ -82,9 +121,9 @@ export function Pricing() {
   const hasCalc = tarif > 0 && clients > 0;
 
   async function generate() {
-    saveLocal("ns_pricing_offre", offre);
+    saveLocal(projectKey("ns_pricing_offre", projectId), offre);
     const r = await gen("financier", promptPricing(profile, offre), { model: MODEL_REASONING });
-    if (r) { setResult(r); saveLocal("ns_pricing_result", r); }
+    if (r) { setResult(r); saveLocal(projectKey("ns_pricing_result", projectId), r); }
   }
 
   return (

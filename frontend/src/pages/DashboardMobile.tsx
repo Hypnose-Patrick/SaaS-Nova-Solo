@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import { DevisExpress } from "@/components/dashboard/DevisExpress";
 import { OracleCard } from "@/components/dashboard/OracleCard";
 
@@ -35,6 +35,32 @@ const URGENCES: { nom: string; tel: string; note: string }[] = [
   { nom: "Pompiers", tel: "118", note: "Incendie, fuite, sauvetage" },
   { nom: "Urgences sanitaires", tel: "144", note: "Ambulance · urgence vitale" },
 ];
+
+// Clés localStorage partagées avec Dashboard.tsx (mêmes cases à cocher,
+// synchronisées entre les deux vues). ns_bienetre n'est pas affiché ici mais
+// doit rester dans la migration pour ne pas perdre les données desktop.
+const DASH_KEYS = ["ns_laci_71a", "ns_rituels", "ns_bienetre"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon des cases cochées du dernier projet actif.
+function migrateLegacyDashboard(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_laci_71a", projectId)) != null) return;
+  if (DASH_KEYS.every((k) => localStorage.getItem(k) == null)) return;
+  for (const base of DASH_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  DASH_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadDashboard(projectId: string | null | undefined) {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  return {
+    laciDone: loadLocal<boolean[]>(projectKey("ns_laci_71a", projectId), LACI_71A_STEPS.map(() => false)),
+    rituels: loadLocal<{ day: string; done: boolean[] }>(projectKey("ns_rituels", projectId), { day: todayKey, done: RITUELS.map(() => false) }),
+  };
+}
 
 const DAYS = ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."];
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -110,6 +136,7 @@ function Kpi({ label, value, unit, tone }: { label: string; value: string; unit:
 export function DashboardMobile() {
   const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { compta, fetchCompta, events, fetchEvents } = useAppStore();
   const setOpen = useChatStore((s) => s.setOpen);
   const setAgent = useChatStore((s) => s.setAgent);
@@ -118,27 +145,40 @@ export function DashboardMobile() {
     if (profile?.id) { fetchCompta(profile.id); fetchEvents(profile.id); }
   }, [profile?.id]);
 
+  useEffect(() => { if (projectId) migrateLegacyDashboard(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // — LACI (art. 71a) —
   const isLaci = profile?.is_laci || profile?.statut === "laci";
   const [laciOpen, setLaciOpen] = useState(true);
-  const [laciDone, setLaciDone] = useState<boolean[]>(() => loadLocal("ns_laci_71a", LACI_71A_STEPS.map(() => false)));
+  const [laciDone, setLaciDone] = useState<boolean[]>(() => loadDashboard(projectId).laciDone);
   function toggleLaci(i: number) {
     const next = laciDone.map((v, j) => (j === i ? !v : v));
-    setLaciDone(next); saveLocal("ns_laci_71a", next);
+    setLaciDone(next); saveLocal(projectKey("ns_laci_71a", projectId), next);
   }
   const laciCount = laciDone.filter(Boolean).length;
 
   // — Rituels du jour (reset quotidien) —
   const todayKey = new Date().toISOString().slice(0, 10);
-  const [rituels, setRituels] = useState<{ day: string; done: boolean[] }>(() => loadLocal("ns_rituels", { day: todayKey, done: RITUELS.map(() => false) }));
+  const [rituels, setRituels] = useState<{ day: string; done: boolean[] }>(() => loadDashboard(projectId).rituels);
   const ritDone = rituels.day === todayKey ? rituels.done : RITUELS.map(() => false);
   function toggleRituel(i: number) {
     const done = ritDone.map((v, j) => (j === i ? !v : v));
     const next = { day: todayKey, done };
-    setRituels(next); saveLocal("ns_rituels", next);
+    setRituels(next); saveLocal(projectKey("ns_rituels", projectId), next);
   }
   const ritCount = ritDone.filter(Boolean).length;
   const ritLeft = RITUELS.length - ritCount;
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // les cases propres à ce projet au lieu de garder celles affichées à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadDashboard(projectId);
+    setLaciDone(d.laciDone); setRituels(d.rituels);
+  }, [projectId]);
 
   // — KPIs compta —
   const revenus = compta.filter((e) => e.type === "revenu").reduce((s, e) => s + e.amount, 0);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useUserStore } from "@/stores/useUserStore";
@@ -7,7 +7,7 @@ import { challengeBmcBlock } from "@/lib/ai";
 import { AiResult } from "@/components/ui/AiResult";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptBmcGlobal, promptBmcEnrich, BMC_GUIDE } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 const BLOCKS = [
   { key: "partenaires", label: "Partenaires clés",     area: "partenaires" },
@@ -23,16 +23,47 @@ const BLOCKS = [
 
 type BlockKey = (typeof BLOCKS)[number]["key"];
 
+// Reprend l'ancienne donnée globale (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis l'efface — sans ça
+// tout nouveau projet hériterait sinon de l'analyse du dernier projet actif.
+function migrateLegacyBmc(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_bmc_global", projectId)) != null) return;
+  const v = localStorage.getItem("ns_bmc_global");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_bmc_global", projectId), v);
+  localStorage.removeItem("ns_bmc_global");
+}
+
+function loadBmc(projectId: string | null | undefined) {
+  return {
+    global: loadLocal<string | null>(projectKey("ns_bmc_global", projectId), null),
+  };
+}
+
 export function Bmc() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { bmc, fetchBmc, upsertBmcBlock, loadingBmc } = useAppStore();
   const [editing, setEditing] = useState<BlockKey | null>(null);
   const [draft, setDraft] = useState("");
   const [challenging, setChallenging] = useState<BlockKey | null>(null);
   const { loading: gLoading, error: gError, gen } = useAiGen();
-  const [global, setGlobal] = useState<string | null>(() => loadLocal<string | null>("ns_bmc_global", null));
+
+  useEffect(() => { if (projectId) migrateLegacyBmc(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [global, setGlobal] = useState<string | null>(() => loadBmc(projectId).global);
   const [enriching, setEnriching] = useState<BlockKey | null>(null);
   const [enrichDraft, setEnrichDraft] = useState<Record<string, string>>({});
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // l'analyse propre à ce projet au lieu de garder celle affichée à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    setGlobal(loadBmc(projectId).global);
+  }, [projectId]);
 
   async function enrich(key: BlockKey, label: string) {
     setEnriching(key);
@@ -59,7 +90,7 @@ export function Bmc() {
   async function analyzeGlobal() {
     const resume = BLOCKS.map((b) => `${b.label} : ${getBlock(b.key)?.content ?? "—"}`).join("\n");
     const r = await gen("strategist", promptBmcGlobal(profile, resume), { model: MODEL_REASONING });
-    if (r) { setGlobal(r); saveLocal("ns_bmc_global", r); }
+    if (r) { setGlobal(r); saveLocal(projectKey("ns_bmc_global", projectId), r); }
   }
 
   function getBlock(key: BlockKey) {

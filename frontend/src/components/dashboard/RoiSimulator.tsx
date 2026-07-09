@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { useUserStore } from "@/stores/useUserStore";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 // Économies de temps par module (en heures/mois).
 // Les modules "lancement" sont des gains one-time étalés sur 3 mois.
@@ -72,28 +73,63 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
+const ROI_KEYS = ["ns_roi_taux", "ns_roi_lancement", "ns_roi_quotidien"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon des réglages du dernier projet actif.
+function migrateLegacyRoi(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_roi_taux", projectId)) != null) return;
+  if (localStorage.getItem("ns_roi_taux") == null) return;
+  for (const base of ROI_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  ROI_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadRoi(projectId: string | null | undefined) {
+  return {
+    taux: loadLocal<number>(projectKey("ns_roi_taux", projectId), TAUX_DEFAULT),
+    activeLancement: loadLocal<Record<string, boolean>>(projectKey("ns_roi_lancement", projectId), {}),
+    activeQuotidien: loadLocal<Record<string, boolean>>(projectKey("ns_roi_quotidien", projectId), {}),
+  };
+}
+
 export function RoiSimulator() {
-  const [taux, setTaux] = useState<number>(() => loadLocal("ns_roi_taux", TAUX_DEFAULT));
-  const [activeLancement, setActiveLancement] = useState<Record<string, boolean>>(() =>
-    loadLocal("ns_roi_lancement", {}),
-  );
-  const [activeQuotidien, setActiveQuotidien] = useState<Record<string, boolean>>(() =>
-    loadLocal("ns_roi_quotidien", {}),
-  );
+  const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
+
+  useEffect(() => { if (projectId) migrateLegacyRoi(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [taux, setTaux] = useState<number>(() => loadRoi(projectId).taux);
+  const [activeLancement, setActiveLancement] = useState<Record<string, boolean>>(() => loadRoi(projectId).activeLancement);
+  const [activeQuotidien, setActiveQuotidien] = useState<Record<string, boolean>>(() => loadRoi(projectId).activeQuotidien);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter le composant) :
+  // recharge les réglages propres à ce projet au lieu de garder ceux affichés.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadRoi(projectId);
+    setTaux(d.taux); setActiveLancement(d.activeLancement); setActiveQuotidien(d.activeQuotidien);
+  }, [projectId]);
 
   function toggleLancement(id: string) {
     const next = { ...activeLancement, [id]: !activeLancement[id] };
     setActiveLancement(next);
-    saveLocal("ns_roi_lancement", next);
+    saveLocal(projectKey("ns_roi_lancement", projectId), next);
   }
   function toggleQuotidien(id: string) {
     const next = { ...activeQuotidien, [id]: !activeQuotidien[id] };
     setActiveQuotidien(next);
-    saveLocal("ns_roi_quotidien", next);
+    saveLocal(projectKey("ns_roi_quotidien", projectId), next);
   }
   function handleTaux(v: number) {
     setTaux(v);
-    saveLocal("ns_roi_taux", v);
+    saveLocal(projectKey("ns_roi_taux", projectId), v);
   }
 
   // Calcul : gains lancement étalés sur 3 mois → ÷ 3
