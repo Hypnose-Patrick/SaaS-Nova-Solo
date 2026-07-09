@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen } from "@/lib/useAiGen";
-import { promptMirrorFisch } from "@/lib/lancementPrompts";
+import { promptMirrorFisch, promptMirrorFischRewrite } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 // Extrait les KPI de la réaction simulée : « 24% » de conversion, « 67/100 » d'engagement.
@@ -96,12 +97,25 @@ export function MirrorFisch() {
   const profile = useUserStore((s) => s.profile);
   const projectId = profile?.id ?? null;
   const { loading, error, gen } = useAiGen();
+  const rewrite = useAiGen();
+
+  // Script transmis depuis le générateur de contenu (« Tester sur une audience »).
+  const location = useLocation();
+  const injectedScript = (location.state as { script?: string } | null)?.script;
 
   useEffect(() => { if (projectId) migrateLegacyMirrorFisch(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [persona, setPersona] = useState(() => loadMirrorFisch(projectId).persona);
-  const [message, setMessage] = useState(() => loadMirrorFisch(projectId).message);
+  const [message, setMessage] = useState(() => injectedScript ?? loadMirrorFisch(projectId).message);
   const [result, setResult] = useState<string | null>(() => loadMirrorFisch(projectId).result);
+
+  // Persiste le script injecté et purge le state de navigation : un refresh /
+  // retour arrière ne doit pas l'écraser par-dessus une saisie ultérieure.
+  useEffect(() => {
+    if (!injectedScript) return;
+    saveLocal(projectKey("ns_mf_message", projectId), injectedScript);
+    window.history.replaceState({}, "");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const scores = useMemo(() => parseScores(result), [result]);
   const prevProjectId = useRef(projectId);
 
@@ -120,6 +134,14 @@ export function MirrorFisch() {
     saveLocal(projectKey("ns_mf_message", projectId), message);
     const r = await gen("communicant", promptMirrorFisch(persona, message));
     if (r) { setResult(r); saveLocal(projectKey("ns_mf_result", projectId), r); }
+  }
+
+  // Réécrit le message en tenant compte de la réaction simulée, puis remplace le
+  // champ (l'utilisateur relit et clique « Re-simuler » pour mesurer l'effet).
+  async function adaptMessage() {
+    if (!result) return;
+    const r = await rewrite.gen("communicant", promptMirrorFischRewrite(persona, message, result));
+    if (r) { setMessage(r); saveLocal(projectKey("ns_mf_message", projectId), r); }
   }
 
   return (
@@ -158,6 +180,19 @@ export function MirrorFisch() {
       {(loading || error || result) && (
         <Card glass title="Réaction simulée">
           <AiResult content={result} loading={loading} error={error} />
+          {result && !loading && (
+            <div style={{ marginTop: "var(--space-4)", borderTop: "var(--border-subtle)", paddingTop: "var(--space-4)" }}>
+              <Button variant="ghost" size="sm" loading={rewrite.loading} onClick={adaptMessage}>
+                ✨ Adapter le message selon ce feedback
+              </Button>
+              {rewrite.error && (
+                <p style={{ color: "var(--color-danger)", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 0" }}>{rewrite.error}</p>
+              )}
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "var(--space-2) 0 0" }}>
+                Le message ci-dessus est réécrit — relisez-le puis re-simulez pour mesurer l'effet.
+              </p>
+            </div>
+          )}
         </Card>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -75,6 +75,7 @@ let _seq = 0;
 function nextId() { _seq += 1; return `c${_seq}_${performance.now().toFixed(0)}`; }
 
 export function Marketing() {
+  const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
   const post = useAiGen();
   const ideasGen = useAiGen();
@@ -243,7 +244,13 @@ export function Marketing() {
 
         {(post.loading || post.error || content) && (
           <div style={{ marginTop: "var(--space-4)" }}>
-            <AiResult content={content} loading={post.loading} error={post.error} />
+            <AiResult
+              content={content}
+              loading={post.loading}
+              error={post.error}
+              onUse={(c) => navigate("/mirrorfisch", { state: { script: c } })}
+              useLabel="Tester sur une audience"
+            />
           </div>
         )}
 

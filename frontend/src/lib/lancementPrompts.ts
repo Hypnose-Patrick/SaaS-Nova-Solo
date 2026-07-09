@@ -139,6 +139,11 @@ export function promptMirrorFisch(persona: string, message: string): string {
   return `Tu es MirrorFisch, un simulateur de réaction d'audience pour le marketing. Analyse ce message marketing du point de vue d'un·e "${persona}". Donne : (1) Probabilité de conversion estimée (ex: 24%), (2) Score d'engagement sur 100 (ex: 67/100), (3) Ce qui attire ou repousse ce persona dans le message, (4) Une suggestion d'amélioration en 1 phrase. Message : "${message}"`;
 }
 
+// Réécrit un message marketing en tenant compte de la réaction simulée (boucle test → adaptation).
+export function promptMirrorFischRewrite(persona: string, message: string, feedback: string): string {
+  return `Tu es le Communicant. Voici un message marketing, le persona ciblé et la réaction simulée de ce persona.\n\nPERSONA : "${persona}"\n\nMESSAGE ACTUEL :\n"${message}"\n\nRÉACTION SIMULÉE (feedback à corriger) :\n${feedback}\n\nRéécris le message pour lever les objections et renforcer ce qui attire ce persona, en gardant le même format, la même langue (fr-CH sans anglicisme) et une longueur similaire. Réponds UNIQUEMENT avec le message réécrit, sans préambule, sans commentaire, sans guillemets englobants.`;
+}
+
 // ── Marketing & Visibilité (Communicant) ──
 export function promptMarketingPost(p: Profile | null, format: string, sujet: string): string {
   return `${profileContext(p)}\n\nTu es un expert en personal branding et contenu LinkedIn pour indépendants en Suisse romande. Rédige un contenu au format « ${format} » sur le sujet : ${sujet}. Règles : accroche forte dès la 1re ligne, ton authentique à la première personne, valeur concrète et actionnable, un seul appel à l'action doux à la fin, fr-CH sans anglicisme, 150-220 mots, 2-3 hashtags pertinents en fin de post. Termine par 2 variantes d'accroche alternatives à tester (préfixées « Variante A : » et « Variante B : »).`;
