@@ -12,7 +12,7 @@ import {
   promptSymbolicActions,
   promptSymbolicChat,
 } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal, parseLooseJson } from "@/lib/local";
+import { loadLocal, saveLocal, parseLooseJson, projectKey } from "@/lib/local";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface SymNode { id: string; label: string; icon: string; kind: string; note: string; x: number | null; y: number | null }
@@ -40,6 +40,31 @@ const KIND_OF = (k: string) => SYM_KINDS[k] ?? { name: "Symbole", color: "var(--
 
 const EMPTY_MAP: SymMap = { nodes: [], links: [], lecture: "", questions: [], actions: [], intake: null };
 const BOARD_H = 460;
+
+const SYM_KEYS = ["ns_sym_map", "ns_sym_chat", "ns_sym_step", "ns_sym_answers"] as const;
+const CHAT_SEED: ChatMsg[] = [{ role: "nova", meta: "Vision symbolique · Question 1/3", text: SYM_QUESTIONS[0] }];
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du tableau du dernier projet actif.
+function migrateLegacySymbolique(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_sym_map", projectId)) != null) return;
+  if (localStorage.getItem("ns_sym_map") == null) return;
+  for (const base of SYM_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  SYM_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadSymbolique(projectId: string | null | undefined) {
+  return {
+    map: loadLocal<SymMap>(projectKey("ns_sym_map", projectId), EMPTY_MAP),
+    messages: loadLocal<ChatMsg[]>(projectKey("ns_sym_chat", projectId), CHAT_SEED),
+    step: loadLocal<number>(projectKey("ns_sym_step", projectId), 0),
+    answers: loadLocal<string[]>(projectKey("ns_sym_answers", projectId), []),
+  };
+}
 
 function genId() { return "s" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
 
@@ -101,25 +126,37 @@ const BLANK_EDIT: EditState = { id: null, label: "", icon: "", kind: "offre", no
 
 export function Symbolique() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { gen } = useAiGen();
   const boardRef = useRef<HTMLDivElement>(null);
 
-  const [map, setMap] = useState<SymMap>(() => loadLocal<SymMap>("ns_sym_map", EMPTY_MAP));
-  const [messages, setMessages] = useState<ChatMsg[]>(() => loadLocal<ChatMsg[]>("ns_sym_chat", [
-    { role: "nova", meta: "Vision symbolique · Question 1/3", text: SYM_QUESTIONS[0] },
-  ]));
-  const [step, setStep] = useState<number>(() => loadLocal<number>("ns_sym_step", 0));
-  const [answers, setAnswers] = useState<string[]>(() => loadLocal<string[]>("ns_sym_answers", []));
+  useEffect(() => { if (projectId) migrateLegacySymbolique(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [map, setMap] = useState<SymMap>(() => loadSymbolique(projectId).map);
+  const [messages, setMessages] = useState<ChatMsg[]>(() => loadSymbolique(projectId).messages);
+  const [step, setStep] = useState<number>(() => loadSymbolique(projectId).step);
+  const [answers, setAnswers] = useState<string[]>(() => loadSymbolique(projectId).answers);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState<"" | "map" | "coach" | "actions" | "chat">("");
   const [edit, setEdit] = useState<EditState | null>(null);
   const dragRef = useRef<{ id: string } | null>(null);
   const chatBottom = useRef<HTMLDivElement>(null);
+  const prevProjectId = useRef(projectId);
 
-  const persistMap = useCallback((m: SymMap) => { setMap(m); saveLocal("ns_sym_map", m); }, []);
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le tableau propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadSymbolique(projectId);
+    setMap(d.map); setMessages(d.messages); setStep(d.step); setAnswers(d.answers);
+  }, [projectId]);
+
+  const persistMap = useCallback((m: SymMap) => { setMap(m); saveLocal(projectKey("ns_sym_map", projectId), m); }, [projectId]);
   const pushMsg = useCallback((m: ChatMsg) => {
-    setMessages((prev) => { const next = [...prev, m]; saveLocal("ns_sym_chat", next); return next; });
-  }, []);
+    setMessages((prev) => { const next = [...prev, m]; saveLocal(projectKey("ns_sym_chat", projectId), next); return next; });
+  }, [projectId]);
 
   useEffect(() => { chatBottom.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -137,8 +174,8 @@ export function Symbolique() {
     dragRef.current = null;
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
-    setMap((m) => { saveLocal("ns_sym_map", m); return m; });
-  }, [onMove]);
+    setMap((m) => { saveLocal(projectKey("ns_sym_map", projectId), m); return m; });
+  }, [onMove, projectId]);
   function startDrag(e: React.PointerEvent, id: string) {
     e.preventDefault();
     dragRef.current = { id };
@@ -169,8 +206,8 @@ export function Symbolique() {
     const boardEmpty = map.nodes.length === 0;
 
     if (boardEmpty && step < 3) {
-      const ans = answers.slice(); ans[step] = txt; setAnswers(ans); saveLocal("ns_sym_answers", ans);
-      const next = step + 1; setStep(next); saveLocal("ns_sym_step", next);
+      const ans = answers.slice(); ans[step] = txt; setAnswers(ans); saveLocal(projectKey("ns_sym_answers", projectId), ans);
+      const next = step + 1; setStep(next); saveLocal(projectKey("ns_sym_step", projectId), next);
       if (next < 3) {
         pushMsg({ role: "nova", meta: `Vision symbolique · Question ${next + 1}/3`, text: SYM_QUESTIONS[next] });
       } else {
@@ -212,11 +249,11 @@ export function Symbolique() {
   }
 
   function resetIntake() {
+    if (!window.confirm("Réinitialiser le tableau symbolique de ce projet ? Les symboles, la métaphore et la conversation seront effacés.")) return;
     persistMap(EMPTY_MAP);
-    setStep(0); saveLocal("ns_sym_step", 0);
-    setAnswers([]); saveLocal("ns_sym_answers", []);
-    const seed: ChatMsg[] = [{ role: "nova", meta: "Vision symbolique · Question 1/3", text: SYM_QUESTIONS[0] }];
-    setMessages(seed); saveLocal("ns_sym_chat", seed);
+    setStep(0); saveLocal(projectKey("ns_sym_step", projectId), 0);
+    setAnswers([]); saveLocal(projectKey("ns_sym_answers", projectId), []);
+    setMessages(CHAT_SEED); saveLocal(projectKey("ns_sym_chat", projectId), CHAT_SEED);
   }
 
   // ── Édition d'un symbole (modal) ────────────────────────────────────────────
@@ -278,6 +315,9 @@ export function Symbolique() {
           <div style={{ display: "flex", gap: "var(--space-2)" }}>
             <Button size="sm" variant="gold" loading={busy === "map"} onClick={() => generateMap(map.intake)}>✦ Générer ma vision (IA)</Button>
             <Button size="sm" variant="ghost" onClick={() => openEdit(null)}>+ Symbole</Button>
+            {(map.nodes.length > 0 || messages.length > 1) && (
+              <Button size="sm" variant="ghost" onClick={resetIntake}>↺ Réinitialiser</Button>
+            )}
           </div>
         </div>
 

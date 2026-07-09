@@ -6,7 +6,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { callAI } from "@/lib/ai";
 import type { AgentKey } from "@/types";
-import { parseLooseJson, loadLocal, saveLocal } from "@/lib/local";
+import { parseLooseJson, loadLocal, saveLocal, projectKey } from "@/lib/local";
 import { promptCascadeBmc, promptCascadeBp, promptCascadeCv, promptCascadePricingOffer } from "@/lib/lancementPrompts";
 
 type CascadeKey = "bmc" | "bp" | "cv" | "pricing";
@@ -78,6 +78,7 @@ function parseDiag(raw: string): DiagResult | null {
 
 export function Diagnostic() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { updateProfile } = useUserStore();
   const { upsertBmcBlock, fetchBmc } = useAppStore();
 

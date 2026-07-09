@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-bg: #050806;
+  --color-bg-surface: #111812;
+  --color-bg-elevated: #1a231b;
+  --color-bg-sunken: #020403;
+  --color-text: #F0F4EF;
+  --color-text-muted: #C7D8C3;
+  --color-text-subtle: #8FA88A;
+  --color-accent: #DAA520;
+  --color-accent-hover: #B8891A;
+  --color-primary: #4A8B24;
+  --color-primary-soft: #1F3018;
+  --color-primary-contrast: #F0F4EF;
+  --color-border: #3A5331;
+  --color-border-muted: #2A3F22;
+  --color-border-strong: #5FA832;
+  --color-success: #4ADE80;
+  --color-success-bg: rgba(74,222,128,0.1);
+  --color-warning: #FBBF24;
+  --color-warning-bg: rgba(251,191,36,0.1);
+  --color-error: #F87171;
+  --color-error-bg: rgba(248,113,113,0.1);
+  --color-info: #38BDF8;
+  --gradient-accent: linear-gradient(135deg, #DAA520 0%, #B8891A 100%);
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}
+html, body { margin: 0; padding: 0; background: #020304; min-height: 100vh; }
+* { box-sizing: border-box; }
+.ns-scroll::-webkit-scrollbar { display: none; }
+.ns-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  border-radius: 2px; background: #1a231b; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: #DAA520; cursor: pointer;
+  box-shadow: 0 0 10px rgba(218,165,32,0.5);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</helmet>
+
+<!-- Outer centering shell — design preview only -->
+<div style="min-height: 100vh; background: radial-gradient(ellipse at 50% 0%, #0d1510 0%, #020304 60%); display: flex; justify-content: center; align-items: flex-start; padding: 36px 0 60px;">
+
+  <!-- Phone chrome -->
+  <div style="position: relative; width: 390px; height: 820px; background: var(--color-bg); border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 40px 120px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06);">
+
+    <!-- ── TOP BAR ── -->
+    <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: var(--color-bg-surface); border-bottom: 1px solid var(--color-border-muted); z-index: 10;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 30px; height: 30px; background: var(--gradient-accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(218,165,32,0.3);">
+          <span style="font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #0a0a0a; line-height: 1;">N</span>
+        </div>
+        <span style="font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--color-text); letter-spacing: -0.02em;">Nova Solo</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button style="width: 34px; height: 34px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-text-subtle); border-radius: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+        <button onClick="{{ openCameraRecu }}" style="width: 34px; height: 34px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-text-subtle); border-radius: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+        </button>
+        <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--color-primary-soft); border: 1.5px solid var(--color-accent); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <span style="font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--color-accent);">M</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCROLL AREA ── -->
+    <div class="ns-scroll" style="flex: 1; overflow-y: auto; padding-bottom: 80px;">
+
+      <!-- ════ DASHBOARD ════ -->
+      <sc-if value="{{ showDashboard }}" hint-placeholder-val="{{ true }}">
+
+        <!-- 1. GREETING -->
+        <div style="padding: 20px 20px 8px;">
+          <p style="margin: 0 0 2px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-subtle);">{{ todayLabel }}</p>
+          <h1 style="margin: 0 0 4px; font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; color: var(--color-text); line-height: 1.2;">Bonjour, Marc 👋</h1>
+          <p style="margin: 0; font-size: 13px; color: var(--color-text-muted);">Consultant RH indépendant · Genève</p>
+          <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 11px; background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.18); border-radius: 20px;">
+            <div style="width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning); animation: fadeUp 1s ease infinite alternate;"></div>
+            <span style="font-size: 11px; color: var(--color-warning); font-family: var(--font-mono);">3 tâches en attente</span>
+          </div>
+        </div>
+
+        <!-- 2. KPI GRID 2×2 -->
+        <div style="padding: 12px 20px 4px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
+            <div style="background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 14px; padding: 14px;">
+              <p style="margin: 0 0 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Revenus</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--color-text); letter-spacing: -0.02em; line-height: 1;">8'250</p>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 6px;">
+                <span style="font-size: 10px; color: var(--color-text-subtle); font-family: var(--font-mono);">CHF</span>
+                <span style="font-size: 11px; color: var(--color-success); font-family: var(--font-mono); font-weight: 600;">↑ +12%</span>
+              </div>
+            </div>
+
+            <div style="background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 14px; padding: 14px;">
+              <p style="margin: 0 0 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Dépenses</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--color-text); letter-spacing: -0.02em; line-height: 1;">2'340</p>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 6px;">
+                <span style="font-size: 10px; color: var(--color-text-subtle); font-family: var(--font-mono);">CHF</span>
+                <span style="font-size: 11px; color: var(--color-success); font-family: var(--font-mono); font-weight: 600;">↓ -5%</span>
+              </div>
+            </div>
+
+            <div style="background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 14px; padding: 14px;">
+              <p style="margin: 0 0 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Trésorerie</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--color-text); letter-spacing: -0.02em; line-height: 1;">18'750</p>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 6px;">
+                <span style="font-size: 10px; color: var(--color-text-subtle); font-family: var(--font-mono);">CHF</span>
+                <span style="font-size: 11px; color: var(--color-info); font-family: var(--font-mono); font-weight: 600;">→ stable</span>
+              </div>
+            </div>
+
+            <div style="background: var(--color-bg-surface); border: 1px solid rgba(251,191,36,0.18); border-radius: 14px; padding: 14px;">
+              <p style="margin: 0 0 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Runway</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--color-text); letter-spacing: -0.02em; line-height: 1;">6.4</p>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 6px;">
+                <span style="font-size: 10px; color: var(--color-text-subtle); font-family: var(--font-mono);">mois</span>
+                <span style="font-size: 11px; color: var(--color-warning); font-family: var(--font-mono); font-weight: 600;">⚠ vigilance</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 3. PLAN DE ROUTE & LACI -->
+        <div style="margin: 16px 20px 0; background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 16px; overflow: hidden;">
+          <button onClick="{{ toggleRoadmap }}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: transparent; border: none; cursor: pointer; min-height: 48px;">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 6px rgba(218,165,32,0.5);"></div>
+              <span style="font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--color-text);">Plan de route &amp; LACI</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-accent);">{{ roadmapProgress }}</span>
+              <span style="{{ chevronStyle }}">▾</span>
+            </div>
+          </button>
+          <div style="{{ roadmapBodyStyle }}">
+            <div style="padding: 2px 14px 12px; display: flex; flex-direction: column; gap: 1px;">
+
+              <div onClick="{{ toggleS1 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s1Bg }};">
+                <div style="{{ s1Cs }}">{{ s1Cc }}</div>
+                <span style="{{ s1Ls }}">Créer votre compte</span>
+              </div>
+              <div onClick="{{ toggleS2 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s2Bg }};">
+                <div style="{{ s2Cs }}">{{ s2Cc }}</div>
+                <span style="{{ s2Ls }}">Définir votre domaine</span>
+              </div>
+              <div onClick="{{ toggleS3 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s3Bg }};">
+                <div style="{{ s3Cs }}">{{ s3Cc }}</div>
+                <span style="{{ s3Ls }}">Compléter votre profil</span>
+              </div>
+              <div onClick="{{ toggleS4 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s4Bg }};">
+                <div style="{{ s4Cs }}">{{ s4Cc }}</div>
+                <span style="{{ s4Ls }}">Ajouter vos premiers prospects</span>
+              </div>
+              <div onClick="{{ toggleS5 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s5Bg }};">
+                <div style="{{ s5Cs }}">{{ s5Cc }}</div>
+                <span style="{{ s5Ls }}">Émettre votre première facture</span>
+              </div>
+              <div onClick="{{ toggleS6 }}" style="display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; cursor: pointer; min-height: 44px; background: {{ s6Bg }};">
+                <div style="{{ s6Cs }}">{{ s6Cc }}</div>
+                <span style="{{ s6Ls }}">Paramétrer le LACI</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. PROCHAINS RENDEZ-VOUS -->
+        <div style="margin: 16px 20px 0;">
+          <p style="margin: 0 0 9px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-subtle);">Prochains rendez-vous</p>
+          <div style="background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 14px; overflow: hidden;">
+
+            <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-muted);">
+              <div>
+                <p style="margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--color-text); line-height: 1.3;">Appel découverte</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">Lionel Moret · Zoom</p>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                <p style="margin: 0 0 1px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--color-accent);">09h30</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">Lun. 7 juil.</p>
+              </div>
+            </div>
+
+            <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-muted);">
+              <div>
+                <p style="margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--color-text); line-height: 1.3;">Atelier onboarding</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">HEG Genève · Présentiel</p>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                <p style="margin: 0 0 1px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--color-accent);">14h00</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">Mer. 9 juil.</p>
+              </div>
+            </div>
+
+            <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <p style="margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--color-text); line-height: 1.3;">Suivi coaching</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">Sophie Blanc · À distance</p>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                <p style="margin: 0 0 1px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--color-accent);">16h00</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle);">Ven. 11 juil.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 5. RITUELS DU JOUR -->
+        <div style="margin: 16px 20px 0; background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 16px; padding: 14px 14px 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <p style="margin: 0; font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--color-text);">Rituels du jour</p>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--color-accent);">{{ rituelsProgress }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+
+            <div onClick="{{ toggleR1 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px; background: {{ r1Bg }};">
+              <div style="{{ r1Cs }}">{{ r1Cc }}</div>
+              <span style="{{ r1Ls }}">Vérifier le pipeline</span>
+            </div>
+            <div onClick="{{ toggleR2 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px; background: {{ r2Bg }};">
+              <div style="{{ r2Cs }}">{{ r2Cc }}</div>
+              <span style="{{ r2Ls }}">Traiter les messages</span>
+            </div>
+            <div onClick="{{ toggleR3 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px; background: {{ r3Bg }};">
+              <div style="{{ r3Cs }}">{{ r3Cc }}</div>
+              <span style="{{ r3Ls }}">Pointer les heures de la veille</span>
+            </div>
+            <div onClick="{{ toggleR4 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px; background: {{ r4Bg }};">
+              <div style="{{ r4Cs }}">{{ r4Cc }}</div>
+              <span style="{{ r4Ls }}">Consulter le tableau de bord</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 6. ACTIONS RAPIDES -->
+        <div style="margin: 16px 20px 0;">
+          <p style="margin: 0 0 9px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-subtle);">Actions rapides</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+
+            <button style="display: flex; align-items: center; gap: 13px; width: 100%; min-height: 52px; padding: 12px 18px; background: var(--gradient-accent); border: none; border-radius: 14px; cursor: pointer; text-align: left; box-shadow: 0 4px 16px rgba(218,165,32,0.25);">
+              <span style="font-size: 18px; line-height: 1;">💬</span>
+              <span style="font-family: var(--font-display); font-size: 14px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.01em;">Parler à Nova</span>
+            </button>
+
+            <button style="display: flex; align-items: center; gap: 13px; width: 100%; min-height: 52px; padding: 12px 18px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 14px; cursor: pointer; text-align: left;">
+              <span style="font-size: 18px; line-height: 1;">📄</span>
+              <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-text); letter-spacing: -0.01em;">Nouvelle facture</span>
+            </button>
+
+            <button style="display: flex; align-items: center; gap: 13px; width: 100%; min-height: 52px; padding: 12px 18px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 14px; cursor: pointer; text-align: left;">
+              <span style="font-size: 18px; line-height: 1;">👤</span>
+              <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-text); letter-spacing: -0.01em;">Ajouter un prospect</span>
+            </button>
+
+            <button style="display: flex; align-items: center; gap: 13px; width: 100%; min-height: 52px; padding: 12px 18px; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 14px; cursor: pointer; text-align: left;">
+              <span style="font-size: 18px; line-height: 1;">💸</span>
+              <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-text); letter-spacing: -0.01em;">Saisir une dépense</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- 7. SIMULATEUR ROI -->
+        <div style="margin: 16px 20px 0; background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 16px; padding: 16px;">
+          <p style="margin: 0 0 14px; font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--color-text);">Simulateur ROI</p>
+
+          <div style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">CA annuel visé</span>
+              <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-accent);">CHF {{ roiCAFormatted }}</span>
+            </div>
+            <input type="range" min="40000" max="300000" step="5000" value="{{ roiCA }}" onChange="{{ setRoiCA }}">
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">Jours facturés / an</span>
+              <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-accent);">{{ roiJours }} j</span>
+            </div>
+            <input type="range" min="80" max="250" step="5" value="{{ roiJours }}" onChange="{{ setRoiJours }}">
+          </div>
+
+          <div style="background: var(--color-bg-elevated); border-radius: 12px; padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border: 1px solid var(--color-border-muted);">
+            <div>
+              <p style="margin: 0 0 4px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-subtle);">TJM calculé</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 19px; font-weight: 600; color: var(--color-text); line-height: 1.2;">{{ roiTJM }}</p>
+              <p style="margin: 3px 0 0; font-size: 10px; color: var(--color-text-subtle);">CHF / jour</p>
+            </div>
+            <div>
+              <p style="margin: 0 0 4px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-subtle);">Net estimé</p>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 19px; font-weight: 600; color: var(--color-success); line-height: 1.2;">{{ roiNet }}</p>
+              <p style="margin: 3px 0 0; font-size: 10px; color: var(--color-text-subtle);">CHF / an</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. BIEN-ÊTRE & RÉSILIENCE -->
+        <div style="margin: 16px 20px 0; background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 16px; padding: 16px;">
+          <p style="margin: 0 0 12px; font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--color-text);">Bien-être &amp; Résilience</p>
+
+          <p style="margin: 0 0 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Signaux d'alerte</p>
+          <div style="display: flex; flex-direction: column; gap: 1px; margin-bottom: 12px;">
+            <div onClick="{{ toggleW1 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px;">
+              <div style="{{ w1Cs }}">{{ w1Cc }}</div>
+              <span style="font-size: 13px; color: var(--color-text-muted);">Je me sens surchargé(e) ce mois-ci</span>
+            </div>
+            <div onClick="{{ toggleW2 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px;">
+              <div style="{{ w2Cs }}">{{ w2Cc }}</div>
+              <span style="font-size: 13px; color: var(--color-text-muted);">J'ai des difficultés à décrocher</span>
+            </div>
+            <div onClick="{{ toggleW3 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px;">
+              <div style="{{ w3Cs }}">{{ w3Cc }}</div>
+              <span style="font-size: 13px; color: var(--color-text-muted);">Mon moral est en baisse</span>
+            </div>
+            <div onClick="{{ toggleW4 }}" style="display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 9px; cursor: pointer; min-height: 44px;">
+              <div style="{{ w4Cs }}">{{ w4Cc }}</div>
+              <span style="font-size: 13px; color: var(--color-text-muted);">J'ai des inquiétudes financières</span>
+            </div>
+          </div>
+
+          <!-- Risk badge -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: var(--color-bg-elevated); border-radius: 10px; margin-bottom: 14px;">
+            <span style="font-size: 12px; color: var(--color-text-muted);">Niveau de risque</span>
+            <span style="{{ riskBadgeStyle }}">{{ riskLabel }}</span>
+          </div>
+
+          <!-- Resources -->
+          <p style="margin: 0 0 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-subtle);">Ressources Suisse romande</p>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 11px; background: var(--color-bg-elevated); border-radius: 9px;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">TeleBefra</span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--color-accent);">026 322 38 38</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 11px; background: var(--color-bg-elevated); border-radius: 9px;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">Pro Mente Sana</span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--color-accent);">0840 00 00 60</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 9px 11px; background: var(--color-bg-elevated); border-radius: 9px;">
+              <span style="font-size: 12px; color: var(--color-text-muted);">Centre LAVI Genève</span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--color-accent);">022 320 01 40</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. COMPLÉTER LE PROFIL -->
+        <sc-if value="{{ profileVisible }}" hint-placeholder-val="{{ true }}">
+          <div style="margin: 16px 20px 8px; background: linear-gradient(135deg, rgba(218,165,32,0.07) 0%, rgba(74,139,36,0.05) 100%); border: 1px solid rgba(218,165,32,0.22); border-radius: 14px; padding: 14px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 3px;">
+                  <span style="font-size: 14px; line-height: 1;">✨</span>
+                  <span style="font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--color-text);">Complétez votre profil</span>
+                </div>
+                <p style="margin: 0 0 10px; font-size: 12px; color: var(--color-text-muted);">Domaine manquant — 2 min pour finaliser</p>
+                <button style="display: inline-flex; align-items: center; gap: 4px; padding: 7px 13px; background: var(--color-accent); border: none; border-radius: 8px; cursor: pointer; font-family: var(--font-display); font-size: 12px; font-weight: 600; color: #0a0a0a;">
+                  Compléter maintenant →
+                </button>
+              </div>
+              <button onClick="{{ dismissProfile }}" style="width: 26px; height: 26px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid var(--color-border-muted); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--color-text-subtle);">✕</button>
+            </div>
+          </div>
+        </sc-if>
+
+      </sc-if>
+      <!-- END DASHBOARD -->
+
+      <!-- OTHER TABS -->
+      <sc-if value="{{ showOtherTab }}" hint-placeholder-val="{{ false }}">
+
+        <!-- ── PIPELINE : CONTACTS ── -->
+        <sc-if value="{{ showPipeline }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 16px 20px 0;">
+
+            <!-- Search -->
+            <div style="display: flex; align-items: center; gap: 10px; background: var(--color-bg-elevated); border: 1px solid var(--color-border-muted); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style="color: var(--color-text-subtle); flex-shrink: 0;">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span style="font-size: 13px; color: var(--color-text-subtle);">Rechercher un contact…</span>
+            </div>
+
+            <!-- Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-subtle);">5 contacts actifs</span>
+              <button onClick="{{ openCameraCardFromContacts }}" style="display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; background: rgba(218,165,32,0.08); border: 1px solid rgba(218,165,32,0.22); border-radius: 20px; cursor: pointer; font-family: var(--font-mono); font-size: 10px; color: var(--color-accent);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Scanner une carte
+              </button>
+            </div>
+
+            <!-- List -->
+            <div style="background: var(--color-bg-surface); border: 1px solid var(--color-border-muted); border-radius: 14px; overflow: hidden; margin-bottom: 16px;">
+              <sc-for list="{{ contacts }}" as="contact" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--color-border-muted);">
+                  <div style="{{ contact.avatarStyle }}">{{ contact.initials }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <p style="margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ contact.name }}</p>
+                    <p style="margin: 0; font-size: 11px; color: var(--color-text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ contact.company }}</p>
+                  </div>
+                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+                    <span style="{{ contact.tagStyle }}">{{ contact.tag }}</span>
+                    <span style="font-family: var(--font-mono); font-size: 10px; color: var(--color-text-subtle);">{{ contact.lastContact }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- FAB -->
+            <div style="display: flex; justify-content: center; padding-bottom: 8px;">
+              <button style="display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px; background: var(--gradient-accent); border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 20px rgba(218,165,32,0.28);">
+                <span style="font-size: 17px; color: #0a0a0a; font-weight: 700; line-height: 1;">+</span>
+                <span style="font-family: var(--font-display); font-size: 14px; font-weight: 700; color: #0a0a0a;">Nouveau contact</span>
+              </button>
+            </div>
+
+          </div>
+        </sc-if>
+
+        <!-- ── AUTRES ONGLETS (placeholder) ── -->
+        <sc-if value="{{ showGenericOther }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 500px; gap: 10px;">
+            <span style="font-size: 44px; line-height: 1; opacity: 0.18;">{{ otherEmoji }}</span>
+            <span style="font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--color-text-muted);">{{ otherName }}</span>
+            <span style="font-size: 12px; color: var(--color-text-subtle); font-family: var(--font-mono);">bientôt disponible</span>
+          </div>
+        </sc-if>
+
+      </sc-if>
+
+    </div>
+    <!-- END SCROLL AREA -->
+
+    <!-- ── BOTTOM TAB BAR ── -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(14,20,15,0.97); border-top: 1px solid var(--color-border-muted); display: flex; backdrop-filter: blur(24px); padding: 6px 0 14px;">
+
+      <button onClick="{{ setTabDashboard }}" style="{{ tabDashStyle }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+        </svg>
+        <span>Tableau</span>
+      </button>
+
+      <button onClick="{{ setTabDiagnostic }}" style="{{ tabDiagStyle }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Diagnostic</span>
+      </button>
+
+      <button onClick="{{ setTabPipeline }}" style="{{ tabPipelineStyle }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Pipeline</span>
+      </button>
+
+      <button onClick="{{ setTabFinances }}" style="{{ tabFinancesStyle }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <span>Finances</span>
+      </button>
+
+      <button onClick="{{ setTabMore }}" style="{{ tabMoreStyle }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="19" cy="12" r="1"></circle>
+          <circle cx="5" cy="12" r="1"></circle>
+        </svg>
+        <span>Plus</span>
+      </button>
+
+    </div>
+
+    <!-- ── CAMERA MODAL ── -->
+    <sc-if value="{{ cameraOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 300; background: #020304; display: flex; flex-direction: column; border-radius: 40px; overflow: hidden;">
+
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px;">
+          <button onClick="{{ closeCamera }}" style="width: 38px; height: 38px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); font-size: 15px;">✕</button>
+          <span style="font-family: var(--font-display); font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); letter-spacing: -0.01em;">{{ cameraModeLabel }}</span>
+          <button style="width: 38px; height: 38px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px;">⚡</button>
+        </div>
+
+        <!-- Viewfinder -->
+        <div style="flex: 1; position: relative; overflow: hidden; background: #07090a;">
+          <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 35% 40%, #1c2820 0%, #060808 65%);"></div>
+          <!-- Scan frame -->
+          <div style="position: absolute; inset: 28px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="position: absolute; top: -1px; left: -1px; width: 28px; height: 28px; border-top: 2.5px solid #DAA520; border-left: 2.5px solid #DAA520; border-radius: 4px 0 0 0;"></div>
+            <div style="position: absolute; top: -1px; right: -1px; width: 28px; height: 28px; border-top: 2.5px solid #DAA520; border-right: 2.5px solid #DAA520; border-radius: 0 4px 0 0;"></div>
+            <div style="position: absolute; bottom: -1px; left: -1px; width: 28px; height: 28px; border-bottom: 2.5px solid #DAA520; border-left: 2.5px solid #DAA520; border-radius: 0 0 0 4px;"></div>
+            <div style="position: absolute; bottom: -1px; right: -1px; width: 28px; height: 28px; border-bottom: 2.5px solid #DAA520; border-right: 2.5px solid #DAA520; border-radius: 0 0 4px 0;"></div>
+          </div>
+          <!-- Centre hint -->
+          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px;">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.06em; text-transform: uppercase; text-align: center; line-height: 1.6;">Centrez le document<br>dans le cadre</span>
+          </div>
+        </div>
+
+        <!-- Mode tabs -->
+        <div style="display: flex; justify-content: center; gap: 7px; padding: 14px 16px 10px; background: #020304;">
+          <button onClick="{{ setCameraModeRecu }}" style="{{ camModeRecuStyle }}">Reçu</button>
+          <button onClick="{{ setCameraModeCarteVisite }}" style="{{ camModeCarteStyle }}">Carte de visite</button>
+          <button onClick="{{ setCameraModeDocument }}" style="{{ camModeDocStyle }}">Document</button>
+        </div>
+
+        <!-- Shutter row -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 36px 40px; background: #020304;">
+          <div style="width: 50px; height: 50px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 20px; opacity: 0.35;">🖼</span>
+          </div>
+          <button onClick="{{ capturePhoto }}" style="width: 74px; height: 74px; border-radius: 50%; background: white; border: 5px solid rgba(255,255,255,0.2); cursor: pointer; box-shadow: 0 0 0 2px rgba(255,255,255,0.1), 0 6px 28px rgba(255,255,255,0.12);"></button>
+          <button style="width: 50px; height: 50px; background: rgba(255,255,255,0.05); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 22px;">↺</button>
+        </div>
+
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 430, &quot;height&quot;: 860 },
+  &quot;activeTabDefault&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dashboard&quot;,&quot;diagnostic&quot;,&quot;pipeline&quot;,&quot;finances&quot;,&quot;more&quot;], &quot;default&quot;: &quot;dashboard&quot;, &quot;section&quot;: &quot;Navigation&quot; },
+  &quot;roadmapCollapsed&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;section&quot;: &quot;Sections&quot; },
+  &quot;showProfileCard&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;section&quot;: &quot;Sections&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    activeTab: 'dashboard',
+    roadmapExpanded: true,
+    steps:   { s1: true,  s2: true,  s3: false, s4: false, s5: false, s6: false },
+    rituels: { r1: true,  r2: false, r3: true,  r4: false },
+    wellness:{ w1: false, w2: false, w3: false, w4: false },
+    roiCA:    120000,
+    roiJours: 180,
+    profileVisible: true,
+    cameraOpen: false,
+    cameraMode: 'recu',
+  };
+
+  /* ── Tabs ─── */
+  setTabDashboard  = () => this.setState({ activeTab: 'dashboard' });
+  setTabDiagnostic = () => this.setState({ activeTab: 'diagnostic' });
+  setTabPipeline   = () => this.setState({ activeTab: 'pipeline' });
+  setTabFinances   = () => this.setState({ activeTab: 'finances' });
+  setTabMore       = () => this.setState({ activeTab: 'more' });
+
+  /* ── Roadmap ─── */
+  toggleRoadmap = () => this.setState(s => ({ roadmapExpanded: !s.roadmapExpanded }));
+  toggleS1 = () => this.setState(s => ({ steps: { ...s.steps, s1: !s.steps.s1 } }));
+  toggleS2 = () => this.setState(s => ({ steps: { ...s.steps, s2: !s.steps.s2 } }));
+  toggleS3 = () => this.setState(s => ({ steps: { ...s.steps, s3: !s.steps.s3 } }));
+  toggleS4 = () => this.setState(s => ({ steps: { ...s.steps, s4: !s.steps.s4 } }));
+  toggleS5 = () => this.setState(s => ({ steps: { ...s.steps, s5: !s.steps.s5 } }));
+  toggleS6 = () => this.setState(s => ({ steps: { ...s.steps, s6: !s.steps.s6 } }));
+
+  /* ── Rituels ─── */
+  toggleR1 = () => this.setState(s => ({ rituels: { ...s.rituels, r1: !s.rituels.r1 } }));
+  toggleR2 = () => this.setState(s => ({ rituels: { ...s.rituels, r2: !s.rituels.r2 } }));
+  toggleR3 = () => this.setState(s => ({ rituels: { ...s.rituels, r3: !s.rituels.r3 } }));
+  toggleR4 = () => this.setState(s => ({ rituels: { ...s.rituels, r4: !s.rituels.r4 } }));
+
+  /* ── Wellness ─── */
+  toggleW1 = () => this.setState(s => ({ wellness: { ...s.wellness, w1: !s.wellness.w1 } }));
+  toggleW2 = () => this.setState(s => ({ wellness: { ...s.wellness, w2: !s.wellness.w2 } }));
+  toggleW3 = () => this.setState(s => ({ wellness: { ...s.wellness, w3: !s.wellness.w3 } }));
+  toggleW4 = () => this.setState(s => ({ wellness: { ...s.wellness, w4: !s.wellness.w4 } }));
+
+  /* ── ROI ─── */
+  setRoiCA    = (e) => this.setState({ roiCA:    parseInt(e.target.value) });
+  setRoiJours = (e) => this.setState({ roiJours: parseInt(e.target.value) });
+
+  /* ── Profile ─── */
+  dismissProfile = () => this.setState({ profileVisible: false });
+
+  /* ── Camera ─── */
+  openCameraRecu           = () => this.setState({ cameraOpen: true, cameraMode: 'recu' });
+  openCameraCarteVisite    = () => this.setState({ cameraOpen: true, cameraMode: 'carte' });
+  closeCamera              = () => this.setState({ cameraOpen: false });
+  capturePhoto             = () => this.setState({ cameraOpen: false });
+  setCameraModeRecu        = () => this.setState({ cameraMode: 'recu' });
+  setCameraModeCarteVisite = () => this.setState({ cameraMode: 'carte' });
+  setCameraModeDocument    = () => this.setState({ cameraMode: 'document' });
+
+  /* ── Helpers ─── */
+  fmtCHF(n) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2019');
+  }
+
+  ci(done) {
+    return {
+      checkStyle: {
+        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '11px', fontWeight: 700, lineHeight: 1,
+        transition: 'all 0.18s',
+        background: done ? 'var(--color-primary)' : 'transparent',
+        border: '1.5px solid ' + (done ? 'var(--color-primary)' : 'var(--color-border-strong)'),
+        color: done ? 'var(--color-primary-contrast)' : 'transparent',
+      },
+      char: done ? '✓' : '',
+      labelStyle: {
+        fontSize: '13px', flex: 1, lineHeight: 1.4,
+        color: done ? 'var(--color-text-subtle)' : 'var(--color-text)',
+        textDecoration: done ? 'line-through' : 'none',
+        transition: 'color 0.18s',
+      },
+      bg: done ? 'rgba(74,139,36,0.05)' : 'transparent',
+    };
+  }
+
+  wi(flagged) {
+    return {
+      checkStyle: {
+        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '12px', lineHeight: 1, transition: 'all 0.18s',
+        background: flagged ? 'var(--color-warning-bg)' : 'transparent',
+        border: '1.5px solid ' + (flagged ? 'var(--color-warning)' : 'var(--color-border-strong)'),
+        color: flagged ? 'var(--color-warning)' : 'transparent',
+      },
+      char: flagged ? '!' : '',
+    };
+  }
+
+  tabStyle(active) {
+    return {
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+      padding: '8px 4px', background: 'transparent', border: 'none', cursor: 'pointer',
+      color: active ? 'var(--color-accent)' : 'rgba(143,168,138,0.5)',
+      fontSize: '10px', fontFamily: 'var(--font-body)',
+      fontWeight: active ? 600 : 400, letterSpacing: '0.01em',
+      transition: 'color 0.2s',
+    };
+  }
+
+  camModeStyle(active) {
+    return {
+      padding: '7px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+      background: active ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.09)',
+      color: active ? '#0a0a0a' : 'rgba(255,255,255,0.55)',
+      fontSize: '12px', fontFamily: 'var(--font-body)', fontWeight: active ? 600 : 400,
+      transition: 'all 0.2s',
+    };
+  }
+
+  renderVals() {
+    const { activeTab, roadmapExpanded, steps: s, rituels: r, wellness: w, roiCA, roiJours, profileVisible, cameraOpen, cameraMode } = this.state;
+
+    const stepsCount   = Object.values(s).filter(Boolean).length;
+    const rituelsCount = Object.values(r).filter(Boolean).length;
+    const wellnessCount= Object.values(w).filter(Boolean).length;
+
+    const tjm = roiJours > 0 ? Math.round(roiCA / roiJours) : 0;
+    const net = Math.round(roiCA * 0.68);
+
+    let riskLabel, riskColor, riskBg;
+    if      (wellnessCount === 0) { riskLabel = '🟢 Au vert';       riskColor = 'var(--color-success)'; riskBg = 'var(--color-success-bg)'; }
+    else if (wellnessCount <= 2)  { riskLabel = '🟡 Vigilance';     riskColor = 'var(--color-warning)'; riskBg = 'var(--color-warning-bg)'; }
+    else                          { riskLabel = '🔴 À surveiller';  riskColor = 'var(--color-error)';   riskBg = 'var(--color-error-bg)';   }
+
+    const days   = ['Dim.','Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.'];
+    const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sep.','oct.','nov.','déc.'];
+    const today  = new Date();
+    const todayLabel = days[today.getDay()] + ' ' + today.getDate() + ' ' + months[today.getMonth()] + ' 2026';
+
+    const otherMap = { diagnostic: ['📊','Diagnostic'], finances: ['💰','Finances'], more: ['⋯','Plus'] };
+    const [otherEmoji, otherName] = otherMap[activeTab] || ['',''];
+
+    const camLabels = { recu: 'Scan reçu', carte: 'Carte de visite', document: 'Document' };
+
+    const contactsData = [
+      { initials: 'LM', name: 'Lionel Moret',   company: 'DRH · Banque Cantonale', tag: 'Prospect chaud', tagColor: '#FBBF24', lastContact: 'il y a 2j',      bg: '#283820' },
+      { initials: 'SB', name: 'Sophie Blanc',    company: 'Coach · Freelance',       tag: 'Client actif',  tagColor: '#4ADE80', lastContact: 'il y a 5j',      bg: '#1a2a3c' },
+      { initials: 'RP', name: 'Romain Pittet',   company: 'CEO · StartupGE',         tag: 'À relancer',    tagColor: '#8FA88A', lastContact: 'il y a 2 sem.', bg: '#321a32' },
+      { initials: 'AC', name: 'Amélie Chablis',  company: 'DRH · PME Vaud',          tag: 'Prospect',      tagColor: '#38BDF8', lastContact: 'il y a 3 sem.', bg: '#1a3028' },
+      { initials: 'TF', name: 'Thomas Fournier', company: 'Directeur · Swiss HR',    tag: 'Archivé',       tagColor: '#8FA88A', lastContact: 'il y a 2 mois', bg: '#2a2218' },
+    ].map(c => ({
+      ...c,
+      avatarStyle: { width: '44px', height: '44px', borderRadius: '12px', background: c.bg, border: '1.5px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, fontFamily: 'var(--font-display)', color: '#F0F4EF', flexShrink: 0, letterSpacing: '-0.01em' },
+      tagStyle: { fontSize: '10px', fontFamily: 'var(--font-mono)', color: c.tagColor, padding: '3px 8px', background: c.tagColor + '22', borderRadius: '20px', whiteSpace: 'nowrap', flexShrink: 0 },
+    }));
+
+    const ci1 = this.ci(s.s1), ci2 = this.ci(s.s2), ci3 = this.ci(s.s3);
+    const ci4 = this.ci(s.s4), ci5 = this.ci(s.s5), ci6 = this.ci(s.s6);
+    const ri1 = this.ci(r.r1), ri2 = this.ci(r.r2), ri3 = this.ci(r.r3), ri4 = this.ci(r.r4);
+    const wi1 = this.wi(w.w1), wi2 = this.wi(w.w2), wi3 = this.wi(w.w3), wi4 = this.wi(w.w4);
+
+    return {
+      todayLabel, profileVisible,
+      showDashboard: activeTab === 'dashboard',
+      showOtherTab:     activeTab !== 'dashboard',
+      showPipeline:     activeTab === 'pipeline',
+      showGenericOther: activeTab !== 'dashboard' && activeTab !== 'pipeline',
+      otherEmoji, otherName,
+
+      /* Tabs */
+      setTabDashboard:  this.setTabDashboard,
+      setTabDiagnostic: this.setTabDiagnostic,
+      setTabPipeline:   this.setTabPipeline,
+      setTabFinances:   this.setTabFinances,
+      setTabMore:       this.setTabMore,
+      tabDashStyle:     this.tabStyle(activeTab === 'dashboard'),
+      tabDiagStyle:     this.tabStyle(activeTab === 'diagnostic'),
+      tabPipelineStyle: this.tabStyle(activeTab === 'pipeline'),
+      tabFinancesStyle: this.tabStyle(activeTab === 'finances'),
+      tabMoreStyle:     this.tabStyle(activeTab === 'more'),
+
+      /* Roadmap */
+      toggleRoadmap: this.toggleRoadmap,
+      roadmapProgress: stepsCount + '/6',
+      chevronStyle: {
+        fontSize: '16px', color: 'var(--color-text-subtle)',
+        transform: roadmapExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+        transition: 'transform 0.28s',
+        display: 'inline-block',
+      },
+      roadmapBodyStyle: {
+        maxHeight: roadmapExpanded ? '440px' : '0',
+        overflow: 'hidden',
+        transition: 'max-height 0.35s cubic-bezier(0.16,1,0.3,1)',
+      },
+      toggleS1: this.toggleS1, s1Cs: ci1.checkStyle, s1Cc: ci1.char, s1Ls: ci1.labelStyle, s1Bg: ci1.bg,
+      toggleS2: this.toggleS2, s2Cs: ci2.checkStyle, s2Cc: ci2.char, s2Ls: ci2.labelStyle, s2Bg: ci2.bg,
+      toggleS3: this.toggleS3, s3Cs: ci3.checkStyle, s3Cc: ci3.char, s3Ls: ci3.labelStyle, s3Bg: ci3.bg,
+      toggleS4: this.toggleS4, s4Cs: ci4.checkStyle, s4Cc: ci4.char, s4Ls: ci4.labelStyle, s4Bg: ci4.bg,
+      toggleS5: this.toggleS5, s5Cs: ci5.checkStyle, s5Cc: ci5.char, s5Ls: ci5.labelStyle, s5Bg: ci5.bg,
+      toggleS6: this.toggleS6, s6Cs: ci6.checkStyle, s6Cc: ci6.char, s6Ls: ci6.labelStyle, s6Bg: ci6.bg,
+
+      /* Rituels */
+      rituelsProgress: rituelsCount + '/4',
+      toggleR1: this.toggleR1, r1Cs: ri1.checkStyle, r1Cc: ri1.char, r1Ls: ri1.labelStyle, r1Bg: ri1.bg,
+      toggleR2: this.toggleR2, r2Cs: ri2.checkStyle, r2Cc: ri2.char, r2Ls: ri2.labelStyle, r2Bg: ri2.bg,
+      toggleR3: this.toggleR3, r3Cs: ri3.checkStyle, r3Cc: ri3.char, r3Ls: ri3.labelStyle, r3Bg: ri3.bg,
+      toggleR4: this.toggleR4, r4Cs: ri4.checkStyle, r4Cc: ri4.char, r4Ls: ri4.labelStyle, r4Bg: ri4.bg,
+
+      /* Wellness */
+      toggleW1: this.toggleW1, w1Cs: wi1.checkStyle, w1Cc: wi1.char,
+      toggleW2: this.toggleW2, w2Cs: wi2.checkStyle, w2Cc: wi2.char,
+      toggleW3: this.toggleW3, w3Cs: wi3.checkStyle, w3Cc: wi3.char,
+      toggleW4: this.toggleW4, w4Cs: wi4.checkStyle, w4Cc: wi4.char,
+      riskLabel,
+      riskBadgeStyle: {
+        display: 'inline-flex', alignItems: 'center', gap: '5px',
+        padding: '4px 10px', borderRadius: '20px',
+        background: riskBg, color: riskColor,
+        fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 600,
+      },
+
+      /* ROI */
+      roiCA, roiJours,
+      roiCAFormatted: this.fmtCHF(roiCA),
+      roiTJM: this.fmtCHF(tjm),
+      roiNet: this.fmtCHF(net),
+      setRoiCA:    this.setRoiCA,
+      setRoiJours: this.setRoiJours,
+
+      /* Profile */
+      dismissProfile: this.dismissProfile,
+
+      /* Camera */
+      cameraOpen,
+      openCameraRecu:           this.openCameraRecu,
+      openCameraCarteVisite:    this.openCameraCarteVisite,
+      closeCamera:              this.closeCamera,
+      capturePhoto:             this.capturePhoto,
+      setCameraModeRecu:        this.setCameraModeRecu,
+      setCameraModeCarteVisite: this.setCameraModeCarteVisite,
+      setCameraModeDocument:    this.setCameraModeDocument,
+      cameraModeLabel: camLabels[cameraMode] || 'Photo',
+      camModeRecuStyle:  this.camModeStyle(cameraMode === 'recu'),
+      camModeCarteStyle: this.camModeStyle(cameraMode === 'carte'),
+      camModeDocStyle:   this.camModeStyle(cameraMode === 'document'),
+
+      /* Contacts */
+      contacts: contactsData,
+      openCameraCardFromContacts: this.openCameraCarteVisite,
+    };
+  }
+}
+</script>
+</body>
+</html>

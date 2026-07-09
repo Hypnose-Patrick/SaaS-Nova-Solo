@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -8,7 +8,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptDossier, DOSSIER_TEMPLATES, type DossierTemplate, type DossierRecipient } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import { printHtml, downloadWord, slugify, renderStaticHtml } from "@/lib/exportDoc";
 import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
@@ -42,35 +42,74 @@ function mdToHtml(raw: string): string {
   return html;
 }
 
+const DOSSIER_KEYS = ["ns_dossier_result", "ns_dossier_template", "ns_dossier_recip"] as const;
+const EMPTY_RECIP: DossierRecipient = { nom: "", fonction: "", org: "" };
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du dossier du dernier projet actif.
+function migrateLegacyDossier(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_dossier_result", projectId)) != null) return;
+  if (localStorage.getItem("ns_dossier_result") == null) return;
+  for (const base of DOSSIER_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  DOSSIER_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadDossier(projectId: string | null | undefined) {
+  return {
+    dossier: loadLocal<string | null>(projectKey("ns_dossier_result", projectId), null),
+    template: loadLocal<DossierTemplate>(projectKey("ns_dossier_template", projectId), "client"),
+    recip: loadLocal<DossierRecipient>(projectKey("ns_dossier_recip", projectId), EMPTY_RECIP),
+  };
+}
+
 export function Dossier() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { bmc, fetchBmc } = useAppStore();
   const { loading, error, gen } = useAiGen();
-  const [dossier, setDossier] = useState<string | null>(() => loadLocal<string | null>("ns_dossier_result", null));
-  const [template, setTemplate] = useState<DossierTemplate>(() => loadLocal<DossierTemplate>("ns_dossier_template", "client"));
-  const [recip, setRecip] = useState<DossierRecipient>(() => loadLocal<DossierRecipient>("ns_dossier_recip", { nom: "", fonction: "", org: "" }));
+
+  useEffect(() => { if (projectId) migrateLegacyDossier(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [dossier, setDossier] = useState<string | null>(() => loadDossier(projectId).dossier);
+  const [template, setTemplate] = useState<DossierTemplate>(() => loadDossier(projectId).template);
+  const [recip, setRecip] = useState<DossierRecipient>(() => loadDossier(projectId).recip);
+  const prevProjectId = useRef(projectId);
 
   useEffect(() => {
     if (profile?.id) fetchBmc(profile.id);
   }, [profile?.id]);
 
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le dossier propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadDossier(projectId);
+    setDossier(d.dossier); setTemplate(d.template); setRecip(d.recip);
+  }, [projectId]);
+
   function pickTemplate(t: DossierTemplate) {
     setTemplate(t);
-    saveLocal("ns_dossier_template", t);
+    saveLocal(projectKey("ns_dossier_template", projectId), t);
   }
   function patchRecip(p: Partial<DossierRecipient>) {
     const next = { ...recip, ...p };
     setRecip(next);
-    saveLocal("ns_dossier_recip", next);
+    saveLocal(projectKey("ns_dossier_recip", projectId), next);
   }
 
   const bmcResume = bmc.filter((b) => b.content).map((b) => `${b.block_key} : ${b.content}`).join("\n") || "—";
-  const pricing = loadLocal<string | null>("ns_pricing_result", null) ?? "—";
+  const pricing = loadLocal<string | null>(projectKey("ns_pricing_result", projectId), null) ?? "—";
   const tplLabel = DOSSIER_TEMPLATES.find((t) => t.key === template)?.label ?? "Dossier";
 
   async function generate() {
     const r = await gen("communicant", promptDossier(profile, bmcResume, pricing, template, recip), { model: MODEL_REASONING });
-    if (r) { setDossier(r); saveLocal("ns_dossier_result", r); }
+    if (r) { setDossier(r); saveLocal(projectKey("ns_dossier_result", projectId), r); }
   }
 
   function buildDocHtml(): Promise<string> {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,7 +10,7 @@ import {
   type SwarmPersonaVerdict,
   type SwarmVote,
 } from "@/lib/ai";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 type Phase = "idle" | "panel" | "debate" | "synthesis";
 
@@ -32,15 +32,45 @@ const PHASE_LABEL: Record<Exclude<Phase, "idle">, string> = {
   synthesis: "Nova synthétise le débat…",
 };
 
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du run du dernier projet actif.
+function migrateLegacySimulation(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_swarm", projectId)) != null) return;
+  const v = localStorage.getItem("ns_swarm");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_swarm", projectId), v);
+  localStorage.removeItem("ns_swarm");
+}
+
+function loadSimulation(projectId: string | null | undefined) {
+  return {
+    run: loadLocal<SwarmRun | null>(projectKey("ns_swarm", projectId), null),
+  };
+}
+
 export function Simulation() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
+
+  useEffect(() => { if (projectId) migrateLegacySimulation(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [question, setQuestion] = useState("");
   const [count, setCount] = useState(8);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [run, setRun] = useState<SwarmRun | null>(() =>
-    loadLocal<SwarmRun | null>("ns_swarm", null),
-  );
+  const [run, setRun] = useState<SwarmRun | null>(() => loadSimulation(projectId).run);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le run propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadSimulation(projectId);
+    setRun(d.run);
+  }, [projectId]);
 
   const busy = phase !== "idle";
 
@@ -70,7 +100,7 @@ export function Simulation() {
       const recommendation = await swarmRecommendation(q, verdicts, ctx);
       const next: SwarmRun = { question: q, verdicts, recommendation };
       setRun(next);
-      saveLocal("ns_swarm", next);
+      saveLocal(projectKey("ns_swarm", projectId), next);
     } catch {
       setError("La simulation a échoué. Réessayez dans un instant.");
     }

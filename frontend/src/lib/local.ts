@@ -2,6 +2,13 @@
 // (CV, dossier, pricing, vision symbolique…). Évite une migration Supabase ;
 // à migrer vers la DB si un partage cross-device est requis.
 
+// Scope une clé localStorage au projet actif, pour isoler les données entre
+// projets d'un même compte. Sans projectId (profil pas encore chargé), retombe
+// sur la clé nue — c'est aussi la clé "legacy" que lisent les migrateLegacyXxx().
+export function projectKey(base: string, projectId: string | null | undefined): string {
+  return projectId ? `${base}:${projectId}` : base;
+}
+
 export function loadLocal<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

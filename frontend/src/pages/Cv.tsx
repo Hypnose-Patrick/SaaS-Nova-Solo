@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -6,7 +6,8 @@ import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptCvGenerate, promptCvImprove, CV_TYPES, type CvType } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
+import type { Profile } from "@/types";
 import { printHtml, downloadWord, renderStaticHtml } from "@/lib/exportDoc";
 import { fillTemplate } from "@/lib/fillTemplate";
 import { ExportGate } from "@/components/ExportGate";
@@ -47,29 +48,67 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const CV_KEYS = ["ns_cv_fields", "ns_cv_type", "ns_cv_result"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon des données du dernier projet actif.
+function migrateLegacyCv(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_cv_fields", projectId)) != null) return;
+  if (localStorage.getItem("ns_cv_fields") == null) return;
+  for (const base of CV_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  CV_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadCv(projectId: string | null | undefined, profile: Profile | null | undefined) {
+  return {
+    f: loadLocal<CvFields>(projectKey("ns_cv_fields", projectId), {
+      profil: profile?.profil ?? profile?.situation ?? "", skills: "", exp: "", formation: "", langues: "",
+    }),
+    cvType: loadLocal<CvType>(projectKey("ns_cv_type", projectId), "bank"),
+    cv: loadLocal<string | null>(projectKey("ns_cv_result", projectId), null),
+  };
+}
+
 export function Cv() {
   const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { loading, error, gen } = useAiGen();
-  const [f, setF] = useState<CvFields>(() => loadLocal<CvFields>("ns_cv_fields", {
-    profil: profile?.profil ?? profile?.situation ?? "", skills: "", exp: "", formation: "", langues: "",
-  }));
-  const [cvType, setCvType] = useState<CvType>(() => loadLocal<CvType>("ns_cv_type", "bank"));
-  const [cv, setCv] = useState<string | null>(() => loadLocal<string | null>("ns_cv_result", null));
+
+  useEffect(() => { if (projectId) migrateLegacyCv(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [f, setF] = useState<CvFields>(() => loadCv(projectId, profile).f);
+  const [cvType, setCvType] = useState<CvType>(() => loadCv(projectId, profile).cvType);
+  const [cv, setCv] = useState<string | null>(() => loadCv(projectId, profile).cv);
   const [improvingKey, setImprovingKey] = useState<keyof CvFields | null>(null);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // les données propres à ce projet au lieu de garder celles affichées à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadCv(projectId, profile);
+    setF(d.f); setCvType(d.cvType); setCv(d.cv);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function patch(p: Partial<CvFields>) {
     const next = { ...f, ...p };
     setF(next);
-    saveLocal("ns_cv_fields", next);
+    saveLocal(projectKey("ns_cv_fields", projectId), next);
   }
   function pickType(t: CvType) {
     setCvType(t);
-    saveLocal("ns_cv_type", t);
+    saveLocal(projectKey("ns_cv_type", projectId), t);
   }
 
   async function generate() {
     const r = await gen("communicant", promptCvGenerate(profile, f, cvType), { model: MODEL_REASONING });
-    if (r) { setCv(r); saveLocal("ns_cv_result", r); }
+    if (r) { setCv(r); saveLocal(projectKey("ns_cv_result", projectId), r); }
   }
 
   async function improve(key: keyof CvFields, label: string) {

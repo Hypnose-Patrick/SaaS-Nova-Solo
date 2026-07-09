@@ -1,0 +1,56 @@
+## Prompt originel
+
+Tu m'aides à penser l'architecture du rate limiting pour mon SaaS React (Nova Solo).
+
+Contexte :
+- App qui appelle des APIs IA (OCR, analyses financières)
+- Coût par appel : ~0.01-0.10 CHF
+- Plans : Solo (limité) vs Pro
+- Doit protéger la rentabilité
+
+Mes vraies questions avant de coder :
+
+1. Qu'est-ce que je limite ? Par user ? Par endpoint ? Par IP ?
+2. Quel algo ? Fixed window (reset chaque jour) ? Token bucket (crédit qui se régénère) ? Leaky bucket (janelle glissante) ?
+3. Quels chiffres ? Solo : 10 appels/jour ? 50 ? 100 ? — Pro : 500 ou illimité ?
+4. Où je mets ça ? Client-side pour le feedback rapide, server-side pour la vraie sécurité, ou les deux ?
+5. Où je persiste ? Base de données Supabase, mémoire de la Edge Function, hybrid ?
+6. Reset par jour UTC ? Minuit local de l'user ? Ou janelle glissante 24h ?
+
+La vraie tension : je construis solo, pas pour hyper-scale. Mais je dois pas me laisser ruiner par quelqu'un qui spammerait.
+
+Aide-moi à penser les pièges réels, les compromis — pas juste « voici LA solution ». Quel scénario catastrophe tu redoutes vraiment ? Et qu'est-ce qui est juste du over-engineering pour ma situation ?
+
+-----
+
+## Réponse de Claude Opus
+
+La question que tu poses — "quel algo, quels chiffres, où je persiste" — présuppose que le rate limiting est ton vrai problème. Je n'en suis pas sûr. Avant de choisir entre token bucket et fixed window, il y a une question plus en amont : *qu'est-ce que tu protèges exactement, et contre qui ?* Parce que "rate limiting" est un mot-valise qui recouvre trois problèmes qui n'ont rien à voir entre eux, et si tu les traites avec le même outil tu vas construire quelque chose de compliqué qui ne résout aucun des trois proprement.
+
+Les trois problèmes sont : (1) la rentabilité par plan — un client Solo ne doit pas consommer autant qu'un Pro, sinon ton pricing ne veut rien dire ; (2) l'abus — quelqu'un qui automatise 10'000 appels pendant la nuit pour te faire cramer ton budget API ; (3) la protection contre ta propre facture qui explose sans que tu t'en rendes compte. Ce sont des menaces différentes avec des solutions différentes, et je pense que tu les as fusionnées dans ta tête sous "rate limiting".
+
+Le premier n'est même pas du rate limiting, c'est du *quota*. Un quota c'est "tu as droit à N appels par mois, période". C'est comptable, pas temporel. Ça vit dans ta base de données parce que c'est de la donnée métier, au même titre que le plan de l'utilisateur. Le troisième, la protection de ta facture globale, ne se règle pas du tout côté application — ça se règle dans le dashboard de ton fournisseur API avec un hard cap de dépense mensuelle. Le vrai rate limiting temporel, le "pas plus de X par minute", ne concerne que le deuxième problème : l'abus.
+
+Reprenons tes questions dans cet ordre-là.
+
+**Ce que tu limites.** Par user authentifié, sans hésiter. L'IP est un piège pour ton cas : tu vas bloquer trois collègues derrière le même NAT d'entreprise et laisser passer un attaquant qui tourne sur un VPN à IP rotative. L'IP ne sert que pour les routes *non authentifiées* — ton login, ton signup, ton reset password — pour éviter le bourrinage de credentials. Mais tes appels IA sont derrière l'auth, donc c'est l'user id qui compte. Par endpoint, oui, mais pas comme tu l'imagines : tu ne veux pas six compteurs séparés, tu veux un système de *coût*. Un OCR qui te coûte 0.01 et une analyse financière qui te coûte 0.10, ce n'est pas "un appel = un appel". Si tu comptes en appels bruts, un utilisateur malin fait 50 analyses lourdes pendant qu'un autre fait 50 OCR légers, et tu paies dix fois plus pour le premier avec le même quota. Compte en *crédits pondérés par coût réel*. Un OCR vaut 1 crédit, une analyse en vaut 10. Ton quota devient une enveloppe de crédits, pas un nombre d'appels. Ça résout la pondération sans multiplier les compteurs.
+
+**L'algo.** Pour le quota mensuel : un simple compteur qui s'incrémente, avec une date de reset. Pas de token bucket, pas de leaky bucket, c'est de l'over-engineering pur pour ce besoin. Un `credits_used` et un `credits_reset_at` dans une table, tu compares, tu incrémentes. Pour la protection anti-abus, là un token bucket a du sens parce que tu veux autoriser des rafales courtes (l'utilisateur légitime qui traite dix documents d'affilée) tout en bloquant le flot continu (le script qui tape sans arrêt). Le token bucket régénère lentement et se vide vite — c'est exactement le comportement que tu veux : tolérant au burst, intolérant au sostenu. Mais — et c'est là que je te contredis avant que tu me demandes — est-ce que tu as vraiment besoin de la couche anti-abus dès le jour un ? J'y reviens à la fin.
+
+Le leaky bucket que tu appelles "fenêtre glissante" — ce n'est pas tout à fait la même chose, la fenêtre glissante est encore un autre mécanisme — je le mettrais de côté. La fenêtre glissante exacte demande de stocker chaque timestamp d'appel, c'est le plus coûteux en stockage et en calcul, et pour ton échelle c'est disproportionné.
+
+**Les chiffres.** Ici je ne peux pas te donner un nombre honnête sans une donnée que tu n'as pas mise dans ta question : *combien tu factures un Solo et un Pro par mois ?* Le quota ne se déduit pas du vide, il se déduit de la marge que tu veux garder. Si un Solo paie 20 CHF/mois et que tu veux garder 70% de marge, tu peux dépenser 6 CHF en coûts API sur lui. À 0.10 le pire appel, c'est 60 analyses lourdes maximum, ou 600 OCR légers, ou n'importe quel mélange entre les deux si tu comptes en crédits. Voilà ton plafond réel : 60 crédits-lourds, disons 600 crédits pondérés pour arrondir avec du confort. Pas "10 ou 50 ou 100" tirés au hasard — un nombre qui tombe de ta marge. Fais ce calcul avec tes vrais prix et le chiffre apparaîtra tout seul. Et "Pro illimité" est un piège tentant : illimité veut dire que ta marge est à la merci d'un seul power-user. Mets un plafond très haut plutôt qu'infini, et communique-le comme "usage loyal / fair use" plutôt que comme un chiffre affiché — la plupart des Pro n'atteindront jamais le plafond, mais tu es couvert contre celui qui déraille.
+
+**Où tu mets ça.** Le server-side n'est pas négociable — c'est la seule source de vérité, parce que tout ce qui vit dans le navigateur, l'utilisateur peut le contourner en trois lignes de console. Le client-side ne sert qu'à une chose : le confort visuel. Griser le bouton, afficher "il te reste 43 crédits", éviter un aller-retour qui va échouer de toute façon. C'est du feedback, jamais de la sécurité. Ne te fais pas d'illusion sur ce partage : le client *ment* toujours, le serveur *décide* toujours. Donc oui, les deux, mais avec des rôles qui ne se recouvrent pas.
+
+**Où tu persistes.** Supabase, dans une table, pour le quota. La mémoire d'une Edge Function est une fausse bonne idée qui va te mordre : les Edge Functions sont éphémères et distribuées, chaque invocation peut tomber sur une instance fraîche qui ne sait rien des appels précédents. Un compteur en mémoire dans une fonction serverless, c'est un compteur qui se remet à zéro quand ça l'arrange et qui diverge entre instances. Pour du quota comptable qui doit être exact, c'est la base de données. Le seul cas où la mémoire ou un store type Redis se justifie, c'est le rate limiting anti-abus à haute fréquence où tu ne veux pas taper la DB à chaque requête — mais encore une fois, à ton échelle, taper Postgres à chaque appel IA n'est absolument pas ton goulot. Tes appels IA prennent des centaines de millisecondes ; une écriture Postgres en prend quelques-unes. Le rate limiting ne sera jamais ce qui te ralentit.
+
+Un piège concret à ce niveau, parce qu'il est réel et que beaucoup se font avoir : la *race condition*. Deux requêtes de la même personne arrivent en même temps, les deux lisent "42 crédits utilisés", les deux vérifient "ok c'est sous la limite", les deux incrémentent, tu te retrouves avec des doubles comptages ou des dépassements. La parade n'est pas un verrou applicatif compliqué, c'est de faire l'incrémentation et la vérification dans la *même* opération atomique côté base — un `UPDATE ... SET credits = credits + X WHERE credits + X <= limit RETURNING`. Si la ligne revient, c'était autorisé ; sinon, refusé. Postgres gère l'atomicité pour toi. Ne recode pas ça à la main dans du JavaScript, tu vas te tromper.
+
+**Le reset.** UTC minuit, sans discuter — mais en réalité je te pousserais vers un quota *mensuel*, pas journalier, et là le reset n'est pas minuit mais la date anniversaire de l'abonnement. Le reset journalier crée un comportement pénible : quelqu'un qui a un gros document à traiter le 3 du mois et rien le reste du temps se fait bloquer à 10 appels/jour alors qu'il est très en dessous de ce que tu peux te permettre sur le mois. Le quota mensuel épouse mieux l'usage réel, qui est irrégulier par nature. Le minuit-local-de-l'utilisateur est un raffinement qui ne vaut pas la complexité qu'il introduit — gérer les fuseaux pour un reset, c'est du travail pour un bénéfice que personne ne remarquera.
+
+Maintenant, le scénario catastrophe que je redoute vraiment pour toi, et ce n'est pas celui de ta question. Tu crains le spammeur qui te ruine. C'est réel mais c'est *visible et borné* — tu le vois dans tes coûts, et un hard cap chez ton fournisseur API le stoppe net. Le vrai danger silencieux, c'est la fuite lente : un bug dans ton propre code qui fait qu'un appel IA se déclenche en boucle sur un `useEffect` mal câblé côté React, ou un retry automatique qui rejoue un appel échoué à l'infini. Ce n'est pas un attaquant, c'est *toi*. Et ton rate limiting par-user ne t'en protège pas forcément, parce que ça peut être un seul user légitime dont le client part en vrille, ou pire, ça peut venir de ton backend lui-même. La seule protection contre ça, c'est le plafond de dépense global chez le fournisseur API, celui qui coupe tout quand tu atteins X CHF sur le mois. Mets-le en place *avant* d'écrire une ligne de rate limiting. C'est ta ceinture de sécurité ultime, celle qui te sauve même quand toute ta logique applicative se trompe.
+
+Et l'over-engineering, puisque tu demandes honnêtement : le token bucket anti-abus, dès le jour un, pour un SaaS solo sans utilisateurs. Tu construis une digue avant qu'il y ait de l'eau. Le quota mensuel par plan + le hard cap fournisseur te couvrent contre 95% de ce qui peut mal tourner, et ces deux choses sont simples à mettre en place. Le rate limiting haute fréquence anti-burst, tu l'ajoutes le jour où tu vois dans tes logs un pattern d'abus réel — et tu le verras, parce que tu regardes tes coûts. Construire la défense sophistiquée maintenant, c'est du temps volé à ce qui fait vivre le produit, pour parer une menace qui n'existe pas encore et dont tu ne connais pas la forme exacte. La forme réelle de l'abus, tu la découvriras en la voyant, pas en l'imaginant.
+
+Donc si je devais te donner l'ordre de construction : le hard cap fournisseur d'abord (cinq minutes, protection maximale), puis le quota mensuel pondéré en crédits dans Supabase avec l'update atomique (ton cœur métier, ce qui fait tenir ton pricing), puis le feedback client-side pour que ce soit agréable. Et tu t'arrêtes là. L'anti-abus fin, tu le gardes en tête comme une extension future, pas comme une fondation.

@@ -1,7 +1,7 @@
 // Modèle financier partagé (Finances + Business Plan) — source unique de vérité
 // pour la forme des données, le calcul du prévisionnel et le résumé budgétaire.
 
-import { loadLocal } from "./local";
+import { loadLocal, projectKey } from "./local";
 
 export const FIN_KEY = "ns_finance";
 
@@ -57,9 +57,9 @@ export function financeKpis(rows: FinRow[]) {
   };
 }
 
-// Charge le budget enregistré localement (ou null si aucun).
-export function loadFinanceModel(): FinModel | null {
-  return loadLocal<FinModel | null>(FIN_KEY, null);
+// Charge le budget enregistré localement (ou null si aucun), scopé au projet actif.
+export function loadFinanceModel(projectId: string | null | undefined): FinModel | null {
+  return loadLocal<FinModel | null>(projectKey(FIN_KEY, projectId), null);
 }
 
 // Résumé texte du budget réel — destiné à la section financière du Business Plan.

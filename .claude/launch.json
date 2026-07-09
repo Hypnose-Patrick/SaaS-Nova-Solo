@@ -1,11 +1,20 @@
 {
   "version": "0.0.1",
+  "autoPort": false,
   "configurations": [
     {
-      "name": "nova-solo-frontend",
+      "name": "nova-solo",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 5173
+      "port": 5174,
+      "cwd": "C:\\Claude-Shared\\01_APPS-PROD\\SaaS-Nova-Solo\\frontend"
+    },
+    {
+      "name": "nova-solo-react",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5174,
+      "cwd": "C:\\Claude-Shared\\01_APPS-PROD\\SaaS-Nova-Solo\\frontend"
     }
   ]
 }

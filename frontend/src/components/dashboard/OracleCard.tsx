@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ORACLE_ANIMALS } from "@/lib/oracleAnimals";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
+import { useUserStore } from "@/stores/useUserStore";
 
 // Oracle du jour — mini-jeu de pause : 1 tap tire un animal business (message +
 // défi). La carte reste fixée pour la journée ; « une autre » permet de rejouer.
 
 interface DrawState { day: string; idx: number }
+const EMPTY_STATE: DrawState = { day: "", idx: -1 };
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -17,13 +19,44 @@ function pick(exclude = -1): number {
   return i;
 }
 
+// Reprend l'ancien tirage global (pré-scoping projet) pour le premier projet
+// qui charge ce module après le correctif, puis l'efface — sans ça tout
+// nouveau projet hériterait sinon du tirage du dernier projet actif.
+function migrateLegacyOracle(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_oracle_jour", projectId)) != null) return;
+  const v = localStorage.getItem("ns_oracle_jour");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_oracle_jour", projectId), v);
+  localStorage.removeItem("ns_oracle_jour");
+}
+
+function loadOracle(projectId: string | null | undefined) {
+  return loadLocal<DrawState>(projectKey("ns_oracle_jour", projectId), EMPTY_STATE);
+}
+
 export function OracleCard() {
-  const [state, setState] = useState<DrawState>(() => loadLocal<DrawState>("ns_oracle_jour", { day: "", idx: -1 }));
+  const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
+
+  useEffect(() => { if (projectId) migrateLegacyOracle(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [state, setState] = useState<DrawState>(() => loadOracle(projectId));
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le tirage propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    setState(loadOracle(projectId));
+  }, [projectId]);
+
   const drawn = state.day === todayKey() && state.idx >= 0 ? ORACLE_ANIMALS[state.idx] : null;
 
   function draw(exclude = -1) {
     const next = { day: todayKey(), idx: pick(exclude) };
-    setState(next); saveLocal("ns_oracle_jour", next);
+    setState(next); saveLocal(projectKey("ns_oracle_jour", projectId), next);
   }
 
   return (

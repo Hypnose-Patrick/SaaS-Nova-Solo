@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { AiResult } from "@/components/ui/AiResult";
+import { useUserStore } from "@/stores/useUserStore";
 import { useAiGen } from "@/lib/useAiGen";
 import { promptMirrorFisch } from "@/lib/lancementPrompts";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 // Extrait les KPI de la réaction simulée : « 24% » de conversion, « 67/100 » d'engagement.
 function parseScores(text: string | null): { conv: number | null; eng: number | null } {
@@ -68,18 +69,57 @@ const LBL: React.CSSProperties = {
   textTransform: "uppercase", color: "var(--color-text-muted)",
 };
 
+const MF_KEYS = ["ns_mf_persona", "ns_mf_message", "ns_mf_result"] as const;
+
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du contenu du dernier projet actif.
+function migrateLegacyMirrorFisch(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_mf_persona", projectId)) != null) return;
+  if (localStorage.getItem("ns_mf_persona") == null) return;
+  for (const base of MF_KEYS) {
+    const v = localStorage.getItem(base);
+    if (v != null) localStorage.setItem(projectKey(base, projectId), v);
+  }
+  MF_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
+function loadMirrorFisch(projectId: string | null | undefined) {
+  return {
+    persona: loadLocal(projectKey("ns_mf_persona", projectId), PERSONAS[0]),
+    message: loadLocal(projectKey("ns_mf_message", projectId), ""),
+    result: loadLocal<string | null>(projectKey("ns_mf_result", projectId), null),
+  };
+}
+
 export function MirrorFisch() {
+  const profile = useUserStore((s) => s.profile);
+  const projectId = profile?.id ?? null;
   const { loading, error, gen } = useAiGen();
-  const [persona, setPersona] = useState(() => loadLocal("ns_mf_persona", PERSONAS[0]));
-  const [message, setMessage] = useState(() => loadLocal("ns_mf_message", ""));
-  const [result, setResult] = useState<string | null>(() => loadLocal<string | null>("ns_mf_result", null));
+
+  useEffect(() => { if (projectId) migrateLegacyMirrorFisch(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [persona, setPersona] = useState(() => loadMirrorFisch(projectId).persona);
+  const [message, setMessage] = useState(() => loadMirrorFisch(projectId).message);
+  const [result, setResult] = useState<string | null>(() => loadMirrorFisch(projectId).result);
   const scores = useMemo(() => parseScores(result), [result]);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // les données propres à ce projet au lieu de garder celles affichées à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    const d = loadMirrorFisch(projectId);
+    setPersona(d.persona); setMessage(d.message); setResult(d.result);
+  }, [projectId]);
 
   async function simulate() {
-    saveLocal("ns_mf_persona", persona);
-    saveLocal("ns_mf_message", message);
+    saveLocal(projectKey("ns_mf_persona", projectId), persona);
+    saveLocal(projectKey("ns_mf_message", projectId), message);
     const r = await gen("communicant", promptMirrorFisch(persona, message));
-    if (r) { setResult(r); saveLocal("ns_mf_result", r); }
+    if (r) { setResult(r); saveLocal(projectKey("ns_mf_result", projectId), r); }
   }
 
   return (

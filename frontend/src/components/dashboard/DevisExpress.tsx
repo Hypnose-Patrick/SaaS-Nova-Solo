@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUserStore } from "@/stores/useUserStore";
-import { loadLocal, saveLocal } from "@/lib/local";
+import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 
 // Devis express — chiffrer sur le terrain en quelques secondes puis copier /
 // envoyer par mail. Autonome, hors-ligne, persisté en local (brouillon).
@@ -23,20 +23,51 @@ function chf(n: number): string {
   return n.toLocaleString("fr-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/ /g, "’");
 }
 
+// Reprend les anciennes données globales (pré-scoping projet) pour le premier
+// projet qui charge ce module après le correctif, puis les efface — sans ça
+// tout nouveau projet hériterait sinon du brouillon du dernier projet actif.
+function migrateLegacyDevisExpress(projectId: string) {
+  if (localStorage.getItem(projectKey("ns_devis_express", projectId)) != null) return;
+  const v = localStorage.getItem("ns_devis_express");
+  if (v == null) return;
+  localStorage.setItem(projectKey("ns_devis_express", projectId), v);
+  localStorage.removeItem("ns_devis_express");
+}
+
+function loadDevisExpress(projectId: string | null | undefined) {
+  return {
+    st: loadLocal<DevisState>(projectKey("ns_devis_express", projectId), EMPTY),
+  };
+}
+
 export function DevisExpress() {
   const profile = useUserStore((s) => s.profile);
-  const [st, setSt] = useState<DevisState>(() => loadLocal<DevisState>("ns_devis_express", EMPTY));
+  const projectId = profile?.id ?? null;
+
+  useEffect(() => { if (projectId) migrateLegacyDevisExpress(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [st, setSt] = useState<DevisState>(() => loadDevisExpress(projectId).st);
+  const prevProjectId = useRef(projectId);
+
+  // Changement de projet actif (sélecteur, sans démonter la page) : recharge
+  // le brouillon propre à ce projet au lieu de garder celui affiché à l'écran.
+  useEffect(() => {
+    if (prevProjectId.current === projectId) return;
+    prevProjectId.current = projectId;
+    if (!projectId) return;
+    setSt(loadDevisExpress(projectId).st);
+  }, [projectId]);
 
   function patch(p: Partial<DevisState>) {
     const next = { ...st, ...p };
-    setSt(next); saveLocal("ns_devis_express", next);
+    setSt(next); saveLocal(projectKey("ns_devis_express", projectId), next);
   }
   function setLine(i: number, field: keyof Line, v: string) {
     patch({ lines: st.lines.map((l, j) => (j === i ? { ...l, [field]: v } : l)) });
   }
   function addLine() { patch({ lines: [...st.lines, { d: "", qte: "1", pu: "" }] }); }
   function delLine(i: number) { patch({ lines: st.lines.filter((_, j) => j !== i) }); }
-  function reset() { setSt(EMPTY); saveLocal("ns_devis_express", EMPTY); }
+  function reset() { setSt(EMPTY); saveLocal(projectKey("ns_devis_express", projectId), EMPTY); }
 
   const ht = st.lines.reduce((s, l) => s + (Number(l.qte) || 0) * (Number(l.pu) || 0), 0);
   const tva = st.tva ? (ht * TVA) / 100 : 0;

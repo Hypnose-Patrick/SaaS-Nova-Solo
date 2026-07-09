@@ -205,7 +205,7 @@ export function BusinessPlan() {
   async function insertBudget() {
     if (!profile?.id) return;
     setBudgetMsg(null);
-    const f = loadFinanceModel();
+    const f = loadFinanceModel(profile?.id ?? null);
     if (!f) {
       setBudgetMsg("Renseignez d'abord votre budget dans la page Finances.");
       return;
