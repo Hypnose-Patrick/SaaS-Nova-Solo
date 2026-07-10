@@ -79,3 +79,42 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+
+      # Vérification post-deploy : les règles structurantes de l'ADR 2026-06-30
+      # (Hostinger hôte unique) sont contrôlées EN PROD après chaque upload :
+      #   / = landing (jamais la SPA), /login = SPA (id="root" + bundle), et le
+      #   bundle référencé répond réellement (attrape un upload FTP partiel).
+      # Résultat notifié sur Telegram (Patrick) via le webhook d'alerte Hermes.
+      - name: Verify deployment (règles ADR 2026-06-30)
+        run: |
+          sleep 10   # laisse Hostinger/LiteSpeed servir les nouveaux fichiers
+          BASE=https://start-mybusiness.com
+          HOOK=https://n8n.srv1331196.hstgr.cloud/webhook/hermes-alert-x7q2v9
+          fail=""
+
+          landing=$(curl -s -m 20 "$BASE/")
+          echo "$landing" | grep -q '/assets/index-' && fail="$fail / sert la SPA au lieu de la landing;"
+          [ -z "$landing" ] && fail="$fail / vide ou injoignable;"
+
+          spa=$(curl -s -m 20 "$BASE/login")
+          echo "$spa" | grep -q 'id="root"' || fail="$fail /login ne sert pas la SPA (id=root absent);"
+
+          bundle=$(echo "$spa" | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+          if [ -n "$bundle" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$bundle")
+            [ "$code" = "200" ] || fail="$fail bundle $bundle en HTTP $code (upload partiel ?);"
+          else
+            fail="$fail aucun bundle référencé par /login;"
+          fi
+
+          if [ -n "$fail" ]; then
+            msg="❌ DEPLOY Nova Solo (${GITHUB_SHA:0:7}) : vérification post-deploy en ÉCHEC —$fail voir Actions."
+            curl -s -m 15 -X POST "$HOOK" -H 'Content-Type: application/json' \
+              --data "$(printf '{"text":"%s"}' "$msg")" >/dev/null || true
+            echo "::error::$msg"
+            exit 1
+          fi
+          msg="✅ DEPLOY Nova Solo (${GITHUB_SHA:0:7}) vérifié : landing OK, SPA /login OK, bundle $bundle OK."
+          curl -s -m 15 -X POST "$HOOK" -H 'Content-Type: application/json' \
+            --data "$(printf '{"text":"%s"}' "$msg")" >/dev/null || true
+          echo "$msg"
