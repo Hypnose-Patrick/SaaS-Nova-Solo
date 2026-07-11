@@ -218,7 +218,7 @@ export function Cv() {
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)", position: "sticky", top: "var(--space-4)" }}>
           <Card glass title="Aperçu" action={
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
-              <ExportGate>
+              <ExportGate previewHtml={buildDocHtml}>
                 <Button size="sm" variant="ghost" onClick={exportWordCv}>Word</Button>
                 <Button size="sm" variant="ghost" onClick={printCv}>Imprimer / PDF</Button>
               </ExportGate>

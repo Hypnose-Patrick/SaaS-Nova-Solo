@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useSubscription, exportLockInfo } from "@/lib/useSubscription";
 import { supabase } from "@/lib/supabase";
 import { extractReceipt, ocrReceipt, extractStatement } from "@/lib/ai";
 import type { ComptaEntry } from "@/types";
@@ -53,6 +54,8 @@ const YEARS = [2024, 2025, 2026, 2027];
 export function Compta() {
   const profile = useUserStore((s) => s.profile);
   const { compta, fetchCompta } = useAppStore();
+  const { canExport, account } = useSubscription();
+  const exportLock = exportLockInfo(account);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filterType, setFilterType] = useState<"all" | "revenu" | "depense">("all");
@@ -326,7 +329,7 @@ export function Compta() {
     return /[";\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
   }
   function exportCsv() {
-    if (filtered.length === 0) return;
+    if (!canExport || filtered.length === 0) return;
     const header = ["Date", "Type", "Montant CHF", "Description", "Fournisseur/Client", "Catégorie", "TVA %"];
     const body = filtered.map((e) =>
       [e.date, e.type === "revenu" ? "Revenu" : "Dépense", e.amount.toFixed(2),
@@ -526,7 +529,13 @@ export function Compta() {
                 {importing ? "Import…" : "📄 Importer PDF"}
               </span>
             </label>
-            <Button size="sm" variant="ghost" disabled={filtered.length === 0} onClick={exportCsv}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={filtered.length === 0 || !canExport}
+              title={canExport ? undefined : exportLock.label}
+              onClick={exportCsv}
+            >
               ⬇ Exporter ({filtered.length})
             </Button>
           </div>

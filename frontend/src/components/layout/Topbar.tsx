@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/stores/useUserStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 interface TopbarProps {
   title: string;
@@ -18,9 +19,17 @@ const STATUT_LABEL: Record<string, string> = {
 export function Topbar({ title }: TopbarProps) {
   const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
+  const account = useUserStore((s) => s.account);
   const reset = useUserStore((s) => s.reset);
   const chatReset = useChatStore((s) => s.clearLocal);
   const setOpen = useChatStore((s) => s.setOpen);
+
+  // Essai gratuit de 14 jours en cours — accès complet à l'app, mais l'export
+  // de documents reste verrouillé jusqu'au passage en statut payant "active".
+  const isTrialing = account?.subscription_status === "trialing";
+  const trialDaysLeft = isTrialing && account?.subscription_end
+    ? Math.max(1, Math.ceil((new Date(account.subscription_end).getTime() - Date.now()) / 86_400_000))
+    : null;
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -105,6 +114,15 @@ export function Topbar({ title }: TopbarProps) {
       </button>
 
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", flexShrink: 0 }}>
+        {isTrialing && trialDaysLeft != null && (
+          <button
+            onClick={() => navigate("/settings")}
+            title={`Votre essai se termine le ${new Date(account!.subscription_end!).toLocaleDateString("fr-CH")} — l'export de documents sera débloqué automatiquement.`}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          >
+            <Badge color="warning">Essai — J-{trialDaysLeft}</Badge>
+          </button>
+        )}
         <Button size="sm" variant="ghost" onClick={() => navigate("/diagnostic")} aria-label="Lancer le diagnostic">
           Diagnostic
         </Button>

@@ -152,7 +152,7 @@ export function Contrat() {
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
               <Button size="sm" variant="ghost" onClick={copyText}>{copied ? "Copié ✓" : "Copier"}</Button>
               <Button size="sm" variant="ghost" onClick={downloadTxt}>.txt</Button>
-              <ExportGate>
+              <ExportGate previewHtml={buildDocHtml}>
                 <Button size="sm" variant="ghost" onClick={exportWord}>Word</Button>
                 <Button size="sm" variant="gold" onClick={exportPdf}>Imprimer / PDF</Button>
               </ExportGate>

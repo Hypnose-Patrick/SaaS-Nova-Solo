@@ -80,12 +80,36 @@ serve(async (req) => {
     return undefined;
   }
 
+  // Logique de synchro partagée entre la création et la mise à jour d'un
+  // abonnement — c'est elle qui écrit le vrai statut Stripe ("trialing" pendant
+  // l'essai de 14 jours, "active" une fois le premier prélèvement effectué).
+  async function syncFromSubscription(sub: Stripe.Subscription) {
+    const end = periodEnd(sub);
+    const isActive = sub.status === "active" || sub.status === "trialing";
+    const patch: Record<string, unknown> = {
+      subscription_status: isActive ? sub.status : "inactive",
+      subscription_id: sub.id,
+      subscription_end: end ? new Date(end * 1000).toISOString() : null,
+    };
+    // Reprise d'un abonnement (ex. carte régularisée après échec de paiement) =
+    // annule une purge déjà programmée.
+    if (isActive) patch.scheduled_purge_at = null;
+    // Déduit le palier du prix réel — couvre aussi bien un changement fait
+    // depuis le Portail Client Stripe (upgrade/downgrade) qu'un événement
+    // de renouvellement standard.
+    const plan = resolvePlan(sub);
+    if (plan) patch.plan = plan;
+    await updateByCustomer(String(sub.customer), withMaxProjects(patch));
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode === "subscription" && session.customer) {
+        // Ne PAS écrire subscription_status ici : avec l'essai de 14 jours,
+        // Stripe envoie ce webhook en même temps que customer.subscription.created,
+        // qui seul connaît le vrai statut ("trialing" vs "active") via syncFromSubscription.
         const patch: Record<string, unknown> = {
-          subscription_status: "active",
           subscription_id: String(session.subscription),
           // Réabonnement = annule une éventuelle purge programmée (résiliation
           // précédente ou auto-suppression volontaire, cf. account-delete).
@@ -98,24 +122,10 @@ serve(async (req) => {
       break;
     }
 
+    case "customer.subscription.created":
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
-      const end = periodEnd(sub);
-      const isActive = sub.status === "active" || sub.status === "trialing";
-      const patch: Record<string, unknown> = {
-        subscription_status: isActive ? sub.status : "inactive",
-        subscription_id: sub.id,
-        subscription_end: end ? new Date(end * 1000).toISOString() : null,
-      };
-      // Reprise d'un abonnement (ex. carte régularisée après échec de paiement) =
-      // annule une purge déjà programmée.
-      if (isActive) patch.scheduled_purge_at = null;
-      // Déduit le palier du prix réel — couvre aussi bien un changement fait
-      // depuis le Portail Client Stripe (upgrade/downgrade) qu'un événement
-      // de renouvellement standard.
-      const plan = resolvePlan(sub);
-      if (plan) patch.plan = plan;
-      await updateByCustomer(String(sub.customer), withMaxProjects(patch));
+      await syncFromSubscription(sub);
       break;
     }
 
