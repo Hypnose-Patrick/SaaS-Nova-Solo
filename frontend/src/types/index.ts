@@ -49,6 +49,9 @@ export interface Account {
   subscription_id: string | null;
   subscription_end: string | null;
   is_admin: boolean;
+  paid_invoices_count: number;
+  first_paid_at: string | null;
+  second_paid_at: string | null;
   created_at: string;
   updated_at: string;
 }
