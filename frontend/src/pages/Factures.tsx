@@ -11,6 +11,7 @@ import { useSubscription, exportLockInfo } from "@/lib/useSubscription";
 import { DocumentPreview } from "@/components/DocumentPreview";
 import { supabase } from "@/lib/supabase";
 import { printHtml, downloadWord, escapeHtml } from "@/lib/exportDoc";
+import { unlockShare } from "@/lib/referral";
 import type { ComptaEntry, Invoice } from "@/types";
 
 const STATUS_LABEL: Record<Invoice["status"], string> = {
@@ -135,7 +136,11 @@ export function Factures() {
         })
         .select()
         .single();
-      if (data) setInvoices((prev) => [data as Invoice, ...prev]);
+      if (data) {
+        setInvoices((prev) => [data as Invoice, ...prev]);
+        // Parrainage : 1re facture créée -> débloque le module de partage (idempotent).
+        void unlockShare("first_invoice_sent");
+      }
     }
 
     resetForm();
