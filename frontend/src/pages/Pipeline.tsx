@@ -8,6 +8,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { supabase } from "@/lib/supabase";
 import { researchProspect, prospectEmail, prospectObjections, prospectDossier, PROSPECT_EMAIL_TEMPLATES, type ProspectEmailTemplate } from "@/lib/ai";
 import { callN8n } from "@/lib/n8n";
+import { unlockShare } from "@/lib/referral";
 import type { Prospect, ProspectColumn, SonCas } from "@/types";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { PipelineMobile } from "@/pages/PipelineMobile";
@@ -153,6 +154,8 @@ function PipelineDesktop() {
 
     if (data) {
       useAppStore.setState((s) => ({ prospects: [data as Prospect, ...s.prospects] }));
+      // Parrainage : 1er prospect capté -> débloque le module de partage (idempotent).
+      void unlockShare("first_client_added");
     }
     setForm({ name: "", company: "", email: "", soncas: "", est_value: "", notes: "" });
     setShowForm(false);

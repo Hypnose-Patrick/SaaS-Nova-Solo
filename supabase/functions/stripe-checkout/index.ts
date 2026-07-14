@@ -100,7 +100,13 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       metadata: { plan },
-      subscription_data: { metadata: { plan } },
+      // Essai gratuit de 14 jours réservé au palier "pro" (1 projet, IA managée) —
+      // le BYOK ("solo") et Trio sont facturés dès l'inscription. Carte requise
+      // mais non débitée avant l'échéance pour Pro ; cf. stripe-webhook pour la
+      // synchronisation du statut "trialing" côté nova.accounts.
+      subscription_data: plan === "pro"
+        ? { trial_period_days: 14, metadata: { plan } }
+        : { metadata: { plan } },
       // `/` est servi par Hostinger comme la landing (via .htaccess) — il faut une
       // route SPA, sinon l'utilisateur retombe sur la landing après paiement.
       // /login (connecté) passe le gate → dashboard une fois l'abonnement actif.

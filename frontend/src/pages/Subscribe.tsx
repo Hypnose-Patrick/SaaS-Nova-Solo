@@ -85,7 +85,8 @@ export function Subscribe() {
           }}
         >
           Bienvenue{profile?.name ? `, ${profile.name}` : ""}.
-          Choisissez votre édition — accès immédiat après paiement.
+          Choisissez votre édition — le palier Pro inclut 14 jours d'essai gratuit ;
+          Trio et Solo (BYOK) sont facturés dès l'inscription.
         </p>
 
         {error && (
@@ -132,9 +133,12 @@ export function Subscribe() {
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--color-text-primary)", margin: "0 0 var(--space-2)" }}>
               CHF 29 <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>/ mois</span>
             </p>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-2)" }}>
               Accès complet, tous les modules. <strong style={{ color: "var(--color-text-primary)" }}>IA incluse</strong> — mode
               managé, rien à configurer.
+            </p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-gold)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+              Essai gratuit de 14 jours, sans engagement — résiliable à tout moment avant la fin de l'essai.
             </p>
             <button
               onClick={() => handleCheckout("pro")}
@@ -179,10 +183,13 @@ export function Subscribe() {
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--color-text-primary)", margin: "0 0 var(--space-2)" }}>
               CHF 39 <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>/ mois</span>
             </p>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-2)" }}>
               Jusqu'à <strong style={{ color: "var(--color-text-primary)" }}>3 projets</strong> distincts (plusieurs
               activités, ou clients pour un coach). Accès complet, tous les modules.{" "}
               <strong style={{ color: "var(--color-text-primary)" }}>IA incluse</strong> — mode managé.
+            </p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+              Facturation immédiate, résiliable à tout moment.
             </p>
             <button
               onClick={() => handleCheckout("trio")}
@@ -231,10 +238,13 @@ export function Subscribe() {
             <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-2)" }}>
               Licence annuelle — CHF 108 payable en 1×
             </p>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-2)" }}>
               Tous les modules inclus. Vous apportez votre propre clé IA
               (OpenAI, OpenRouter, Anthropic…) : vous payez directement votre fournisseur,
               en plus de l'abonnement. Configuration dans Réglages → Moteur IA après l'abonnement.
+            </p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", lineHeight: "var(--leading-relaxed)", margin: "0 0 var(--space-6)" }}>
+              Facturation immédiate, résiliable avant l'échéance annuelle.
             </p>
             <button
               onClick={() => handleCheckout("solo")}
@@ -262,8 +272,11 @@ export function Subscribe() {
           </div>
         </div>
 
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-2)" }}>
+          Résiliable à tout moment · Paiement sécurisé Stripe · TVA CH incluse
+        </p>
         <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-6)" }}>
-          Facturation annuelle · résiliable avant l'échéance (non renouvelé) · Paiement sécurisé Stripe · TVA CH incluse
+          Sur le palier Pro : export et impression des documents (CV, dossier, factures…) disponibles dès la fin de l'essai — aperçu visuel non copiable pendant les 14 jours.
         </p>
 
         <button

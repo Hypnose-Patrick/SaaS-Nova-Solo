@@ -182,7 +182,7 @@ export function Dossier() {
             {dossier ? "Régénérer le dossier" : `Générer — ${tplLabel}`}
           </Button>
           {dossier && (
-            <ExportGate>
+            <ExportGate previewHtml={buildDocHtml}>
               <Button variant="ghost" onClick={exportWord}>Word</Button>
               <Button variant="ghost" onClick={exportPdf}>Exporter en PDF</Button>
             </ExportGate>

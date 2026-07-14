@@ -9,6 +9,7 @@ import { promptContrat } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal, projectKey } from "@/lib/local";
 import { printHtml, downloadWord } from "@/lib/exportDoc";
 import { ExportGate } from "@/components/ExportGate";
+import { useSubscription } from "@/lib/useSubscription";
 
 const TYPES = ["Prestation de services", "Mandat de conseil", "Formation / atelier", "Prestation de services récurrente", "Contrat d'entreprise / chantier (art. 363 CO)"];
 const DUREES = ["Ponctuel (one-shot)", "3 mois", "6 mois", "12 mois reconductible"];
@@ -54,6 +55,7 @@ export function Contrat() {
   const profile = useUserStore((s) => s.profile);
   const projectId = profile?.id ?? null;
   const { loading, error, gen } = useAiGen();
+  const { canExport } = useSubscription();
 
   useEffect(() => { if (projectId) migrateLegacyContrat(projectId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -100,7 +102,7 @@ export function Contrat() {
   function exportWord() { if (result) downloadWord(fileBase, buildDocHtml()); }
 
   function downloadTxt() {
-    if (!result) return;
+    if (!result || !canExport) return;
     const url = URL.createObjectURL(new Blob([result], { type: "text/plain;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
@@ -110,7 +112,7 @@ export function Contrat() {
   }
 
   async function copyText() {
-    if (!result) return;
+    if (!result || !canExport) return;
     try {
       await navigator.clipboard.writeText(result);
       setCopied(true);
@@ -150,9 +152,9 @@ export function Contrat() {
           title="Contrat (modèle indicatif)"
           action={result && !loading ? (
             <div style={{ display: "flex", gap: "var(--space-2)" }}>
-              <Button size="sm" variant="ghost" onClick={copyText}>{copied ? "Copié ✓" : "Copier"}</Button>
-              <Button size="sm" variant="ghost" onClick={downloadTxt}>.txt</Button>
-              <ExportGate>
+              <ExportGate previewHtml={buildDocHtml}>
+                <Button size="sm" variant="ghost" onClick={copyText}>{copied ? "Copié ✓" : "Copier"}</Button>
+                <Button size="sm" variant="ghost" onClick={downloadTxt}>.txt</Button>
                 <Button size="sm" variant="ghost" onClick={exportWord}>Word</Button>
                 <Button size="sm" variant="gold" onClick={exportPdf}>Imprimer / PDF</Button>
               </ExportGate>

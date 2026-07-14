@@ -13,6 +13,7 @@ import { TelegramCard } from "@/components/settings/TelegramCard";
 import { N8nCard } from "@/components/settings/N8nCard";
 import { GoogleDriveCard } from "@/components/settings/GoogleDriveCard";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
+import { ReferralCard } from "@/components/settings/ReferralCard";
 import { SubscribeButton } from "@/components/SubscribeButton";
 import { useSearchParams } from "react-router-dom";
 
@@ -550,6 +551,9 @@ export function Settings() {
         </p>
         <SubscribeButton subscriptionStatus={account?.subscription_status} plan={account?.plan} />
       </Card>
+
+      {/* Section : Parrainage — 3 paliers progressifs (Solo/Trio uniquement, pas BYOK) */}
+      <ReferralCard />
 
       {/* Section : Moteur IA (BYOK) — conf propre, sauvegardée séparément */}
       <AiEngineCard />

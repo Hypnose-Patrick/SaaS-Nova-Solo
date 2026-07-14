@@ -33,6 +33,7 @@ import { Aide } from "@/pages/Aide";
 import { Legal } from "@/pages/Legal";
 import { Subscribe } from "@/pages/Subscribe";
 import { hasAccess } from "@/lib/useSubscription";
+import { captureRefFromUrl, claimPendingRef } from "@/lib/referral";
 
 // Pattern layout route react-router-dom v6 : AppShell utilise <Outlet /> internement.
 function ProtectedRoutes() {
@@ -92,6 +93,18 @@ export default function App() {
 
     return () => sub.subscription.unsubscribe();
   }, [fetchProfile, reset]);
+
+  // Capture le ?ref=CODE dès le boot (persisté en localStorage) — survit à la
+  // redirection OAuth Google et au passage par /login. Verrouillage réel de la
+  // relation parrain->filleul dès que le compte est chargé (idempotent côté
+  // serveur, jamais rétroactif).
+  useEffect(() => {
+    captureRefFromUrl();
+  }, []);
+
+  useEffect(() => {
+    if (account?.id) claimPendingRef(account);
+  }, [account?.id]);
 
   if (session === "loading") {
     return (

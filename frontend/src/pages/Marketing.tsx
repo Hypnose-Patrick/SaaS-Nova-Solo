@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { AiResult } from "@/components/ui/AiResult";
 import { useUserStore } from "@/stores/useUserStore";
+import { useSubscription, exportLockInfo } from "@/lib/useSubscription";
 import { useAiGen, MODEL_REASONING } from "@/lib/useAiGen";
 import { promptMarketingPost, promptEditorialIdeas, promptPortfolioCase, promptMarketingInsights, promptSiteVitrine } from "@/lib/lancementPrompts";
 import { loadLocal, saveLocal, parseLooseJson } from "@/lib/local";
@@ -77,6 +78,8 @@ function nextId() { _seq += 1; return `c${_seq}_${performance.now().toFixed(0)}`
 export function Marketing() {
   const navigate = useNavigate();
   const profile = useUserStore((s) => s.profile);
+  const { canExport, account } = useSubscription();
+  const exportLock = exportLockInfo(account);
   const post = useAiGen();
   const ideasGen = useAiGen();
   const portfolio = useAiGen();
@@ -132,7 +135,7 @@ export function Marketing() {
   }
 
   function downloadSite() {
-    if (!siteHtml) return;
+    if (!siteHtml || !canExport) return;
     const blob = new Blob([siteHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -371,7 +374,17 @@ export function Marketing() {
       {/* Site Vitrine une page */}
       <Card glass title="Mon Site Vitrine" action={
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          {siteHtml && <Button size="sm" variant="ghost" onClick={downloadSite}>⬇ Télécharger HTML</Button>}
+          {siteHtml && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!canExport}
+              title={canExport ? undefined : exportLock.label}
+              onClick={downloadSite}
+            >
+              {canExport ? "⬇ Télécharger HTML" : `🔒 ${exportLock.label}`}
+            </Button>
+          )}
           <Button size="sm" variant="gold" loading={siteGen.loading} onClick={generateSite} disabled={!siteOffres.trim()}>
             {siteHtml ? "Régénérer" : "Générer mon site"}
           </Button>

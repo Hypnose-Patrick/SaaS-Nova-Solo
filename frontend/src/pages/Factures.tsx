@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/Input";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useUserStore } from "@/stores/useUserStore";
 import { useAppStore } from "@/stores/useAppStore";
-import { useSubscription } from "@/lib/useSubscription";
+import { useSubscription, exportLockInfo } from "@/lib/useSubscription";
+import { DocumentPreview } from "@/components/DocumentPreview";
 import { supabase } from "@/lib/supabase";
 import { printHtml, downloadWord, escapeHtml } from "@/lib/exportDoc";
+import { unlockShare } from "@/lib/referral";
 import type { ComptaEntry, Invoice } from "@/types";
 
 const STATUS_LABEL: Record<Invoice["status"], string> = {
@@ -39,7 +41,9 @@ interface LineItem {
 export function Factures() {
   const profile = useUserStore((s) => s.profile);
   const navigate = useNavigate();
-  const { isActive } = useSubscription();
+  const { isActive, canExport, account } = useSubscription();
+  const exportLock = exportLockInfo(account);
+  const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -132,7 +136,11 @@ export function Factures() {
         })
         .select()
         .single();
-      if (data) setInvoices((prev) => [data as Invoice, ...prev]);
+      if (data) {
+        setInvoices((prev) => [data as Invoice, ...prev]);
+        // Parrainage : 1re facture créée -> débloque le module de partage (idempotent).
+        void unlockShare("first_invoice_sent");
+      }
     }
 
     resetForm();
@@ -263,22 +271,28 @@ export function Factures() {
   }
 
   function exportInvoicePdf(inv: Invoice) {
-    if (!isActive) { navigate("/settings"); return; }
+    if (!canExport) {
+      if (isActive) setPreviewInvoice(inv); else navigate("/settings");
+      return;
+    }
     printHtml(buildInvoiceHtml(inv));
   }
   function exportInvoiceWord(inv: Invoice) {
-    if (!isActive) { navigate("/settings"); return; }
+    if (!canExport) {
+      if (isActive) setPreviewInvoice(inv); else navigate("/settings");
+      return;
+    }
     downloadWord(`facture-${inv.number}`, buildInvoiceHtml(inv));
   }
 
-  // Export CSV de l'ensemble des factures (donnée brute, non réservé aux abonnés — même règle que Compta/Finances).
+  // Export CSV de l'ensemble des factures — réservé aux abonnés actifs (pas pendant l'essai gratuit).
   function csvField(s: string | number): string {
     const v = String(s ?? "");
     const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
     return /[";\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
   }
   function exportInvoicesCsv() {
-    if (invoices.length === 0) return;
+    if (!canExport || invoices.length === 0) return;
     const header = ["N°", "Client", "Email", "Date", "Montant HT", "TVA %", "Montant TTC", "Statut"];
     const body = invoices.map((i) =>
       [
@@ -320,7 +334,13 @@ export function Factures() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
-          <Button size="sm" variant="ghost" disabled={invoices.length === 0} onClick={exportInvoicesCsv}>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={invoices.length === 0 || !canExport}
+            title={canExport ? undefined : exportLock.label}
+            onClick={exportInvoicesCsv}
+          >
             ⬇ Export CSV
           </Button>
           <Button
@@ -511,15 +531,15 @@ export function Factures() {
                   </button>
                   <button
                     onClick={() => exportInvoicePdf(inv)}
-                    title={isActive ? "Exporter en PDF" : "Export PDF réservé aux abonnés"}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: isActive ? 1 : 0.5, padding: "2px" }}
+                    title={canExport ? "Exporter en PDF" : isActive ? `Aperçu — ${exportLock.label}` : exportLock.label}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: canExport ? 1 : 0.5, padding: "2px" }}
                   >
                     🖨
                   </button>
                   <button
                     onClick={() => exportInvoiceWord(inv)}
-                    title={isActive ? "Exporter en Word" : "Export Word réservé aux abonnés"}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: isActive ? 1 : 0.5, padding: "2px" }}
+                    title={canExport ? "Exporter en Word" : isActive ? `Aperçu — ${exportLock.label}` : exportLock.label}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", opacity: canExport ? 1 : 0.5, padding: "2px" }}
                   >
                     📝
                   </button>
@@ -528,6 +548,14 @@ export function Factures() {
             ))}
           </div>
         </Card>
+      )}
+
+      {previewInvoice && (
+        <DocumentPreview
+          html={buildInvoiceHtml(previewInvoice)}
+          label={exportLock.label}
+          onClose={() => setPreviewInvoice(null)}
+        />
       )}
     </div>
   );

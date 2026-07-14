@@ -279,7 +279,7 @@ export function BusinessPlan() {
             }} />
           </div>
           <Button size="sm" variant="gold" loading={generatingAll} onClick={generateAll}>✦ Tout générer</Button>
-          <ExportGate>
+          <ExportGate previewHtml={buildDocHtml}>
             <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportWord}>Word</Button>
             <Button size="sm" variant="ghost" disabled={filledCount === 0} onClick={exportPdf}>PDF</Button>
           </ExportGate>
