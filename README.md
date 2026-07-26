@@ -220,7 +220,7 @@ Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour guidelines.
 
 ## License
 
-Propriétaire — SeedJobs Sàrl. Voir [LICENSE](LICENSE).
+Propriétaire — Patrick Beiner. Voir [LICENSE](LICENSE).
 
 ## Support
 
