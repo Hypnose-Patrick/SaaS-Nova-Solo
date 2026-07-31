@@ -1,5 +1,27 @@
 # SaaS Nova Solo
 
+> ## ⚠️ Ce dépôt ne déploie plus start-mybusiness.com
+>
+> Depuis le **2026-07-31**, le site suisse est bâti et mis en ligne par
+> [`Hypnose-Patrick/SaaS-Nova-France`](https://github.com/Hypnose-Patrick/SaaS-Nova-France),
+> à partir du même code que nova-solo.fr. Ce qui diffère entre les deux pays
+> passe par `frontend/src/lib/regime.ts` et `frontend/statique-ch/`.
+>
+> Le workflow de déploiement d'ici est **désarmé** (commit `ec501c1`) : plus de
+> déclencheur `push`, seulement un `workflow_dispatch` conservé comme filet si
+> l'alignement devait être annulé. Ne pas le réarmer — deux dépôts déployant le
+> même `/public_html/`, c'est un pile ou face, et le perdant remet en ligne la
+> version d'avant sans qu'aucun job n'échoue.
+>
+> **Ne rien appliquer depuis `supabase/migrations/`** : voir le `LISEZ-MOI.md`
+> qui s'y trouve. Les numéros 019 et suivants désignent autre chose sur la base.
+>
+> Le code applicatif reste ici pour l'instant : la branche
+> `fix/aide-link-vers-presentation` porte cinq commits jamais fusionnés, et
+> décider de leur sort passe avant tout nettoyage.
+>
+> Le récit complet : `SaaS-Nova-France/docs/ALIGNEMENT-SUISSE.md`.
+
 Refactorisation de Nova Solo en application React moderne avec Supabase pour multi-tenancy.
 
 ## Vue d'ensemble
