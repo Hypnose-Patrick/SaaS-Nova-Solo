@@ -1,8 +1,27 @@
-name: Build & Deploy
+name: Build & Deploy — DÉSARMÉ (le site suisse part depuis SaaS-Nova-France)
+
+# ┌─ DÉSARMÉ LE 2026-07-31 — NE PAS REMETTRE LE DÉCLENCHEUR `push` ──────────────┐
+# │                                                                              │
+# │ Le site start-mybusiness.com est désormais bâti et déployé depuis le dépôt   │
+# │ Hypnose-Patrick/SaaS-Nova-France, workflow `build-deploy-ch.yml`. Les deux    │
+# │ dépôts visaient le MÊME `/public_html/`, avec le même compte FTP.            │
+# │                                                                              │
+# │ Ce que ce workflow ferait s'il restait armé : à la première poussée sur      │
+# │ `master`, il remettrait en ligne le build d'AVANT l'alignement — ancien      │
+# │ contenu, anciens textes légaux, sur la même base de données. Sans erreur,    │
+# │ sans alerte, sans qu'aucun job n'échoue. Un retour en arrière silencieux,    │
+# │ qui coûte des jours à diagnostiquer précisément parce que rien ne casse.     │
+# │                                                                              │
+# │ Le `workflow_dispatch` est conservé : il permet de redéployer volontairement │
+# │ l'ancienne version si l'alignement devait être annulé. C'est un filet, pas   │
+# │ un usage courant — et ça reste un clic délibéré, pas un effet de bord d'une  │
+# │ poussée de code.                                                             │
+# │                                                                              │
+# │ Voir docs/ALIGNEMENT-SUISSE.md dans le dépôt France, phase C tâche 7.        │
+# └──────────────────────────────────────────────────────────────────────────────┘
 
 on:
-  push:
-    branches: [master]
+  # push: DÉSARMÉ — voir le bandeau ci-dessus avant de le rétablir.
   workflow_dispatch:
 
 jobs:
