@@ -85,8 +85,8 @@ export function Subscribe() {
           }}
         >
           Bienvenue{profile?.name ? `, ${profile.name}` : ""}.
-          Choisissez votre édition — le palier Pro inclut 14 jours d'essai gratuit ;
-          Trio et Solo (BYOK) sont facturés dès l'inscription.
+          Choisissez votre édition — le palier Solo inclut 14 jours d'essai gratuit ;
+          Trio et BYOK sont facturés dès l'inscription.
         </p>
 
         {error && (
@@ -114,7 +114,7 @@ export function Subscribe() {
             marginBottom: "var(--space-6)",
           }}
         >
-          {/* Pro — IA managée */}
+          {/* Solo (clé technique `pro`) — IA managée */}
           <div
             style={{
               flex: "1 1 320px",
@@ -128,7 +128,7 @@ export function Subscribe() {
             }}
           >
             <p style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", margin: "0 0 var(--space-2)" }}>
-              Pro
+              Solo
             </p>
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--color-text-primary)", margin: "0 0 var(--space-2)" }}>
               CHF 29 <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>/ mois</span>
@@ -160,7 +160,7 @@ export function Subscribe() {
                 boxSizing: "border-box",
               } as React.CSSProperties}
             >
-              {loadingPlan === "pro" ? "Redirection…" : "Commencer — Pro"}
+              {loadingPlan === "pro" ? "Redirection…" : "Commencer — Solo"}
             </button>
           </div>
 
@@ -216,7 +216,7 @@ export function Subscribe() {
             </button>
           </div>
 
-          {/* Solo — BYOK */}
+          {/* BYOK (clé technique `solo`) — licence annuelle */}
           <div
             style={{
               flex: "1 1 320px",
@@ -230,7 +230,7 @@ export function Subscribe() {
             }}
           >
             <p style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-gold)", margin: "0 0 var(--space-2)" }}>
-              Solo — BYOK
+              BYOK
             </p>
             <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--color-text-primary)", margin: "0 0 var(--space-1)" }}>
               CHF 9 <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>/ mois</span>
@@ -267,7 +267,7 @@ export function Subscribe() {
                 opacity: loadingPlan !== null && loadingPlan !== "solo" ? 0.5 : 1,
               } as React.CSSProperties}
             >
-              {loadingPlan === "solo" ? "Redirection…" : "Commencer — Solo (BYOK)"}
+              {loadingPlan === "solo" ? "Redirection…" : "Commencer — BYOK"}
             </button>
           </div>
         </div>
@@ -276,7 +276,7 @@ export function Subscribe() {
           Résiliable à tout moment · Paiement sécurisé Stripe · TVA CH incluse
         </p>
         <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", margin: "0 0 var(--space-6)" }}>
-          Sur le palier Pro : export et impression des documents (CV, dossier, factures…) disponibles dès la fin de l'essai — aperçu visuel non copiable pendant les 14 jours.
+          Sur le palier Solo : export et impression des documents (CV, dossier, factures…) disponibles dès la fin de l'essai — aperçu visuel non copiable pendant les 14 jours.
         </p>
 
         <button

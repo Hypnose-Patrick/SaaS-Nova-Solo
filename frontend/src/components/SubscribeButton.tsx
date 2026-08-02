@@ -6,9 +6,12 @@ interface Props {
   plan?: string | null;
 }
 
+// Libellés commerciaux : Solo = 29 / mois · Trio = 39 / mois · BYOK = 108 / an.
+// Les clés `pro`, `trio`, `solo` restent TECHNIQUES (base, secrets Stripe) : `pro`
+// porte le palier Solo, `solo` porte le BYOK.
 const PLAN_LABELS: Record<string, string> = {
   solo: "BYOK — 9 CHF / mois",
-  pro: "Pro — 29 CHF / mois",
+  pro: "Solo — 29 CHF / mois",
   trio: "Trio — 39 CHF / mois",
 };
 

@@ -101,7 +101,7 @@ export function AiEngineCard() {
       <p style={SECTION_TITLE}>Moteur IA — votre édition</p>
       {isSolo ? (
         <p style={{ fontSize: "var(--text-xs)", color: "var(--color-gold-muted)", margin: "0 0 var(--space-4) 0", lineHeight: "var(--leading-normal)" }}>
-          <strong>Édition Solo (CHF 9/mois) — BYOK obligatoire.</strong> L'IA managée n'est pas
+          <strong>Édition BYOK (CHF 9/mois) — votre propre clé API est nécessaire.</strong> L'IA managée n'est pas
           incluse dans ce palier : configurez votre propre clé (OpenAI, OpenRouter, Anthropic…)
           ci-dessous pour utiliser les agents IA. Votre clé est chiffrée côté serveur, jamais
           réaffichée ; sa consommation est facturée directement par votre fournisseur.

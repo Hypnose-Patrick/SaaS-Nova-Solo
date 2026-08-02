@@ -75,7 +75,7 @@ export function DangerZoneCard() {
     <Card glass style={{ border: "1px solid rgba(168,90,90,0.25)" }}>
       <p style={SECTION_TITLE}>Zone de danger</p>
 
-      {/* Reset d'un projet — palier Pro/Trio uniquement */}
+      {/* Reset d'un projet — palier Solo/Trio uniquement */}
       <div style={{ paddingBottom: "var(--space-4)", marginBottom: "var(--space-4)", borderBottom: "var(--border-subtle)" }}>
         <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-primary)", fontWeight: 500, margin: "0 0 var(--space-1) 0" }}>
           Réinitialiser ce projet
@@ -84,7 +84,7 @@ export function DangerZoneCard() {
           Efface toutes les données de « {profile?.project_name || "ce projet"} » (BMC, business plan,
           prospection, finances, documents…) pour repartir de zéro. Le compte et les autres projets
           ne sont pas affectés.
-          {!canReset && " Non inclus dans le palier BYOK — passez à Pro ou Trio pour y accéder."}
+          {!canReset && " Non inclus dans le palier BYOK — passez à Solo ou Trio pour y accéder."}
         </p>
         {resetMsg && (
           <p style={{ fontSize: "var(--text-sm)", margin: "0 0 var(--space-3) 0", color: resetMsg.kind === "ok" ? "var(--color-success)" : "var(--color-danger)" }}>
